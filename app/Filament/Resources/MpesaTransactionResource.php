@@ -101,7 +101,7 @@ class MpesaTransactionResource extends Resource
                         Components\TextEntry::make('checkout_request_id')
                             ->label('Checkout Request ID')
                             ->copyable(),
-                        Components\TextEntry::make('tenant.name')
+                        Components\TextEntry::make('tenant.tenant_name')
                             ->label('Tenant'),
                         Components\TextEntry::make('invoice.invoice_number')
                             ->label('Invoice'),

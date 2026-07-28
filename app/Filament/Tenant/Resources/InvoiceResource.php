@@ -63,9 +63,9 @@ class InvoiceResource extends Resource
                 SelectFilter::make('status')
                     ->label('Payment Status')
                     ->options([
-                        'Paid' => 'Paid',
-                        'Partial' => 'Partial',
-                        'Unpaid' => 'Unpaid',
+                        'paid' => 'Paid',
+                        'partial' => 'Partial',
+                        'unpaid' => 'Unpaid',
                     ]),
 
                 //filters for invoices month

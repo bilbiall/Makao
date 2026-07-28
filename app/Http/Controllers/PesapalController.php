@@ -64,10 +64,15 @@ class PesapalController extends Controller
      */
     public function simulateCallback(Request $request)
     {
+        // Defense in depth: this route is only ever registered when app()->environment('local'),
+        // but guard here too in case it's ever reached another way.
+        abort_unless(app()->environment('local'), 404);
+
         $pendingId = $request->query('pending_id') ?? null;
         if ($pendingId) {
+            $user = Auth::user();
             $pending = PendingPayment::find($pendingId);
-            if ($pending) {
+            if ($pending && $user && $user->tenant && $pending->tenant_id === $user->tenant->id) {
                 $invoice = Invoice::find($pending->invoice_id);
                 if ($invoice) {
                     $payment = Payment::create([
@@ -120,9 +125,10 @@ class PesapalController extends Controller
         }
 
         if (in_array(strtolower($status), ['completed', 'paid', 'settled'])) {
-            // Create Payment record
+            // Create Payment record (skip if this reference was already settled by a prior
+            // delivery of this webhook or by the IPN handler, to avoid double-crediting)
             $invoice = Invoice::find($pending->invoice_id);
-            if ($invoice) {
+            if ($invoice && $pending->status !== 'completed') {
                 $payment = Payment::create([
                     'tenant_id' => $pending->tenant_id,
                     'invoice_id' => $invoice->id,
@@ -135,6 +141,10 @@ class PesapalController extends Controller
                 $pending->meta = array_merge($pending->meta ?? [], ['webhook' => $data]);
                 $pending->save();
                 return response()->json(['message' => 'recorded']);
+            }
+
+            if ($invoice) {
+                return response()->json(['message' => 'already recorded']);
             }
         }
 

@@ -47,7 +47,7 @@ class TenantObserver
             return [
                 'amount_paid' => $payment->amount_paid,
                 'payment_date' => $payment->payment_date,
-                'reference' => $payment->reference,
+                'reference' => $payment->payment_reference,
                 'invoice_number' => optional($payment->invoice)->invoice_number,
             ];
         })->toArray();

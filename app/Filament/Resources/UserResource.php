@@ -42,12 +42,12 @@ class UserResource extends Resource
             ->schema([
                 //user form
                 TextInput::make('name')->required(),
-                TextInput::make('email')->email(),
+                TextInput::make('email')->email()->required(),
                 //TextInput::make('password')->password()
                 //to enable password updates
                 TextInput::make('password')
                     ->password()
-                    ->required()
+                    ->required(fn (string $context): bool => $context === 'create')
                     //->dehydrateStateUsing(fn ($state) => \Hash::make($state))
                     ->dehydrateStateUsing(fn ($state) => Hash::make($state))
 
@@ -55,12 +55,13 @@ class UserResource extends Resource
                     ->label('Password'),
 
                 // ✅ Role selection dropdown
+                // Note: 'landlord' and 'superadmin' are deliberately not assignable here -
+                // they're only created via the signup flow / superadmin panel, so staff can't self-escalate.
                 Select::make('role')
                     ->required()
                     ->label('User Role')
                     ->options([
                         'admin' => 'Admin',
-                        'manager' => 'Manager',
                         'caretaker' => 'Caretaker',
                         'tenant' => 'Tenant',
                     ])
@@ -110,7 +111,7 @@ class UserResource extends Resource
                     ->label('User Type')
                     ->options([
                         'admin' => 'Admin',
-                        'manager' => 'Manager',
+                        'landlord' => 'Landlord',
                         'caretaker' => 'Caretaker',
                         'tenant' => 'Tenant',
                     ])
@@ -148,45 +149,38 @@ class UserResource extends Resource
     /**
      * Role-based access control for Users resource.
      * Caretaker cannot access Users resource at all.
-     * Manager cannot delete admin accounts.
      */
     public static function canAccess(): bool
     {
         $user = auth()->user();
-        
-        // Only admin and manager can access users resource
-        return $user && in_array($user->role, ['admin', 'manager']);
+
+        // Only admin and landlord can access users resource
+        return $user && in_array($user->role, ['admin', 'landlord']);
     }
 
     public static function canCreate(): bool
     {
         $user = auth()->user();
-        return $user && in_array($user->role, ['admin', 'manager']);
+        return $user && in_array($user->role, ['admin', 'landlord']);
     }
 
     public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
     {
         $user = auth()->user();
-        return $user && in_array($user->role, ['admin', 'manager']);
+        return $user && in_array($user->role, ['admin', 'landlord']);
     }
 
     public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
     {
         $user = auth()->user();
-        
-        // Only admin can delete. Manager cannot delete anyone.
-        if (! $user || $user->role !== 'admin') {
-            return false;
-        }
-        
-        return true;
+
+        return $user && in_array($user->role, ['admin', 'landlord']);
     }
 
     public static function canDeleteAny(): bool
     {
         $user = auth()->user();
-        
-        // Only admin can delete users
-        return $user && $user->role === 'admin';
+
+        return $user && in_array($user->role, ['admin', 'landlord']);
     }
 }

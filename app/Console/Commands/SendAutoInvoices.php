@@ -110,7 +110,7 @@ class SendAutoInvoices extends Command
                     'due_date' => $today->copy()->addDays(10),
                     'amount' => $total,
                     'comment' => 'Auto-generated invoice',
-                    'status' => 'Unpaid',
+                    'status' => 'unpaid',
                 ]);
 
                 SmsHelper::sendSms($tenant->phone_number, "Hello {$tenant->tenant_name}, your invoice ({$invoice->invoice_number}) of KES {$total} is due by {$invoice->due_date->format('M d')}.");

@@ -101,7 +101,11 @@ class Payment extends Model
         ];
 
         $message = str_replace($placeholders, $replacements, $template);
-        \App\Helpers\SmsHelper::sendSms($tenant->phone_number, $message);
+        try {
+            \App\Helpers\SmsHelper::sendSms($tenant->phone_number, $message);
+        } catch (\Throwable $e) {
+            // ignore SMS failures (e.g. gateway not configured)
+        }
         // Also create database notification for admins and tenant user
         $admins = \App\Models\User::where('role', 'admin')->get();
         foreach ($admins as $admin) {

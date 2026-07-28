@@ -9,6 +9,10 @@ class Setting extends Model
 {
     use HasFactory;
 
+    // Named "app_settings" (not "settings") to avoid colliding with the
+    // tomatophp/filament-settings-hub package's own "settings" table.
+    protected $table = 'app_settings';
+
     protected $fillable = [
         'payload',
     ];

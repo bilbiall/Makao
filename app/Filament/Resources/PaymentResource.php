@@ -49,7 +49,7 @@ class PaymentResource extends Resource
                     $tenantId = $get('tenant_id');
                     if (!$tenantId) return [];
                     return \App\Models\Invoice::where('tenant_id', $tenantId)
-                        ->whereIn('status', ['Unpaid', 'Partial'])
+                        ->whereIn('status', ['unpaid', 'partial'])
                         ->pluck('invoice_number', 'id');
                 })
                 ->required()

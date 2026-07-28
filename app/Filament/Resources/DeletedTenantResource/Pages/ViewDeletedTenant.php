@@ -30,8 +30,6 @@ class ViewDeletedTenant extends ViewRecord
                             ->label('Phone Number'),
                         Infolists\Components\TextEntry::make('email')
                             ->label('Email'),
-                        Infolists\Components\TextEntry::make('id_number')
-                            ->label('ID Number'),
                         Infolists\Components\TextEntry::make('location_name')
                             ->label('Location'),
                         Infolists\Components\TextEntry::make('previous_house')

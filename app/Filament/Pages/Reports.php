@@ -21,13 +21,13 @@ class Reports extends Page
     public static function shouldRegisterNavigation(): bool
     {
         $user = auth()->user();
-        return $user && in_array($user->role, ['admin', 'manager']);
+        return $user && in_array($user->role, ['admin', 'landlord']);
     }
 
     public function mount(): void
     {
         $user = auth()->user();
-        if (! $user || ! in_array($user->role, ['admin', 'manager'])) {
+        if (! $user || ! in_array($user->role, ['admin', 'landlord'])) {
             abort(403, 'Unauthorized');
         }
 

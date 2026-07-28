@@ -26,7 +26,6 @@ use Filament\Forms\Components\Textarea;
 
 use Filament\Tables\Filters\SelectFilter;
 
-use App\Helpers\sendSms;
 //for notifs
 use Filament\Notifications\Notification;
 use Filament\Notifications\Actions\Action;
@@ -186,9 +185,9 @@ class InvoiceResource extends Resource
                 SelectFilter::make('status')
                     ->label('Payment Status')
                     ->options([
-                        'Paid' => 'Paid',
-                        'Partial' => 'Partial',
-                        'Unpaid' => 'Unpaid',
+                        'paid' => 'Paid',
+                        'partial' => 'Partial',
+                        'unpaid' => 'Unpaid',
                     ]),
 
                 //filters for invoices month
@@ -218,29 +217,6 @@ class InvoiceResource extends Resource
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
-    }
-
-
-    public static function beforeCreate($record)
-    {
-        // Generate unique invoice number
-        $lastInvoice = \App\Models\Invoice::latest('id')->first();
-        $nextId = $lastInvoice ? $lastInvoice->id + 1 : 1;
-        $record->invoice_number = 'INV-' . $nextId;
-
-        // Calculate rent + bills
-        $tenant = Tenant::find($record->tenant_id);
-        $houseRent = $tenant->house->rent_amount ?? 0;
-
-        $bill = Bill::where('tenant_id', $tenant->id)
-            ->whereMonth('bill_month', now()->month)
-            ->whereYear('bill_month', now()->year)
-            ->first();
-
-        $billTotal = $bill ? ($bill->water_bill + $bill->trash_bill + $bill->internet_bill) : 0;
-
-        $record->total_amount = $houseRent + $billTotal;
-            $record->balance = $record->amount; // ✅ CRITICAL
     }
 
 

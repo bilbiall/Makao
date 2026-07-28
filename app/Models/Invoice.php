@@ -88,8 +88,12 @@ class Invoice extends Model
                 'due_date' => \Carbon\Carbon::parse($invoice->due_date)->format('d/m/Y'),
             ]);
 
-            SmsHelper::sendSms($tenant->phone_number, $message);
-            
+            try {
+                SmsHelper::sendSms($tenant->phone_number, $message);
+            } catch (\Throwable $e) {
+                // ignore SMS failures (e.g. gateway not configured)
+            }
+
             // Send database notification to admins
             $admins = \App\Models\User::where('role', 'admin')->get();
             foreach ($admins as $admin) {

@@ -98,7 +98,11 @@ class Tenant extends Model
             );
 
             // Send SMS using your helper
-            SmsHelper::sendSms($tenant->phone_number, $message);
+            try {
+                SmsHelper::sendSms($tenant->phone_number, $message);
+            } catch (\Throwable $e) {
+                // ignore SMS failures (e.g. gateway not configured)
+            }
 
             // Notify admins via database about new tenant admission
             $admins = \App\Models\User::where('role', 'admin')->get();

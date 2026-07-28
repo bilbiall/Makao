@@ -99,13 +99,10 @@ class BillResource extends Resource
 
                 ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                // Tenants must never edit their own utility bills (these feed directly into
+                // invoice amount calculation) - view-only for this panel.
             ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
-            ]);
+            ->bulkActions([]);
     }
 
     public static function getRelations(): array
@@ -126,6 +123,23 @@ class BillResource extends Resource
 
     // Disable creation from the tenant panel (tenants still use their own resource)
     public static function canCreate(): bool
+    {
+        return false;
+    }
+
+    // Bills feed directly into invoice amount calculation - tenants must never edit or
+    // delete their own, only view them.
+    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return false;
+    }
+
+    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return false;
+    }
+
+    public static function canDeleteAny(): bool
     {
         return false;
     }

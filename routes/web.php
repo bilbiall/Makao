@@ -32,8 +32,6 @@ Route::middleware(['auth'])->group(function () {
     // Pesapal routes
     Route::get('/tenant/payments/initiate/{invoice}', [PesapalController::class, 'initiate'])
         ->name('tenant.payments.initiate');
-    Route::get('/tenant/payments/pesapal-callback', [PesapalController::class, 'simulateCallback'])
-        ->name('tenant.payments.pesapal.callback');
     Route::get('/payments/pesapal/callback', [PesapalController::class, 'callbackRedirect'])
         ->name('payments.pesapal.callback.redirect');
     
@@ -51,6 +49,14 @@ Route::middleware(['auth'])->group(function () {
 
     // Chat page for tenant/admin messaging
     Route::get('/chat', fn () => view('chat'))->name('chat');
+
+    // Local-only Pesapal simulation endpoint (marks a pending payment as paid without
+    // actually calling Pesapal) - never registered outside local dev, so it can't be
+    // used in production to bypass real payment collection.
+    if (app()->environment('local')) {
+        Route::get('/tenant/payments/pesapal-callback', [PesapalController::class, 'simulateCallback'])
+            ->name('tenant.payments.pesapal.callback');
+    }
 });
 
 

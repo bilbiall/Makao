@@ -121,11 +121,6 @@ class User extends Authenticatable
         return $this->role === 'caretaker';
     }
 
-    public function isManager(): bool
-    {
-        return $this->role === 'manager';
-    }
-
     //relationship with tenants
     public function tenant()
     {
@@ -174,11 +169,15 @@ class User extends Authenticatable
                 'reset_code' => $token,
             ]);
 
-            EmailHelper::send(
-                $this->email,
-                'Password Reset Instructions',
-                $body
-            );
+            try {
+                EmailHelper::send(
+                    $this->email,
+                    'Password Reset Instructions',
+                    $body
+                );
+            } catch (\Throwable $e) {
+                // ignore email failures (e.g. SMTP not configured) - SMS below is a fallback
+            }
         }
 
         // Optional SMS only for tenants with phone numbers

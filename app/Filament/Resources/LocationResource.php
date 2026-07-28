@@ -74,11 +74,11 @@ class LocationResource extends Resource
     }
 
     /**
-     * Only admin and manager can view locations. Caretakers can't access locations.
+     * Only admin and landlord can view locations. Caretakers can't access locations.
      */
     public static function canAccess(): bool
     {
         $user = auth()->user();
-        return $user && in_array($user->role, ['admin', 'manager']);
+        return $user && in_array($user->role, ['admin', 'landlord']);
     }
 }

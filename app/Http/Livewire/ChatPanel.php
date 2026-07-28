@@ -112,7 +112,13 @@ class ChatPanel extends Component
         }
         
         $this->filteredRecipients = $query->orderBy('name')->get();
-        
+
+        // If the currently selected recipient is no longer in the filtered set,
+        // fall back to the first visible match instead of leaving a stale/hidden selection.
+        if ($this->recipientId && !$this->filteredRecipients->contains('id', $this->recipientId)) {
+            $this->recipientId = null;
+        }
+
         // Auto-select first if available
         if ($this->filteredRecipients->count() > 0 && !$this->recipientId) {
             $this->recipientId = $this->filteredRecipients->first()->id;
@@ -180,11 +186,15 @@ class ChatPanel extends Component
                 'message_body' => $this->body,
             ]);
 
-            EmailHelper::send(
-                $receiver->email,
-                'New message from ' . ($sender?->name ?? config('app.name')),
-                $body
-            );
+            try {
+                EmailHelper::send(
+                    $receiver->email,
+                    'New message from ' . ($sender?->name ?? config('app.name')),
+                    $body
+                );
+            } catch (\Throwable $e) {
+                // ignore email failures (e.g. SMTP not configured) - the Message row is already saved
+            }
         }
 
         $this->body = '';
@@ -235,11 +245,15 @@ class ChatPanel extends Component
                     'message_body' => $this->broadcastMsg,
                 ]);
 
-                EmailHelper::send(
-                    $tenant->email,
-                    'New broadcast message from ' . ($sender?->name ?? config('app.name')),
-                    $body
-                );
+                try {
+                    EmailHelper::send(
+                        $tenant->email,
+                        'New broadcast message from ' . ($sender?->name ?? config('app.name')),
+                        $body
+                    );
+                } catch (\Throwable $e) {
+                    // ignore email failures for this recipient and keep broadcasting to the rest
+                }
             }
         }
         

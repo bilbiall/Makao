@@ -41,9 +41,6 @@ class DeletedTenantResource extends Resource
                         Forms\Components\TextInput::make('email')
                             ->label('Email')
                             ->disabled(),
-                        Forms\Components\TextInput::make('id_number')
-                            ->label('ID Number')
-                            ->disabled(),
                     ])->columns(2),
 
                 Forms\Components\Section::make('Financial Summary')
@@ -91,10 +88,10 @@ class DeletedTenantResource extends Resource
 
                 Forms\Components\Section::make('Archival Dates')
                     ->schema([
-                        Forms\Components\DateTimeInput::make('deleted_at')
+                        Forms\Components\DateTimePicker::make('deleted_at')
                             ->label('Deleted On')
                             ->disabled(),
-                        Forms\Components\DateTimeInput::make('auto_delete_at')
+                        Forms\Components\DateTimePicker::make('auto_delete_at')
                             ->label('Auto-Delete On')
                             ->disabled(),
                     ])->columns(2),

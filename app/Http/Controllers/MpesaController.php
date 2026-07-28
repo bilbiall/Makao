@@ -72,10 +72,10 @@ class MpesaController extends Controller
             return response()->json(['error' => 'Transaction not found'], 404);
         }
 
-        // Authorize: tenants must match; admins/staff can access
+        // Authorize: tenants must match their own tenant record; admins/staff can access
         $user = auth()->user();
-        $isTenant = isset($user->tenant_id) && $user->tenant_id !== null;
-        if ($isTenant && $transaction->tenant_id !== $user->tenant_id) {
+        $tenant = $user?->tenant;
+        if ($tenant && $transaction->tenant_id !== $tenant->id) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 

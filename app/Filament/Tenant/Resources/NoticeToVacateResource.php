@@ -10,6 +10,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 class NoticeToVacateResource extends Resource
 {
@@ -17,6 +18,22 @@ class NoticeToVacateResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-flag';
     protected static ?string $navigationLabel = 'Notice to Vacate';
+
+    // Without this, a tenant could view another tenant's notice by guessing/navigating
+    // to /tenant/notice-to-vacates/{id} directly, since the ListNoticeToVacates page
+    // scopes its table query but the resource's own base query (used to resolve single
+    // records for the View page) did not.
+    public static function getEloquentQuery(): Builder
+    {
+        $tenant = Auth::user()?->tenant;
+
+        if (!$tenant) {
+            return parent::getEloquentQuery()->whereRaw('1 = 0');
+        }
+
+        return parent::getEloquentQuery()
+            ->where('tenant_id', $tenant->id);
+    }
 
     public static function form(Form $form): Form
     {

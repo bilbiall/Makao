@@ -71,10 +71,14 @@ class ListInvoices extends ListRecords
                             'due_date' => $today->copy()->addDays(10),
                             'amount' => $total,
                             'comment' => 'Mass-generated invoice',
-                            'status' => 'Unpaid',
+                            'status' => 'unpaid',
                         ]);
 
-                        SmsHelper::sendSms($tenant->phone_number, "Hello {$tenant->tenant_name}, your invoice ({$invoice->invoice_number}) of KES {$total} is due by {$invoice->due_date->format('M d')}.");
+                        try {
+                            SmsHelper::sendSms($tenant->phone_number, "Hello {$tenant->tenant_name}, your invoice ({$invoice->invoice_number}) of KES {$total} is due by {$invoice->due_date->format('M d')}.");
+                        } catch (\Throwable $e) {
+                            // ignore SMS failures (e.g. gateway not configured)
+                        }
 
                         $count++;
                     }

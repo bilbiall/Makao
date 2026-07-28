@@ -24,13 +24,13 @@
                 <!-- Search Inputs (Direct Tab Only) -->
                 @if($activeTab === 'direct')
                     <div>
-                        <input type="text" wire:model.debounce-300ms="searchHouse" 
-                            placeholder="Search by house..." 
+                        <input type="text" wire:model.live.debounce.300ms="searchHouse"
+                            placeholder="Search by house..."
                             class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-500 dark:placeholder-gray-400">
                     </div>
                     <div>
-                        <input type="text" wire:model.debounce-300ms="searchTenant" 
-                            placeholder="Search by name..." 
+                        <input type="text" wire:model.live.debounce.300ms="searchTenant"
+                            placeholder="Search by name..."
                             class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-500 dark:placeholder-gray-400">
                     </div>
                 @endif
@@ -41,7 +41,7 @@
         @if($activeTab === 'direct')
             <div class="flex-1 overflow-y-auto bg-white dark:bg-gray-800">
                 @forelse($filteredRecipients as $recipient)
-                    <button wire:click="selectRecipient({{ $recipient->id }})"
+                    <button wire:key="recipient-{{ $recipient->id }}" wire:click="selectRecipient({{ $recipient->id }})"
                         class="w-full text-left p-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition {{ $recipientId === $recipient->id ? 'bg-sky-50 dark:bg-sky-900 border-l-4 border-l-sky-600' : '' }}">
                         <div class="flex justify-between items-center">
                             <div>
@@ -95,7 +95,7 @@
             <div wire:poll.3s class="flex-1 overflow-y-auto p-4 space-y-3" id="messages-box">
                 @forelse($this->messages as $msg)
                     @php $isMe = $msg->sender_id === auth()->id(); @endphp
-                    <div class="flex {{ $isMe ? 'justify-end' : 'justify-start' }}">
+                    <div wire:key="message-{{ $msg->id }}" class="flex {{ $isMe ? 'justify-end' : 'justify-start' }}">
                         <div class="max-w-xs px-4 py-2 rounded-lg {{ $isMe ? 'bg-sky-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100' }}">
                             <div class="flex items-center justify-between">
                                 <div class="text-xs {{ $isMe ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400' }}">{{ $msg->created_at->format('M d, H:i') }}</div>
@@ -210,18 +210,15 @@
 </div>
 
 <script>
-    document.addEventListener('livewire:update', function() {
-        const el = document.getElementById('messages-box');
-        if (el) setTimeout(() => el.scrollTop = el.scrollHeight, 100);
-    });
+    // Livewire v3 no longer dispatches a "livewire:update" DOM event (that was v2) -
+    // use the morph.updated component hook instead so scroll/focus actually run.
+    document.addEventListener('livewire:init', () => {
+        Livewire.hook('morph.updated', () => {
+            const el = document.getElementById('messages-box');
+            if (el) setTimeout(() => el.scrollTop = el.scrollHeight, 100);
 
-    // Fallback: use standard livewire:update to scroll/focus after DOM updates
-    document.addEventListener('livewire:update', function(e) {
-        // If message input was the target of a reply, focus it
-        const inp = document.getElementById('message-input');
-        if (inp) setTimeout(() => inp.focus(), 50);
-
-        const el = document.getElementById('messages-box');
-        if (el) setTimeout(() => el.scrollTop = el.scrollHeight, 100);
+            const inp = document.getElementById('message-input');
+            if (inp && document.activeElement !== inp) setTimeout(() => inp.focus(), 50);
+        });
     });
 </script>

@@ -242,10 +242,45 @@ class MpesaService
     }
 
     /**
+     * Create the Payment record for a completed M-Pesa transaction, if one doesn't already
+     * exist for it. Shared by the webhook callback and the status-poll fallback so a
+     * payment is recorded exactly once no matter which path observes completion first.
+     */
+    protected function createPaymentIfMissing(MpesaTransaction $transaction, $paidAmount): ?Payment
+    {
+        $existing = Payment::where('transaction_id', $transaction->checkout_request_id)->first();
+        if ($existing) {
+            return $existing;
+        }
+
+        try {
+            return Payment::create([
+                'invoice_id' => $transaction->invoice_id,
+                'tenant_id' => $transaction->tenant_id,
+                'amount_paid' => $paidAmount,
+                'payment_method' => 'mpesa',
+                'payment_reference' => $transaction->receipt_number ?? $transaction->reference,
+                'transaction_id' => $transaction->checkout_request_id,
+                'status' => 'completed',
+                'payment_date' => now(),
+                'payment_type' => 'mpesa',
+            ]);
+        } catch (\Throwable $e) {
+            \Log::error('Failed to create Payment record for M-Pesa transaction: ' . $e->getMessage(), ['transaction_id' => $transaction->id]);
+            return null;
+        }
+    }
+
+    /**
      * Query transaction status from M-Pesa
      */
     public function queryTransactionStatus(MpesaTransaction $transaction): array
     {
+        // Already resolved by a webhook callback or a previous poll - nothing more to do.
+        if ($transaction->status === 'completed') {
+            return ['success' => true, 'status' => 'completed'];
+        }
+
         if (!$this->enabled()) {
             return ['success' => false, 'error' => 'M-Pesa not configured'];
         }
@@ -305,13 +340,27 @@ class MpesaService
                     $transaction->result_desc = $body['ResultDesc'] ?? null;
                     $transaction->receipt_number = $body['MerchantRequestID'] ?? null;
                     $transaction->save();
-                    
+
+                    // The webhook callback may never arrive (unreachable callback URL, etc.) -
+                    // make sure a Payment gets recorded here too, exactly once.
+                    $this->createPaymentIfMissing($transaction, $transaction->amount);
+
+                    try {
+                        $invoice = $transaction->invoice;
+                        $tenant = $transaction->tenant;
+                        if ($invoice && $tenant) {
+                            \App\Helpers\ActivityLogger::log('mpesa_payment', null, "M-Pesa payment of KES {$transaction->amount} confirmed via status query for Invoice {$invoice->invoice_number} (Tenant: {$tenant->tenant_name})");
+                        }
+                    } catch (\Throwable $e) {
+                        // ignore
+                    }
+
                     \Log::info('M-Pesa payment confirmed via status query', [
                         'transaction_id' => $transaction->id,
                         'result_code' => $resultCode,
                         'result_desc' => $body['ResultDesc'] ?? null,
                     ]);
-                    
+
                     return ['success' => true, 'status' => 'completed'];
                 } elseif ($resultCodeInt === 1032) {
                     // Request timeout (not cancelled, just pending)
@@ -363,6 +412,16 @@ class MpesaService
                 return false;
             }
 
+            // Idempotency: Safaricom (and webhook infrastructure generally) may deliver the
+            // same callback more than once. If we've already recorded this as completed,
+            // don't re-process it and double-credit the tenant.
+            if ($transaction->status === 'completed') {
+                \Log::info('M-Pesa callback received for an already-completed transaction, ignoring', [
+                    'transaction_id' => $transaction->id,
+                ]);
+                return true;
+            }
+
             $transaction->result_code = $resultCode;
             $transaction->result_desc = $resultDesc;
 
@@ -399,29 +458,18 @@ class MpesaService
                 }
 
                 // Create Payment record (use Payment model's created hook to update invoice)
-                try {
-                    $payment = Payment::create([
-                        'invoice_id' => $transaction->invoice_id,
-                        'tenant_id' => $transaction->tenant_id,
-                        'amount_paid' => $paidAmount,
-                        'payment_method' => 'mpesa',
-                        'payment_reference' => $transaction->receipt_number ?? $transaction->reference,
-                        'transaction_id' => $transaction->checkout_request_id,
-                        'status' => 'completed',
-                        'payment_date' => now(),
-                        'payment_type' => 'mpesa',
-                    ]);
-                } catch (\Throwable $e) {
-                    \Log::error('Failed to create Payment record for M-Pesa callback: ' . $e->getMessage(), ['transaction_id' => $transaction->id]);
+                $payment = $this->createPaymentIfMissing($transaction, $paidAmount);
+                if (!$payment) {
                     return false;
                 }
 
-                // Send SMS
+                // Note: no separate SMS send here - Payment::create() above already
+                // triggers the model's `created` hook, which sends the payment
+                // confirmation SMS via SmsHelper. Sending again here would double-SMS
+                // the tenant and (previously) called a method that didn't exist,
+                // which aborted this method before the activity log below ever ran.
                 $tenant = $transaction->tenant;
-                if ($tenant && $tenant->phone_number) {
-                    \App\Helpers\SmsHelper::sendPaymentConfirmation($tenant, $payment);
-                }
-                
+
                 // Log M-Pesa payment
                 try {
                     $invoice = $transaction->invoice;
