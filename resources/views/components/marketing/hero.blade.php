@@ -1,16 +1,20 @@
-<section class="relative overflow-hidden">
-    <x-marketing.kenya-skyline-bg />
-    <div class="absolute -top-24 -right-24 -z-10 h-96 w-96 rounded-full bg-emerald-200/30 blur-3xl"></div>
+<section class="relative isolate overflow-hidden bg-slate-900">
+    {{-- Royalty-free Nairobi skyline photo (Unsplash License - free for commercial
+         use, no attribution required). A dark scrim sits over it so the light-
+         colored headline/copy stay readable at any point on the image. --}}
+    <img src="{{ asset('images/nairobi-skyline-hero.jpg') }}" alt="" aria-hidden="true"
+         class="absolute inset-0 -z-20 h-full w-full object-cover">
+    <div class="absolute inset-0 -z-10 bg-gradient-to-r from-slate-900/80 via-slate-900/45 to-slate-900/10"></div>
 
     <div class="max-w-6xl mx-auto px-6 pt-20 pb-24 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
         <div>
-            <span class="inline-block rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold px-3 py-1">
+            <span class="inline-block rounded-full bg-emerald-400/20 text-emerald-300 text-xs font-semibold px-3 py-1 ring-1 ring-emerald-300/30">
                 Built for Kenyan landlords &amp; property managers
             </span>
-            <h1 class="mt-6 text-4xl sm:text-5xl font-bold tracking-tight text-slate-900">
+            <h1 class="mt-6 text-4xl sm:text-5xl font-bold tracking-tight text-white">
                 Run every building you own from one dashboard.
             </h1>
-            <p class="mt-6 text-lg text-slate-600">
+            <p class="mt-6 text-lg text-slate-200">
                 Renty collects rent via M-Pesa and Pesapal, keeps every tenant in the loop by SMS and email,
                 and gives you one place to track invoices, bills, maintenance, and move-outs - across as many
                 properties as you manage.
@@ -19,11 +23,11 @@
                 <a href="{{ route('signup') }}" class="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-6 py-3 text-sm font-semibold text-white hover:bg-emerald-700 transition">
                     Start Free Trial
                 </a>
-                <a href="{{ route('pricing') }}" class="inline-flex items-center justify-center rounded-lg border border-slate-300 px-6 py-3 text-sm font-semibold text-slate-700 hover:border-slate-400 transition">
+                <a href="{{ route('pricing') }}" class="inline-flex items-center justify-center rounded-lg border border-slate-300/40 px-6 py-3 text-sm font-semibold text-white hover:border-slate-300/70 transition">
                     See Pricing
                 </a>
             </div>
-            <p class="mt-4 text-xs text-slate-400">No card required to start.</p>
+            <p class="mt-4 text-xs text-slate-300">No card required to start.</p>
         </div>
 
         <div class="relative">
