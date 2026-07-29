@@ -10,6 +10,20 @@
     <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700" rel="stylesheet" />
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+    {{-- Google Analytics (GA4) - platform-wide, configured by the superadmin under
+         Platform Settings. Only loads on the public marketing site, never on the
+         authenticated landlord/tenant/superadmin panels. --}}
+    @php $gaId = \App\Models\Setting::forLandlord(null)->payload['google_analytics_id'] ?? null; @endphp
+    @if ($gaId)
+        <script async src="https://www.googletagmanager.com/gtag/js?id={{ $gaId }}"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', @json($gaId));
+        </script>
+    @endif
 </head>
 <body class="bg-stone-50 text-slate-900 antialiased">
     <x-marketing.nav />

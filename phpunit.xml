@@ -20,6 +20,12 @@
     <php>
         <env name="APP_ENV" value="testing"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
+        <!-- .env's APP_URL includes a "/renty/public" subpath (this app is served from an
+             XAMPP htdocs subfolder locally, not a document-root vhost). Without this
+             override, Laravel's test HTTP client resolves relative requests like
+             $this->get('/') against that base URL and ends up routing on the literal
+             path "renty/public", which 404s regardless of what routes actually exist. -->
+        <env name="APP_URL" value="http://localhost"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="CACHE_STORE" value="array"/>
         <env name="DB_CONNECTION" value="sqlite"/>

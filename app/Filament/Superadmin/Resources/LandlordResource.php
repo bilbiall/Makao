@@ -77,6 +77,11 @@ class LandlordResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\Action::make('settings')
+                    ->label('Settings')
+                    ->icon('heroicon-o-cog')
+                    ->color('gray')
+                    ->url(fn (Landlord $record) => Pages\ManageLandlordSettings::getUrl(['record' => $record])),
             ])
             ->defaultSort('created_at', 'desc');
     }
@@ -94,6 +99,7 @@ class LandlordResource extends Resource
             'index' => Pages\ListLandlords::route('/'),
             'view' => Pages\ViewLandlord::route('/{record}'),
             'edit' => Pages\EditLandlord::route('/{record}/edit'),
+            'settings' => Pages\ManageLandlordSettings::route('/{record}/settings'),
         ];
     }
 }

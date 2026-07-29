@@ -85,6 +85,11 @@ class InvoiceResource extends Resource
                 Action::make('pay')
                     ->label('Pay Now')
                     ->button()
+                    // Landlords on "manual" payment mode collect rent outside the app
+                    // (cash/bank/M-Pesa till, recorded by hand) - no in-app pay button
+                    // in that case. Only landlords who've switched to "automatic" and
+                    // configured M-Pesa/Pesapal in Settings show this.
+                    ->visible(fn () => static::paymentModeIsAutomatic())
                     ->form([
                         Forms\Components\Select::make('payment_method')
                             ->label('Payment Method')
@@ -157,6 +162,19 @@ class InvoiceResource extends Resource
             //'create' => Pages\CreateInvoice::route('/create'),
             //'edit' => Pages\EditInvoice::route('/{record}/edit'),
         ];
+    }
+
+    protected static function paymentModeIsAutomatic(): bool
+    {
+        $landlordId = Auth::user()?->landlord_id;
+
+        if (!$landlordId) {
+            return false;
+        }
+
+        $payload = \App\Models\Setting::forLandlord($landlordId)->payload ?? [];
+
+        return ($payload['payment_mode'] ?? 'manual') === 'automatic';
     }
 
     //users to access their only invoices

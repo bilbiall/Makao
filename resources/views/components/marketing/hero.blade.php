@@ -1,7 +1,6 @@
 <section class="relative overflow-hidden">
-    <div class="absolute inset-0 -z-10 bg-gradient-to-br from-emerald-50 via-stone-50 to-amber-50"></div>
-    <div class="absolute -top-24 -right-24 -z-10 h-96 w-96 rounded-full bg-emerald-200/40 blur-3xl"></div>
-    <div class="absolute -bottom-24 -left-24 -z-10 h-96 w-96 rounded-full bg-amber-200/30 blur-3xl"></div>
+    <x-marketing.kenya-skyline-bg />
+    <div class="absolute -top-24 -right-24 -z-10 h-96 w-96 rounded-full bg-emerald-200/30 blur-3xl"></div>
 
     <div class="max-w-6xl mx-auto px-6 pt-20 pb-24 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
         <div>

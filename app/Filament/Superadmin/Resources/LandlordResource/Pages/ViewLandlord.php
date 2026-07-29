@@ -3,6 +3,7 @@
 namespace App\Filament\Superadmin\Resources\LandlordResource\Pages;
 
 use App\Filament\Superadmin\Resources\LandlordResource;
+use App\Filament\Superadmin\Resources\LandlordResource\Pages\ManageLandlordSettings;
 use Filament\Actions;
 use Filament\Infolists\Components;
 use Filament\Infolists\Infolist;
@@ -15,6 +16,11 @@ class ViewLandlord extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('settings')
+                ->label('Settings')
+                ->icon('heroicon-o-cog')
+                ->color('gray')
+                ->url(fn () => ManageLandlordSettings::getUrl(['record' => $this->record])),
             Actions\EditAction::make(),
         ];
     }

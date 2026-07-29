@@ -11,6 +11,7 @@ use App\Models\Location;
 use App\Models\NoticeToVacate;
 use App\Models\Package;
 use App\Models\Payment;
+use App\Models\Setting;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
@@ -46,6 +47,7 @@ class DemoNairobiSeeder extends Seeder
     ];
 
     private int $phoneCounter = 700000001;
+    private int $tenantCounter = 1;
 
     private array $issueTitles = [
         'Leaking kitchen tap', 'Power tripping in bedroom', 'Broken window latch', 'Blocked bathroom drain',
@@ -132,6 +134,10 @@ class DemoNairobiSeeder extends Seeder
                 'owner_name' => 'James Mwangi',
                 'package' => 'growth',
                 'subscription_status' => 'active',
+                // Automatic payment mode, so this landlord's tenant portal shows the
+                // M-Pesa/Pesapal "Pay Now" button - the other two demo landlords are
+                // left on the (manual) default to show both modes exist.
+                'payment_mode' => 'automatic',
                 'locations' => [
                     ['name' => 'Kilimani Heights', 'area' => 'Kilimani', 'rates' => $upperMid, 'mix' => ['Bedsitter' => 2, '1 Bedroom' => 5, '2 Bedroom' => 4, '3 Bedroom' => 1]],
                     ['name' => 'Lavington Court', 'area' => 'Lavington', 'rates' => $upperMid, 'mix' => ['Bedsitter' => 1, '1 Bedroom' => 3, '2 Bedroom' => 3, '3 Bedroom' => 1]],
@@ -193,6 +199,12 @@ class DemoNairobiSeeder extends Seeder
                 'trial_ends_at' => $config['subscription_status'] === 'trialing' ? now()->addDays(7) : null,
                 'expires_at' => now()->addDays($config['subscription_status'] === 'trialing' ? 7 : 335),
             ]);
+        }
+
+        if (!empty($config['payment_mode'])) {
+            $settings = Setting::forLandlord($landlord->id);
+            $settings->payload = array_merge($settings->payload ?? [], ['payment_mode' => $config['payment_mode']]);
+            $settings->save();
         }
 
         $adminEmail = 'admin.' . str($config['business_name'])->slug('') . '@rentydemo.co.ke';
@@ -268,7 +280,9 @@ class DemoNairobiSeeder extends Seeder
         $lastName = $this->tenantLastNames[array_rand($this->tenantLastNames)];
         $fullName = "{$firstName} {$lastName}";
         $phone = '254' . $this->phoneCounter++;
-        $email = strtolower($firstName . '.' . $lastName . $this->phoneCounter) . '@example.test';
+        // A small sequential number (not the 9-digit phone counter) keeps these emails
+        // short and readable, e.g. grace.wanjiru3@example.test.
+        $email = strtolower($firstName . '.' . $lastName . $this->tenantCounter++) . '@example.test';
 
         $tenantUser = User::create([
             'name' => $fullName, 'email' => $email, 'phone_number' => $phone,

@@ -122,11 +122,18 @@ class SendAutoInvoices extends Command
                     'status' => 'unpaid',
                 ]);
 
-                SmsHelper::sendSms(
-                    $tenant->phone_number,
-                    "Hello {$tenant->tenant_name}, your invoice ({$invoice->invoice_number}) of KES {$total} is due by {$invoice->due_date->format('M d')}.",
-                    $landlord->id
-                );
+                // Wrapped separately from invoice creation above: an SMS failure (e.g.
+                // gateway not configured) must not cause an already-created, already-
+                // committed invoice to be misreported as "failed to create".
+                try {
+                    SmsHelper::sendSms(
+                        $tenant->phone_number,
+                        "Hello {$tenant->tenant_name}, your invoice ({$invoice->invoice_number}) of KES {$total} is due by {$invoice->due_date->format('M d')}.",
+                        $landlord->id
+                    );
+                } catch (\Throwable $e) {
+                    // ignore SMS failures - the invoice itself was created successfully
+                }
 
                 $invoiceCount++;
             } catch (\Throwable $e) {
