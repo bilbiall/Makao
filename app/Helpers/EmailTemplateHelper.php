@@ -23,6 +23,7 @@ class EmailTemplateHelper
             'password_reset' => "Hi {tenant_name},\n\nYou requested a password reset. Click the link or use the code below:\n{reset_url}\nReset Code: {reset_code}\n\nIf you did not request this, please ignore this email.\n\nRegards, {app_name}",
             'new_user' => "Hi {user_name},\n\nYour {role} account has been successfully created!\n\nLogin Details:\nEmail: {email}\nPassword: {password}\n\nYou can login at: {site_url}\n\nPlease change your password after first login.\n\nRegards,\n{app_name}",
             'issue_update' => "Hi {tenant_name}, your issue '{issue_title}' status changed to {issue_status}.\n\nRegards, {app_name}",
+            'landlord_welcome' => "Hi {contact_name},\n\nWelcome to {app_name}! Your account for {business_name} is ready, and your {package_name} trial has started ({trial_days}-day trial).\n\nLog in at {site_url} to add your first property.\n\nRegards, {app_name}",
         ];
 
         $template = $payload["email_template_{$key}"] ?? $defaults[$key] ?? '';

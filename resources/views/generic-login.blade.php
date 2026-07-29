@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Login – Renty</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
 <body class="relative min-h-screen bg-cover bg-center bg-no-repeat"
@@ -106,9 +106,6 @@
             Powered by <span class="text-white font-medium">Vumaa</span> Digital
         </p>
     </div>
-
-    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-
 
 </body>
 </html>

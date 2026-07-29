@@ -1,10 +1,12 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\MarketingController;
 
-Route::get('/', function () {
-    return view('landing');
-});
+Route::get('/', [MarketingController::class, 'home'])->name('home');
+Route::get('/pricing', [MarketingController::class, 'pricing'])->name('pricing');
+Route::get('/privacy', [MarketingController::class, 'privacy'])->name('privacy');
+Route::get('/terms', [MarketingController::class, 'terms'])->name('terms');
 
 //generic login
 //Route::get('/login', fn () => view('generic-login'))->name('generic.login');
@@ -13,6 +15,12 @@ Route::get('/', function () {
 Route::get('/login', fn () => view('generic-login'))->name('generic.login');
 Route::post('/login', \App\Http\Controllers\GenericLoginController::class)
      ->name('generic.login.attempt');
+
+// Self-serve landlord signup
+Route::get('/signup', [\App\Http\Controllers\LandlordSignupController::class, 'create'])->name('signup');
+Route::post('/signup', [\App\Http\Controllers\LandlordSignupController::class, 'store'])
+    ->name('signup.store')
+    ->middleware('throttle:6,1');
 
 // password reset (email or phone)
 Route::get('/forgot-password', [\App\Http\Controllers\ForgotPasswordController::class, 'showForgotForm'])
