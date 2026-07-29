@@ -6,8 +6,6 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Filament\Pages;
-use App\Filament\Pages\Settings;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
@@ -47,12 +45,13 @@ class AdminPanelProvider extends PanelProvider
                 'primary' => Color::Amber,
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
+            // discoverPages already picks up App\Filament\Pages\Dashboard (this project's
+            // real dashboard). Previously this array ALSO explicitly registered Filament's
+            // stock Pages\Dashboard::class alongside it - two different classes both
+            // claiming the "dashboard" page/route name, which silently "worked" at
+            // runtime (Laravel tolerates duplicate route names outside of route caching)
+            // but broke `php artisan route:cache` with a route-name collision.
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
-            ->pages([
-                Pages\Dashboard::class,
-                Settings::class,
-                \App\Filament\Pages\Chat::class,
-            ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
                 Widgets\AccountWidget::class,
@@ -74,13 +73,5 @@ class AdminPanelProvider extends PanelProvider
                 \App\Http\Middleware\EnsureAdminRole::class,
             ]);
     }
-
-    //boot method to fix login issue
-    public function boot(): void
-        {
-            \Filament\Facades\Filament::registerPanel(
-            $this->panel(app(\Filament\Panel::class))
-            );
-        }
 
 }

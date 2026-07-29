@@ -14,6 +14,16 @@ class Logs extends Page
     protected static ?string $navigationGroup = 'Analytics';
     protected static string $view = 'filament.pages.logs';
 
+    // Declared explicitly - Livewire/Filament only expose declared public properties to
+    // the Blade view, so these (and $actionsList, which was never computed at all) were
+    // previously invisible to the template, causing "Undefined variable" errors on render.
+    public $log_action;
+    public $log_search;
+    public $log_from;
+    public $log_to;
+    public $logs;
+    public $actionsList = [];
+
     /**
      * Role-based access: Caretaker cannot access Logs.
      */
@@ -34,6 +44,13 @@ class Logs extends Page
         $this->log_search = request()->query('log_search');
         $this->log_from = request()->query('log_from');
         $this->log_to = request()->query('log_to');
+
+        $this->actionsList = ActivityLog::query()
+            ->distinct()
+            ->orderBy('action')
+            ->pluck('action')
+            ->mapWithKeys(fn ($action) => [$action => ucfirst(str_replace('_', ' ', $action))])
+            ->all();
 
         $this->buildLogs();
     }

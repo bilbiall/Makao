@@ -28,18 +28,18 @@ class Settings extends Page implements HasForms
     public ?array $data = [];
 
     /**
-     * Role-based access: Only admin can access Settings.
+     * Role-based access: Only admin/landlord can access Settings.
      */
     public static function shouldRegisterNavigation(): bool
     {
         $user = auth()->user();
-        return $user && $user->role === 'admin';
+        return $user && in_array($user->role, ['admin', 'landlord']);
     }
 
     public function mount(): void
     {
         $user = auth()->user();
-        if (! $user || $user->role !== 'admin') {
+        if (! $user || ! in_array($user->role, ['admin', 'landlord'])) {
             abort(403, 'Unauthorized');
         }
 
