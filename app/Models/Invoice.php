@@ -49,7 +49,11 @@ class Invoice extends Model
         static::creating(function ($invoice) {
             // Only generate if not manually set
             if (!$invoice->invoice_number) {
-                $lastId = self::max('id') + 1; // or use a UUID if needed
+                // invoice_number is globally unique across all landlords, so this must use
+                // the true global max id - self::max('id') would be silently scoped to the
+                // current landlord by LandlordScope and collide with another landlord's
+                // invoice using the same next-id number.
+                $lastId = self::withoutGlobalScopes()->max('id') + 1;
                 $invoice->invoice_number = 'INV-' . $lastId;
             }
         });
@@ -63,13 +67,18 @@ class Invoice extends Model
             }
 
             $rent = $tenant->house->rent_amount ?? 0;
+
+            // Use the invoice's own date (not "today") so a backdated/historical invoice
+            // pulls in bills for the month it actually covers, not whatever month it
+            // happens to be created in.
+            $periodDate = $invoice->invoice_date ? \Carbon\Carbon::parse($invoice->invoice_date) : now();
             $bills = $tenant->bills()
-                ->whereMonth('bill_month', now()->month)
-                ->whereYear('bill_month', now()->year)
+                ->whereMonth('bill_month', $periodDate->month)
+                ->whereYear('bill_month', $periodDate->year)
                 ->get();
 
             $billTotal = $bills->sum(function ($bill) {
-                return $bill->water + $bill->trash + $bill->internet;
+                return $bill->water + $bill->electricity + $bill->trash + $bill->internet;
             });
 
             $invoice->amount = $rent + $billTotal; // <<== Important

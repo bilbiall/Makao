@@ -15,6 +15,20 @@ class Reports extends Page
     protected static ?string $navigationGroup = 'Analytics';
     protected static string $view = 'filament.pages.reports';
 
+    // Declared explicitly (not just assigned in mount()) - Livewire/Filament only expose
+    // declared public properties to the Blade view, so these were previously invisible
+    // to the template despite being set, causing "Undefined variable" errors on render.
+    public $from;
+    public $to;
+    public $tenant_search;
+    public $invoice_status = '';
+    public $invoice_status_label;
+    public $labels = [];
+    public $invoiceTotals = [];
+    public $paymentTotals = [];
+    public $summary = [];
+    public $invoices;
+
     /**
      * Role-based access: Caretaker cannot access Reports.
      */

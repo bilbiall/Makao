@@ -33,7 +33,7 @@ class GenericLoginController extends Controller
         return match ($user->role) {
             'admin', 'landlord', 'caretaker' => redirect()->intended(route('filament.admin.pages.dashboard')),
             'tenant' => redirect()->intended(route('filament.tenant.pages.tenant-dashboard')),
-            'superadmin' => redirect()->intended(route('filament.superadmin.pages.dashboard')),
+            'superadmin' => redirect()->intended(route('filament.superadmin.pages.superadmin-dashboard')),
             default  => abort(403, 'Role not allowed'),
         };
     }

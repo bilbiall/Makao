@@ -62,11 +62,12 @@ class ListInvoices extends ListRecords
                             : 0;
 
                         $total = $rent + $billTotal;
-                        $nextInvoiceNumber = 'INV-' . (Invoice::max('id') + 1);
 
+                        // invoice_number is left unset - Invoice::creating() generates it
+                        // using an unscoped max(id), which is unique-safe across landlords
+                        // (unlike a manually computed value here, which would not be).
                         $invoice = Invoice::create([
                             'tenant_id' => $tenant->id,
-                            'invoice_number' => $nextInvoiceNumber,
                             'invoice_date' => $today,
                             'due_date' => $today->copy()->addDays(10),
                             'amount' => $total,

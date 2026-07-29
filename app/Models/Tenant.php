@@ -27,6 +27,7 @@ class Tenant extends Model
         'date_admitted',
         'balance',
         'landlord_id',
+        'user_id',
     ];
 
     //relationship for with the house model
