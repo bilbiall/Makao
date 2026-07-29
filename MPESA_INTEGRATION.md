@@ -2,6 +2,10 @@
 
 This document covers the M-Pesa STK Push integration using Safaricom's Daraja API v2.
 
+> **Multi-landlord note:** M-Pesa credentials configured in Admin > Settings belong to
+> the landlord who's logged in when they save them - each landlord has their own
+> consumer key/secret/shortcode/passkey, not one shared platform-wide till.
+
 ## Overview
 
 The M-Pesa payment flow is completely separate from Pesapal and works as follows:

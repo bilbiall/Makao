@@ -4,6 +4,11 @@
 
 This Laravel application integrates with Pesapal for payment processing. The integration uses environment-based URLs that automatically work on localhost and scale to production without code changes.
 
+> **Multi-landlord note:** credentials configured in Admin > Settings belong to the
+> landlord who's logged in when they save them - each landlord has their own Pesapal
+> consumer key/secret/IPN ID, not one shared platform-wide config. Commands like
+> `pesapal:register-ipn` require `--landlord=<id>` to specify which one.
+
 ## Route Structure
 
 All Pesapal payment routes are defined once and use the same paths across environments:
@@ -82,7 +87,7 @@ Configure Pesapal credentials in **Admin > Settings > Payments tab**:
 
 - **Consumer Key:** Your Pesapal API consumer key (from [developer.pesapal.com](https://developer.pesapal.com))
 - **Consumer Secret:** Your Pesapal API consumer secret (keep this secret!)
-- **Pesapal IPN ID:** (Required for v3) Register via `php artisan pesapal:register-ipn` — this retrieves the IPN ID from Pesapal API
+- **Pesapal IPN ID:** (Required for v3) Register via `php artisan pesapal:register-ipn --landlord=<landlord_id>` — this retrieves the IPN ID from Pesapal API
 - **Webhook Secret:** Your Pesapal webhook HMAC secret (for signature verification)
 - **Callback URL:** (Optional) Override the default callback URL
 - **Use Pesapal Sandbox:** Toggle to **ON** for sandbox (cybqa.pesapal.com), **OFF** for live (pay.pesapal.com)
@@ -184,7 +189,7 @@ database/
 
 **Before testing checkout, ensure:**
 - [ ] Consumer Key and Secret are entered in Admin Settings
-- [ ] IPN ID is registered and saved (run `php artisan pesapal:register-ipn`)
+- [ ] IPN ID is registered and saved (run `php artisan pesapal:register-ipn --landlord=<landlord_id>`)
 - [ ] Sandbox toggle matches your credentials
 - [ ] APP_URL is set correctly in `.env`
 
@@ -207,7 +212,7 @@ database/
   1. Verify `pesapal.ipn_id` is set in Admin Settings (not empty).
   2. If missing, run:
      ```bash
-     php artisan pesapal:register-ipn
+     php artisan pesapal:register-ipn --landlord=<landlord_id>
      ```
   3. Ensure the IPN ID is from the same environment (sandbox IPN ID for sandbox, live for live).
   4. Verify the IPN URL in Pesapal matches `config('app.url') . '/api/payments/pesapal/ipn'`.
@@ -251,7 +256,7 @@ database/
 2. Enter Consumer Key and Consumer Secret in **Admin > Settings > Payments tab**
 3. **Register Pesapal IPN ID** (required for v3):
    ```bash
-   php artisan pesapal:register-ipn
+   php artisan pesapal:register-ipn --landlord=<landlord_id>
    ```
    This command:
    - Requests an OAuth token using your credentials
@@ -262,6 +267,6 @@ database/
 5. Trigger a payment from tenant invoice — confirm Pesapal checkout appears
 6. Verify debug info in `PendingPayment.meta` (admin UI) if issues occur
 7. Deploy to production and update `.env` with production domain
-8. Re-run `php artisan pesapal:register-ipn` in production (will register live IPN ID)
+8. Re-run `php artisan pesapal:register-ipn --landlord=<landlord_id>` in production (will register live IPN ID)
 9. Update Pesapal dashboard with production callback/IPN URLs
 10. Test live payments
