@@ -13,7 +13,17 @@
         @if ($packages->isEmpty())
             <p class="mt-10 text-center text-slate-500">Pricing is being finalized - contact us to get started.</p>
         @else
-            <div class="mt-14 grid grid-cols-1 sm:grid-cols-{{ min($packages->count(), 3) }} gap-6">
+            {{-- Tailwind's build-time scanner needs literal, complete class names in the
+                 source - a runtime-interpolated "sm:grid-cols-{{ $n }}" is invisible to it
+                 and silently generates no CSS, so the static map below is required. --}}
+            @php
+                $colsClass = match (min($packages->count(), 3)) {
+                    1 => 'sm:grid-cols-1',
+                    2 => 'sm:grid-cols-2',
+                    default => 'sm:grid-cols-3',
+                };
+            @endphp
+            <div class="mt-14 grid grid-cols-1 {{ $colsClass }} gap-6">
                 @foreach ($packages as $index => $package)
                     <x-marketing.pricing-card :package="$package" :featured="$packages->count() >= 3 && $index === 1" />
                 @endforeach

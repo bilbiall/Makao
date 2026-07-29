@@ -10,7 +10,14 @@
                 <p class="text-slate-500">Pricing is being finalized. Contact us to get started.</p>
             </div>
         @else
-            <div class="mt-14 grid grid-cols-1 sm:grid-cols-{{ min($packages->count(), 3) }} gap-6">
+            @php
+                $colsClass = match (min($packages->count(), 3)) {
+                    1 => 'sm:grid-cols-1',
+                    2 => 'sm:grid-cols-2',
+                    default => 'sm:grid-cols-3',
+                };
+            @endphp
+            <div class="mt-14 grid grid-cols-1 {{ $colsClass }} gap-6">
                 @foreach ($packages as $index => $package)
                     <x-marketing.pricing-card :package="$package" :featured="$packages->count() >= 3 && $index === (int) floor($packages->count() / 2)" />
                 @endforeach

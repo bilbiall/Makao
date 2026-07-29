@@ -31,30 +31,48 @@
         </div>
 
         <div class="relative">
-            <div class="rounded-2xl border border-slate-200 bg-white shadow-xl overflow-hidden">
-                <div class="flex items-center gap-1.5 px-4 py-3 border-b border-slate-100 bg-slate-50">
+            {{-- Illustrative preview of the real landlord dashboard (Filament admin panel).
+                 Semi-transparent + blurred so the Nairobi skyline behind still reads through
+                 it, rather than sitting as a flat opaque card on top of the photo. --}}
+            <div class="rounded-2xl border border-white/50 bg-white/85 backdrop-blur-md shadow-2xl shadow-black/30 overflow-hidden">
+                <div class="flex items-center gap-2 px-4 py-3 border-b border-slate-200/70 bg-white/40">
                     <span class="h-2.5 w-2.5 rounded-full bg-rose-300"></span>
                     <span class="h-2.5 w-2.5 rounded-full bg-amber-300"></span>
                     <span class="h-2.5 w-2.5 rounded-full bg-emerald-300"></span>
+                    <span class="ml-2 text-xs font-medium text-slate-500">Landlord Dashboard</span>
                 </div>
-                <div class="p-6 space-y-4">
-                    <div class="grid grid-cols-3 gap-3">
-                        <div class="rounded-lg bg-emerald-50 p-3">
+                <div class="p-6 space-y-5">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="rounded-lg bg-emerald-50/80 p-3">
                             <p class="text-xs text-emerald-700">Occupancy</p>
                             <p class="text-xl font-bold text-emerald-800">92%</p>
                         </div>
-                        <div class="rounded-lg bg-amber-50 p-3">
-                            <p class="text-xs text-amber-700">Due This Month</p>
+                        <div class="rounded-lg bg-amber-50/80 p-3">
+                            <p class="text-xs text-amber-700">Revenue This Month</p>
                             <p class="text-xl font-bold text-amber-800">KES 1.2M</p>
                         </div>
-                        <div class="rounded-lg bg-slate-50 p-3">
-                            <p class="text-xs text-slate-600">Properties</p>
-                            <p class="text-xl font-bold text-slate-800">8</p>
+                        <div class="rounded-lg bg-rose-50/80 p-3">
+                            <p class="text-xs text-rose-700">Outstanding</p>
+                            <p class="text-xl font-bold text-rose-800">KES 245K</p>
+                        </div>
+                        <div class="rounded-lg bg-slate-100/80 p-3">
+                            <p class="text-xs text-slate-600">Tenants</p>
+                            <p class="text-xl font-bold text-slate-800">148</p>
                         </div>
                     </div>
-                    <div class="rounded-lg border border-slate-100 divide-y divide-slate-100">
-                        @foreach ([['Kilimani Heights - 2B', 'Paid', 'success'], ['Lavington Court - 1A', 'Partial', 'warning'], ['Westlands Vista - 3C', 'Unpaid', 'danger']] as [$label, $status, $color])
-                            <div class="flex items-center justify-between px-4 py-3 text-sm">
+
+                    <div class="rounded-lg border border-slate-200/70 bg-white/40 p-3">
+                        <p class="text-xs font-medium text-slate-500">Revenue trend (6 months)</p>
+                        <div class="mt-2 flex items-end gap-1.5 h-14">
+                            @foreach ([45, 55, 50, 68, 62, 80, 92] as $barHeight)
+                                <div class="flex-1 rounded-t bg-emerald-500/70" style="height: {{ $barHeight }}%"></div>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    <div class="rounded-lg border border-slate-200/70 divide-y divide-slate-200/70 bg-white/40">
+                        @foreach ([['Kilimani Heights - 2B', 'Paid', 'success'], ['Lavington Court - 1A', 'Partial', 'warning'], ['Westlands Vista - 3C', 'Unpaid', 'danger'], ['South B Pines - 4D', 'Paid', 'success']] as [$label, $status, $color])
+                            <div class="flex items-center justify-between px-4 py-2.5 text-sm">
                                 <span class="text-slate-700">{{ $label }}</span>
                                 <span @class([
                                     'rounded-full px-2.5 py-0.5 text-xs font-medium',
