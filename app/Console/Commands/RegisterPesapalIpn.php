@@ -8,7 +8,7 @@ use App\Models\Setting;
 
 class RegisterPesapalIpn extends Command
 {
-    protected $signature = 'pesapal:register-ipn';
+    protected $signature = 'pesapal:register-ipn {--landlord= : Landlord ID whose Pesapal credentials to use (each landlord has their own)}';
     protected $description = 'Register Pesapal IPN URL and retrieve the IPN ID (required for v3 checkout)';
 
     public function handle()
@@ -16,12 +16,18 @@ class RegisterPesapalIpn extends Command
         $this->info('Pesapal IPN Registration Helper');
         $this->info('================================\n');
 
-        $settings = Setting::singleton();
+        $landlordId = $this->option('landlord');
+        if (!$landlordId) {
+            $this->error('❌ Pesapal credentials are per-landlord. Pass --landlord=<id>.');
+            return 1;
+        }
+
+        $settings = Setting::forLandlord((int) $landlordId);
         $pesapalConfig = $settings->payload['pesapal'] ?? [];
 
         // Check prerequisites
         if (empty($pesapalConfig['consumer_key']) || empty($pesapalConfig['consumer_secret'])) {
-            $this->error('❌ Consumer Key and Consumer Secret not configured. Please set them in Admin Settings first.');
+            $this->error('❌ Consumer Key and Consumer Secret not configured. Please set them in that landlord\'s Admin Settings first.');
             return 1;
         }
 
@@ -112,7 +118,6 @@ class RegisterPesapalIpn extends Command
         $pesapalConfig['ipn_id'] = $ipnId;
         $settings->payload = array_merge($settings->payload ?? [], ['pesapal' => $pesapalConfig]);
         $settings->save();
-        cache()->forget('settings_singleton');
 
         $this->info("✓ Settings saved\n");
 

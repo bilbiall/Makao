@@ -3,15 +3,18 @@
 namespace App\Helpers;
 
 use App\Models\Setting;
+use App\Support\CurrentLandlord;
 
 class EmailTemplateHelper
 {
     /**
      * Render an email template with replacements and sensible defaults.
+     * $landlordId defaults to the current authenticated user's landlord when omitted.
      */
-    public static function render(string $key, array $replacements = []): string
+    public static function render(string $key, array $replacements = [], ?int $landlordId = null): string
     {
-        $settings = Setting::singleton();
+        $landlordId ??= CurrentLandlord::id();
+        $settings = Setting::forLandlord($landlordId);
         $payload = $settings->payload ?? [];
 
         $defaults = [
@@ -33,7 +36,7 @@ class EmailTemplateHelper
         }
 
         // Replace any app_name placeholder
-        $template = str_replace('{app_name}', AppHelper::getAppName(), $template);
+        $template = str_replace('{app_name}', AppHelper::getAppName($landlordId), $template);
 
         return $template;
     }

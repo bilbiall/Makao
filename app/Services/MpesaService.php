@@ -18,21 +18,31 @@ class MpesaService
     protected $sandbox = true;
     protected $callbackUrl;
 
-    public function __construct()
+    protected ?int $landlordId = null;
+
+    /**
+     * M-Pesa credentials are per-landlord business configuration (each landlord has
+     * their own till/shortcode), not a platform-wide singleton - config is loaded fresh
+     * for whichever landlord owns the record a given call is acting on, rather than
+     * once at construction (this service is resolved once per request/webhook via the
+     * container, and a webhook doesn't know which landlord it belongs to until the
+     * transaction is looked up inside handleCallback()).
+     */
+    protected function loadConfigForLandlord(?int $landlordId): void
     {
-        $settings = \App\Models\Setting::singleton();
+        $this->landlordId = $landlordId;
+        $settings = \App\Models\Setting::forLandlord($landlordId);
         $this->config = $settings->payload['mpesa'] ?? [];
-        
+
         \Log::debug('MpesaService config loaded', [
-            'has_payload' => isset($settings->payload),
-            'has_mpesa_key' => isset($settings->payload['mpesa']),
+            'landlord_id' => $landlordId,
             'mpesa_config_keys' => array_keys($this->config),
             'consumer_key_set' => !empty($this->config['consumer_key']),
             'consumer_secret_set' => !empty($this->config['consumer_secret']),
             'business_shortcode_set' => !empty($this->config['business_shortcode']),
             'passkey_set' => !empty($this->config['passkey']),
         ]);
-        
+
         $this->consumerKey = $this->config['consumer_key'] ?? null;
         $this->consumerSecret = $this->config['consumer_secret'] ?? null;
         $this->businessShortCode = $this->config['business_shortcode'] ?? null;
@@ -96,6 +106,8 @@ class MpesaService
      */
     public function initiateStkPush(Invoice $invoice, string $phoneNumber, float $amount): array
     {
+        $this->loadConfigForLandlord($invoice->landlord_id);
+
         if (!$this->enabled()) {
             return ['success' => false, 'error' => 'M-Pesa not configured'];
         }
@@ -280,6 +292,8 @@ class MpesaService
         if ($transaction->status === 'completed') {
             return ['success' => true, 'status' => 'completed'];
         }
+
+        $this->loadConfigForLandlord($transaction->landlord_id);
 
         if (!$this->enabled()) {
             return ['success' => false, 'error' => 'M-Pesa not configured'];

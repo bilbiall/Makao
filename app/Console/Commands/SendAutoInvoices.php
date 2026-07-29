@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use App\Models\Landlord;
 use App\Models\Tenant;
 use App\Models\Invoice;
 use App\Models\Bill;
@@ -25,46 +26,55 @@ class SendAutoInvoices extends Command
      *
      * @var string
      */
-    protected $description = 'Automatically send invoices on the configured date';
+    protected $description = 'Automatically send invoices on each landlord\'s configured date';
 
     /**
      * Execute the console command.
+     *
+     * Auto-invoice enabled/date is per-landlord settings, not a platform-wide toggle -
+     * this runs once per landlord, using that landlord's own configuration and only
+     * touching that landlord's own tenants.
      */
     public function handle()
     {
-        // Get settings
-        $settings = Setting::singleton();
-        $payload = $settings->payload ?? [];
-        
-        // Check if auto-invoicing is enabled
-        if (!($payload['auto_invoice_enabled'] ?? false)) {
-            $this->info('Auto-invoicing is disabled.');
-            return 0;
+        $totalInvoiced = 0;
+        $totalFailed = 0;
+
+        foreach (Landlord::all() as $landlord) {
+            [$invoiced, $failed] = $this->processLandlord($landlord);
+            $totalInvoiced += $invoiced;
+            $totalFailed += $failed;
         }
 
-        // Get the day of month for auto-invoicing
+        $this->info("Auto-invoicing completed. {$totalInvoiced} invoices sent across all landlords.");
+        if ($totalFailed > 0) {
+            $this->warn("{$totalFailed} invoices failed to send.");
+        }
+
+        return 0;
+    }
+
+    protected function processLandlord(Landlord $landlord): array
+    {
+        $settings = Setting::forLandlord($landlord->id);
+        $payload = $settings->payload ?? [];
+
+        if (!($payload['auto_invoice_enabled'] ?? false)) {
+            return [0, 0];
+        }
+
         $invoiceDay = null;
         if (!empty($payload['auto_invoice_date'])) {
-            // Extract day from date string (format: YYYY-MM-DD)
-            $invoiceDate = Carbon::parse($payload['auto_invoice_date']);
-            $invoiceDay = $invoiceDate->day;
+            $invoiceDay = Carbon::parse($payload['auto_invoice_date'])->day;
         }
 
-        if (!$invoiceDay) {
-            $this->warn('Auto invoice date not configured.');
-            return 1;
+        if (!$invoiceDay || now()->day !== $invoiceDay) {
+            return [0, 0];
         }
 
-        // Check if today is the invoice day
-        if (now()->day !== $invoiceDay) {
-            $this->info("Today is not the invoice day (configured: {$invoiceDay})");
-            return 0;
-        }
+        $this->info("Starting auto-invoice process for {$landlord->name} (day {$invoiceDay})...");
 
-        $this->info("Starting auto-invoice process for day {$invoiceDay}...");
-
-        // Send mass invoices
-        $tenants = Tenant::all();
+        $tenants = Tenant::where('landlord_id', $landlord->id)->get();
         $invoiceCount = 0;
         $failedCount = 0;
         $today = now();
@@ -73,7 +83,6 @@ class SendAutoInvoices extends Command
 
         foreach ($tenants as $tenant) {
             try {
-                // Skip if already invoiced this month
                 $alreadyInvoiced = Invoice::where('tenant_id', $tenant->id)
                     ->whereMonth('invoice_date', $month)
                     ->whereYear('invoice_date', $year)
@@ -113,7 +122,11 @@ class SendAutoInvoices extends Command
                     'status' => 'unpaid',
                 ]);
 
-                SmsHelper::sendSms($tenant->phone_number, "Hello {$tenant->tenant_name}, your invoice ({$invoice->invoice_number}) of KES {$total} is due by {$invoice->due_date->format('M d')}.");
+                SmsHelper::sendSms(
+                    $tenant->phone_number,
+                    "Hello {$tenant->tenant_name}, your invoice ({$invoice->invoice_number}) of KES {$total} is due by {$invoice->due_date->format('M d')}.",
+                    $landlord->id
+                );
 
                 $invoiceCount++;
             } catch (\Throwable $e) {
@@ -122,9 +135,8 @@ class SendAutoInvoices extends Command
             }
         }
 
-        // Log the action
         try {
-            $details = "Auto-invoicing completed. {$invoiceCount} invoices sent to tenants.";
+            $details = "Auto-invoicing completed for {$landlord->name}. {$invoiceCount} invoices sent.";
             if ($failedCount > 0) {
                 $details .= " ({$failedCount} failed)";
             }
@@ -133,11 +145,6 @@ class SendAutoInvoices extends Command
             $this->warn("Could not log activity: {$e->getMessage()}");
         }
 
-        $this->info("Auto-invoicing completed. {$invoiceCount} invoices sent.");
-        if ($failedCount > 0) {
-            $this->warn("{$failedCount} invoices failed to send.");
-        }
-
-        return 0;
+        return [$invoiceCount, $failedCount];
     }
 }

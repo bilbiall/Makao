@@ -76,7 +76,7 @@ class ListInvoices extends ListRecords
                         ]);
 
                         try {
-                            SmsHelper::sendSms($tenant->phone_number, "Hello {$tenant->tenant_name}, your invoice ({$invoice->invoice_number}) of KES {$total} is due by {$invoice->due_date->format('M d')}.");
+                            SmsHelper::sendSms($tenant->phone_number, "Hello {$tenant->tenant_name}, your invoice ({$invoice->invoice_number}) of KES {$total} is due by {$invoice->due_date->format('M d')}.", $invoice->landlord_id);
                         } catch (\Throwable $e) {
                             // ignore SMS failures (e.g. gateway not configured)
                         }
@@ -111,11 +111,10 @@ class ListInvoices extends ListRecords
                             'invoice_number' => $invoice->invoice_number,
                             'amount' => number_format($invoice->balance),
                             'due_date' => $invoice->due_date ? Carbon::parse($invoice->due_date)->format('d M Y') : 'N/A',
-                            'app_name' => config('app.name'),
-                        ]);
+                        ], $invoice->landlord_id);
 
                         try {
-                            SmsHelper::sendSms($tenant->phone_number, $message);
+                            SmsHelper::sendSms($tenant->phone_number, $message, $invoice->landlord_id);
                             $count++;
                         } catch (\Throwable $e) {
                             // silently skip failed sends

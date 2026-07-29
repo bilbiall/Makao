@@ -3,13 +3,19 @@
 namespace App\Helpers;
 
 use App\Models\Setting;
+use App\Support\CurrentLandlord;
 use RuntimeException;
 
 class SmsHelper
 {
-    public static function sendSms(string $phone, string $message)
+    /**
+     * $landlordId defaults to the current authenticated user's landlord when omitted
+     * (covers Filament/web call sites); pass it explicitly from console commands and
+     * webhook handlers, which have no authenticated user to infer it from.
+     */
+    public static function sendSms(string $phone, string $message, ?int $landlordId = null)
     {
-        $settings = Setting::singleton();
+        $settings = Setting::forLandlord($landlordId ?? CurrentLandlord::id());
         $payload = $settings->payload ?? [];
 
         $smsUrl = $payload['sms_url'] ?? env('TEXTSMS_URL');

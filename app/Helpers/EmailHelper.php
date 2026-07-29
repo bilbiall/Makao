@@ -3,16 +3,18 @@
 namespace App\Helpers;
 
 use App\Models\Setting;
+use App\Support\CurrentLandlord;
 use Illuminate\Support\Facades\Mail;
 
 class EmailHelper
 {
     /**
      * Send a raw email using SMTP settings stored in the Settings payload.
+     * $landlordId defaults to the current authenticated user's landlord when omitted.
      */
-    public static function send(string $to, string $subject, string $body): void
+    public static function send(string $to, string $subject, string $body, ?int $landlordId = null): void
     {
-        $settings = Setting::singleton();
+        $settings = Setting::forLandlord($landlordId ?? CurrentLandlord::id());
         $payload = $settings->payload ?? [];
 
         $smtp = $payload['smtp'] ?? [];

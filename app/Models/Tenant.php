@@ -113,19 +113,19 @@ class Tenant extends Model
             $tenant->house->update(['house_status' => 'Occupied']);
             
             // Get template from settings
-            $settings = \App\Models\Setting::singleton();
+            $settings = \App\Models\Setting::forLandlord($tenant->landlord_id);
             $template = $settings->payload['template_tenant_welcome'] ?? 'Hello {tenant_name}, welcome to {app_name}. You were admitted to {house_name} with a monthly rent of KES {rent_amount}';
-            
+
             // Replace variables
             $message = str_replace(
                 ['{tenant_name}', '{app_name}', '{house_name}', '{rent_amount}'],
-                [$tenant->tenant_name, config('app.name'), $tenant->house->house_name, $tenant->house->rent_amount],
+                [$tenant->tenant_name, \App\Helpers\AppHelper::getAppName($tenant->landlord_id), $tenant->house->house_name, $tenant->house->rent_amount],
                 $template
             );
 
             // Send SMS using your helper
             try {
-                SmsHelper::sendSms($tenant->phone_number, $message);
+                SmsHelper::sendSms($tenant->phone_number, $message, $tenant->landlord_id);
             } catch (\Throwable $e) {
                 // ignore SMS failures (e.g. gateway not configured)
             }

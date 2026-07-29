@@ -10,9 +10,13 @@ class PesapalService
 {
     protected $config;
 
-    public function __construct()
+    /**
+     * Pesapal credentials are per-landlord business configuration, not a platform-wide
+     * singleton - loaded fresh for whichever landlord owns the record being acted on.
+     */
+    protected function loadConfigForLandlord(?int $landlordId): void
     {
-        $settings = \App\Models\Setting::singleton();
+        $settings = \App\Models\Setting::forLandlord($landlordId);
         $this->config = $settings->payload['pesapal'] ?? [];
     }
 
@@ -27,6 +31,8 @@ class PesapalService
      */
     public function createPayment(PendingPayment $pending): array
     {
+        $this->loadConfigForLandlord($pending->landlord_id);
+
         // If not configured, return without creating external checkout
         if (!$this->enabled()) {
             return ['success' => false, 'redirect_url' => null, 'pending' => $pending];
@@ -248,11 +254,15 @@ class PesapalService
     }
 
     /**
-     * Very small helper to verify a webhook signature. Expects header value and payload
-     * Uses HMAC-SHA256 with the configured secret if present.
+     * Very small helper to verify a webhook signature. Expects header value and payload.
+     * Uses HMAC-SHA256 with the configured secret if present. $landlordId must be
+     * resolved by the caller (e.g. from the PendingPayment the webhook's `reference`
+     * points at) since a webhook doesn't otherwise identify which landlord it's for.
      */
-    public function verifySignature(?string $signature, string $payload): bool
+    public function verifySignature(?string $signature, string $payload, ?int $landlordId): bool
     {
+        $this->loadConfigForLandlord($landlordId);
+
         $secret = $this->config['webhook_secret'] ?? null;
         if (empty($secret) || empty($signature)) {
             return false;

@@ -184,7 +184,7 @@ class User extends Authenticatable
                 'tenant_name' => $this->name ?? $this->email,
                 'reset_url' => $resetUrl,
                 'reset_code' => $token,
-            ]);
+            ], $this->landlord_id);
 
             try {
                 EmailHelper::send(
@@ -199,18 +199,18 @@ class User extends Authenticatable
 
         // Optional SMS only for tenants with phone numbers
         if ($this->tenant && $this->tenant->phone_number) {
-            $settings = \App\Models\Setting::singleton();
+            $settings = \App\Models\Setting::forLandlord($this->landlord_id);
             $payload = $settings->payload ?? [];
             $template = $payload['template_password_reset_sms'] ?? 'Hi {tenant_name}, use this code to reset your password: {reset_code}. - {app_name}';
 
             $sms = str_replace(
                 ['{tenant_name}', '{reset_code}', '{app_name}'],
-                [$this->tenant->tenant_name ?? $this->name, $token, \App\Helpers\AppHelper::getAppName()],
+                [$this->tenant->tenant_name ?? $this->name, $token, \App\Helpers\AppHelper::getAppName($this->landlord_id)],
                 $template
             );
 
             try {
-                SmsHelper::sendSms($this->tenant->phone_number, $sms);
+                SmsHelper::sendSms($this->tenant->phone_number, $sms, $this->landlord_id);
             } catch (\Throwable $e) {
                 // ignore SMS errors
             }

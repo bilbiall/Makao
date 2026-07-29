@@ -132,9 +132,9 @@ class TenantResource extends Resource
                         ]);
 
                         // ✅ Send SMS
-                        $message = "Hi {$user->name}, your tenant account has been created. Login with Email: {$user->email}, Password: {$password} - " . config('app.name');
+                        $message = "Hi {$user->name}, your tenant account has been created. Login with Email: {$user->email}, Password: {$password} - " . \App\Helpers\AppHelper::getAppName($user->landlord_id);
                         try {
-                            SmsHelper::sendSms($user->phone_number, $message);
+                            SmsHelper::sendSms($user->phone_number, $message, $user->landlord_id);
                         } catch (\Throwable $e) {
                             // ignore SMS failures (e.g. gateway not configured)
                         }

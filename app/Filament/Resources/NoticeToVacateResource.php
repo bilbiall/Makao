@@ -131,7 +131,7 @@ class NoticeToVacateResource extends Resource
                         $tenant = $record->tenant;
                         if ($tenant) {
                             // Build SMS
-                            $settings = Setting::singleton();
+                            $settings = Setting::forLandlord($record->landlord_id);
                             $payload = $settings->payload ?? [];
                             $template = $payload['template_notice_approved'] ?? (
                                 "Hi {tenant_name}, your vacate notice has been approved. Balance: KES {balance}. Approval date: {approval_date}. Vacate date: {vacate_date}."
@@ -154,7 +154,7 @@ class NoticeToVacateResource extends Resource
                                 $phone = '254' . ltrim($phone, '0');
                             }
                             try {
-                                SmsHelper::sendSms($phone, $message);
+                                SmsHelper::sendSms($phone, $message, $record->landlord_id);
                             } catch (\Throwable $e) {
                                 // ignore SMS errors
                             }
@@ -202,7 +202,7 @@ class NoticeToVacateResource extends Resource
 
                         $tenant = $record->tenant;
                         if ($tenant) {
-                            $settings = Setting::singleton();
+                            $settings = Setting::forLandlord($record->landlord_id);
                             $payload = $settings->payload ?? [];
                             $template = $payload['template_notice_denied'] ?? (
                                 "Hi {tenant_name}, your vacate notice has been denied. Balance: KES {balance}. Date requested: {vacate_date}."
@@ -222,7 +222,7 @@ class NoticeToVacateResource extends Resource
                                 $phone = '254' . ltrim($phone, '0');
                             }
                             try {
-                                SmsHelper::sendSms($phone, $message);
+                                SmsHelper::sendSms($phone, $message, $record->landlord_id);
                             } catch (\Throwable $e) {
                                 // ignore SMS errors
                             }

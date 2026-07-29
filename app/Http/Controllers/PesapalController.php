@@ -46,7 +46,7 @@ class PesapalController extends Controller
         }
 
         // Fallback to the simulation view (keeps previous UX if integration isn't configured)
-        $settings = Setting::singleton();
+        $settings = Setting::forLandlord($invoice->landlord_id);
         $pesapalConfig = $settings->payload['pesapal'] ?? null;
 
         return view('pesapal.initiate', [
@@ -105,10 +105,6 @@ class PesapalController extends Controller
         $payload = $request->getContent();
         $signature = $request->header('X-Pesapal-Signature');
 
-        if (!$pesapal->verifySignature($signature, $payload)) {
-            return response()->json(['message' => 'invalid signature'], 403);
-        }
-
         $data = $request->json()->all();
         // Expected fields depend on Pesapal; try to extract reference and status
         $reference = $data['reference'] ?? $data['merchant_reference'] ?? null;
@@ -122,6 +118,12 @@ class PesapalController extends Controller
         if (!$pending) {
             // nothing to do
             return response()->json(['message' => 'pending not found'], 404);
+        }
+
+        // Pesapal credentials (and the webhook signing secret) are per-landlord, so the
+        // owning record must be resolved before the secret to verify against is known.
+        if (!$pesapal->verifySignature($signature, $payload, $pending->landlord_id)) {
+            return response()->json(['message' => 'invalid signature'], 403);
         }
 
         if (in_array(strtolower($status), ['completed', 'paid', 'settled'])) {
@@ -165,11 +167,6 @@ class PesapalController extends Controller
         $payload = $request->getContent();
         $signature = $request->header('X-Pesapal-Signature');
 
-        // Verify signature
-        if (!$pesapal->verifySignature($signature, $payload)) {
-            return response()->json(['message' => 'invalid signature'], 403);
-        }
-
         $data = $request->json()->all();
         $reference = $data['reference'] ?? $data['merchant_reference'] ?? null;
         $status = $data['status'] ?? ($data['payment_status'] ?? 'unknown');
@@ -182,6 +179,12 @@ class PesapalController extends Controller
         $pending = PendingPayment::where('reference', $reference)->first();
         if (!$pending) {
             return response()->json(['message' => 'pending not found'], 404);
+        }
+
+        // Pesapal credentials (and the webhook signing secret) are per-landlord, so the
+        // owning record must be resolved before the secret to verify against is known.
+        if (!$pesapal->verifySignature($signature, $payload, $pending->landlord_id)) {
+            return response()->json(['message' => 'invalid signature'], 403);
         }
 
         // Handle status update

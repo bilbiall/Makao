@@ -102,10 +102,10 @@ class Invoice extends Model
                 'invoice_number' => $invoice->invoice_number,
                 'amount' => number_format($invoice->amount),
                 'due_date' => \Carbon\Carbon::parse($invoice->due_date)->format('d/m/Y'),
-            ]);
+            ], $invoice->landlord_id);
 
             try {
-                SmsHelper::sendSms($tenant->phone_number, $message);
+                SmsHelper::sendSms($tenant->phone_number, $message, $invoice->landlord_id);
             } catch (\Throwable $e) {
                 // ignore SMS failures (e.g. gateway not configured)
             }

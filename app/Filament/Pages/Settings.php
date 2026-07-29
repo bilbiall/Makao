@@ -43,7 +43,7 @@ class Settings extends Page implements HasForms
             abort(403, 'Unauthorized');
         }
 
-        $settings = Setting::singleton();
+        $settings = Setting::forLandlord($user->landlord_id);
         $payload = $settings->payload ?? [];
 
         // Set defaults from config if not already set
@@ -489,13 +489,11 @@ class Settings extends Page implements HasForms
      */
     public function save(): void
     {
-        $settings = Setting::singleton();
+        $settings = Setting::forLandlord(auth()->user()->landlord_id);
 
         // Store all form data inside the 'payload' JSON column
         $settings->payload = $this->form->getState();
         $settings->save();
-
-        cache()->forget('settings_singleton');
 
         Notification::make()
             ->title('Settings saved successfully')

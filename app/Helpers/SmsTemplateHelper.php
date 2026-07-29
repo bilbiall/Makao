@@ -3,19 +3,22 @@
 namespace App\Helpers;
 
 use App\Models\Setting;
+use App\Support\CurrentLandlord;
 
 class SmsTemplateHelper
 {
     /**
-     * Get a template by key and render it with variables
+     * Get a template by key and render it with variables.
+     * $landlordId defaults to the current authenticated user's landlord when omitted.
      *
      * @param string $templateKey The template key (e.g., 'template_invoice')
      * @param array $variables Key-value pairs to replace in template
      * @return string The rendered message
      */
-    public static function render(string $templateKey, array $variables = []): string
+    public static function render(string $templateKey, array $variables = [], ?int $landlordId = null): string
     {
-        $settings = Setting::singleton();
+        $landlordId ??= CurrentLandlord::id();
+        $settings = Setting::forLandlord($landlordId);
         $payload = $settings->payload ?? [];
 
         $template = $payload[$templateKey] ?? self::getDefaultTemplate($templateKey);
@@ -24,20 +27,20 @@ class SmsTemplateHelper
             throw new \RuntimeException("Template '$templateKey' not configured.");
         }
 
-        return self::interpolate($template, $variables);
+        return self::interpolate($template, $variables, $landlordId);
     }
 
     /**
      * Replace {variable} placeholders with values
      */
-    private static function interpolate(string $template, array $variables): string
+    private static function interpolate(string $template, array $variables, ?int $landlordId): string
     {
         foreach ($variables as $key => $value) {
             $template = str_replace('{' . $key . '}', $value, $template);
         }
 
         // Replace app_name with value from settings
-        $template = str_replace('{app_name}', AppHelper::getAppName(), $template);
+        $template = str_replace('{app_name}', AppHelper::getAppName($landlordId), $template);
 
         return $template;
     }

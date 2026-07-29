@@ -195,13 +195,14 @@ class ChatPanel extends Component
                 'tenant_name' => $receiver->name ?? $receiver->email,
                 'sender_name' => $sender?->name ?? 'System',
                 'message_body' => $this->body,
-            ]);
+            ], $receiver->landlord_id);
 
             try {
                 EmailHelper::send(
                     $receiver->email,
-                    'New message from ' . ($sender?->name ?? config('app.name')),
-                    $body
+                    'New message from ' . ($sender?->name ?? \App\Helpers\AppHelper::getAppName($receiver->landlord_id)),
+                    $body,
+                    $receiver->landlord_id
                 );
             } catch (\Throwable $e) {
                 // ignore email failures (e.g. SMTP not configured) - the Message row is already saved
@@ -254,13 +255,14 @@ class ChatPanel extends Component
                     'tenant_name' => $tenant->name ?? $tenant->email,
                     'sender_name' => $sender?->name ?? 'System',
                     'message_body' => $this->broadcastMsg,
-                ]);
+                ], $tenant->landlord_id);
 
                 try {
                     EmailHelper::send(
                         $tenant->email,
-                        'New broadcast message from ' . ($sender?->name ?? config('app.name')),
-                        $body
+                        'New broadcast message from ' . ($sender?->name ?? \App\Helpers\AppHelper::getAppName($tenant->landlord_id)),
+                        $body,
+                        $tenant->landlord_id
                     );
                 } catch (\Throwable $e) {
                     // ignore email failures for this recipient and keep broadcasting to the rest

@@ -9,8 +9,6 @@ use App\Helpers\SmsHelper;
 use App\Helpers\EmailHelper;
 use App\Helpers\EmailTemplateHelper;
 use App\Helpers\SmsTemplateHelper;
-use App\Helpers\AppHelper;
-use App\Models\Setting;
 
 class CreateUser extends CreateRecord
 {
@@ -35,8 +33,6 @@ class CreateUser extends CreateRecord
             return;
         }
 
-        $settings = Setting::singleton();
-        $payload = $settings->payload ?? [];
         $siteUrl = url('/login');
 
         // Send email notification
@@ -47,7 +43,7 @@ class CreateUser extends CreateRecord
                 'password' => $plainPassword,
                 'role' => ucfirst($user->role),
                 'site_url' => $siteUrl,
-            ]);
+            ], $user->landlord_id);
 
             try {
                 EmailHelper::send(
@@ -70,11 +66,10 @@ class CreateUser extends CreateRecord
                 'password' => $plainPassword,
                 'role' => ucfirst($user->role),
                 'site_url' => $siteUrl,
-                'app_name' => AppHelper::getAppName(),
-            ]);
+            ], $user->landlord_id);
 
             try {
-                SmsHelper::sendSms($phone, $sms);
+                SmsHelper::sendSms($phone, $sms, $user->landlord_id);
             } catch (\Throwable $e) {
                 // Log but don't fail user creation
             }

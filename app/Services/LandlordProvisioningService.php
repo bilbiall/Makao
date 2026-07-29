@@ -66,9 +66,9 @@ class LandlordProvisioningService
                 'package_name' => $package->name,
                 'trial_days' => $package->trial_days,
                 'site_url' => url('/login'),
-            ]);
+            ], $user->landlord_id);
 
-            EmailHelper::send($user->email, 'Welcome to ' . config('app.name'), $body);
+            EmailHelper::send($user->email, 'Welcome to ' . config('app.name'), $body, $user->landlord_id);
         } catch (\Throwable $e) {
             // ignore email failures (e.g. SMTP not configured) - signup must still succeed
         }

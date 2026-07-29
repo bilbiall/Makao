@@ -81,7 +81,7 @@ class Payment extends Model
         $tenant->save();
 
         // 🔸 Send SMS confirmation (supports {balance})
-        $settings = \App\Models\Setting::singleton();
+        $settings = \App\Models\Setting::forLandlord($payment->landlord_id);
         $template = $settings->payload['template_payment'] ?? 'Hi {tenant_name}, we\'ve received your payment of KES {amount_paid} for Invoice #{invoice_number}. Your remaining balance is KES {balance}. Thank you. - {app_name}';
 
         // Support multiple placeholder variants in stored templates (e.g. {amount}, {amount_paid})
@@ -104,12 +104,12 @@ class Payment extends Model
             $invoice->invoice_number,
             $invoice->invoice_number,
             number_format($invoiceBalance),
-            config('app.name'),
+            \App\Helpers\AppHelper::getAppName($payment->landlord_id),
         ];
 
         $message = str_replace($placeholders, $replacements, $template);
         try {
-            \App\Helpers\SmsHelper::sendSms($tenant->phone_number, $message);
+            \App\Helpers\SmsHelper::sendSms($tenant->phone_number, $message, $payment->landlord_id);
         } catch (\Throwable $e) {
             // ignore SMS failures (e.g. gateway not configured)
         }
