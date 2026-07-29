@@ -19,3 +19,8 @@ Schedule::command('app:send-auto-invoices')
         // Log failed execution
     });
 
+// Flip trial/active subscriptions past their expiry date to expired
+Schedule::command('app:expire-trials')
+    ->daily()
+    ->withoutOverlapping();
+

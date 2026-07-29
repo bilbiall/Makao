@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Concerns\BelongsToLandlord;
 
 class NoticeToVacate extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToLandlord;
 
     protected $fillable = [
         'tenant_id',
@@ -19,6 +20,7 @@ class NoticeToVacate extends Model
         'approved_by',
         'approved_at',
         'denied_at',
+        'landlord_id',
     ];
 
     protected $casts = [
@@ -39,10 +41,16 @@ class NoticeToVacate extends Model
 
     protected static function booted()
     {
+        static::creating(function ($notice) {
+            if (!$notice->landlord_id && $notice->tenant_id) {
+                $notice->landlord_id = \App\Models\Tenant::withoutGlobalScopes()->find($notice->tenant_id)?->landlord_id;
+            }
+        });
+
         // Notify admins when a tenant submits a notice to vacate
         static::created(function ($notice) {
             $tenant = $notice->tenant;
-            $admins = \App\Models\User::where('role', 'admin')->get();
+            $admins = \App\Models\User::where('role', 'admin')->where('landlord_id', $notice->landlord_id)->get();
             
             foreach ($admins as $admin) {
                 $admin->notify(new \App\Notifications\DatabaseNotification(

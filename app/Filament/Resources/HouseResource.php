@@ -130,4 +130,15 @@ class HouseResource extends Resource
 
         return $query;
     }
+
+    public static function canCreate(): bool
+    {
+        $user = auth()->user();
+        if (!$user || !$user->landlord_id) {
+            return true;
+        }
+
+        return app(\App\Services\PackageLimitService::class)
+            ->canAdd('houses', \App\Models\Landlord::find($user->landlord_id));
+    }
 }

@@ -33,6 +33,7 @@ class User extends Authenticatable
         'password',
         'role',
         'location_id',
+        'landlord_id',
     ];
 
     /**
@@ -119,6 +120,22 @@ class User extends Authenticatable
     public function isCaretaker(): bool
     {
         return $this->role === 'caretaker';
+    }
+
+    public function isLandlord(): bool
+    {
+        return $this->role === 'landlord';
+    }
+
+    public function isSuperadmin(): bool
+    {
+        return $this->role === 'superadmin';
+    }
+
+    // The landlord account this user belongs to (null for superadmin accounts).
+    public function landlord()
+    {
+        return $this->belongsTo(Landlord::class);
     }
 
     //relationship with tenants

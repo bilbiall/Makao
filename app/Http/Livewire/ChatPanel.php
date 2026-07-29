@@ -36,9 +36,9 @@ class ChatPanel extends Component
     public function mount()
     {
         $user = Auth::user();
-        
-        if ($user->isAdmin() || $user->isCaretaker()) {
-            // Admin/Caretaker view: load all tenants
+
+        if ($user->isAdmin() || $user->isCaretaker() || $user->isLandlord()) {
+            // Admin/Caretaker/Landlord view: load all tenants
             $this->loadAdminRecipients();
         } else {
             // Tenant view: load admins/caretakers
@@ -57,8 +57,10 @@ class ChatPanel extends Component
 
     public function loadAdminRecipients()
     {
-        // Load all tenant users for admin/caretaker to message
-        $this->caretakers = User::where('role', 'tenant')->orderBy('name')->get();
+        // Load all of this landlord's tenant users for admin/caretaker/landlord to message.
+        // User carries no automatic landlord scope, so this must be filtered explicitly.
+        $landlordId = Auth::user()->landlord_id;
+        $this->caretakers = User::where('role', 'tenant')->where('landlord_id', $landlordId)->orderBy('name')->get();
         $this->filteredRecipients = $this->caretakers;
         if ($this->caretakers->count() > 0 && !$this->recipientId) {
             $this->recipientId = $this->caretakers->first()->id;
@@ -67,8 +69,9 @@ class ChatPanel extends Component
 
     public function loadTenantRecipients()
     {
-        // Load admin/caretaker users for tenant to message
-        $this->caretakers = User::whereIn('role', ['admin', 'caretaker'])->orderBy('name')->get();
+        // Load this tenant's own landlord's admin/caretaker/landlord users to message.
+        $landlordId = Auth::user()->landlord_id;
+        $this->caretakers = User::whereIn('role', ['admin', 'caretaker', 'landlord'])->where('landlord_id', $landlordId)->orderBy('name')->get();
         $this->filteredRecipients = $this->caretakers;
         if ($this->caretakers->count() > 0 && !$this->recipientId) {
             $this->recipientId = $this->caretakers->first()->id;
@@ -90,10 +93,10 @@ class ChatPanel extends Component
         $user = Auth::user();
         $query = null;
 
-        if ($user->isAdmin() || $user->isCaretaker()) {
-            // Admin: search tenants by house name or tenant name
-            $query = User::where('role', 'tenant');
-            
+        if ($user->isAdmin() || $user->isCaretaker() || $user->isLandlord()) {
+            // Admin/landlord: search this landlord's own tenants by house name or tenant name
+            $query = User::where('role', 'tenant')->where('landlord_id', $user->landlord_id);
+
             if ($this->searchHouse) {
                 // Find house by name, then get tenant in that house
                 $houseIds = House::where('house_name', 'like', '%' . $this->searchHouse . '%')
@@ -107,8 +110,8 @@ class ChatPanel extends Component
                 $query->where('name', 'like', '%' . $this->searchTenant . '%');
             }
         } else {
-            // Tenant: no special filtering, just show admins/caretakers
-            $query = User::whereIn('role', ['admin', 'caretaker']);
+            // Tenant: no special filtering, just show this landlord's admins/caretakers
+            $query = User::whereIn('role', ['admin', 'caretaker', 'landlord'])->where('landlord_id', $user->landlord_id);
         }
         
         $this->filteredRecipients = $query->orderBy('name')->get();
@@ -161,10 +164,18 @@ class ChatPanel extends Component
 
         $this->validate();
 
-        // Ensure issue is only attached when messaging an admin account
+        // recipientId is a public Livewire property and could be tampered with in a crafted
+        // request, so re-verify the receiver belongs to the same landlord as the sender
+        // before creating anything - the filteredRecipients list alone is not enforcement.
         $receiver = User::find($this->recipientId);
+        if (!$receiver || $receiver->landlord_id !== Auth::user()->landlord_id) {
+            session()->flash('error', 'Invalid recipient.');
+            return;
+        }
+
+        // Ensure issue is only attached when messaging an admin account
         $issueId = null;
-        if ($receiver && $receiver->role === 'admin') {
+        if ($receiver->role === 'admin') {
             $issueId = $this->issueId;
         }
 
@@ -221,15 +232,15 @@ class ChatPanel extends Component
         $this->validate(['broadcastMsg' => 'required|string|max:2000']);
         
         $user = Auth::user();
-        
-        // Only admins/caretakers can broadcast
-        if (!($user->isAdmin() || $user->isCaretaker())) {
+
+        // Only admins/caretakers/landlords can broadcast
+        if (!($user->isAdmin() || $user->isCaretaker() || $user->isLandlord())) {
             session()->flash('error', 'Only admins can broadcast messages.');
             return;
         }
-        
-        // Send to all tenant users
-        $tenants = User::where('role', 'tenant')->get();
+
+        // Send to this landlord's own tenant users only
+        $tenants = User::where('role', 'tenant')->where('landlord_id', $user->landlord_id)->get();
         foreach ($tenants as $tenant) {
             Message::create([
                 'sender_id' => Auth::id(),

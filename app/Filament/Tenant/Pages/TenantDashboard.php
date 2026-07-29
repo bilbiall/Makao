@@ -40,6 +40,13 @@ class TenantDashboard extends Page
         // House name (if assigned)
         $this->houseName = $tenant?->house?->house_name ?? 'No House Assigned';
 
+        if (!$tenant) {
+            $this->pendingAmount = 0;
+            $this->recentInvoices = collect();
+            $this->recentPayments = collect();
+            return;
+        }
+
         // Total invoiced vs total paid (balance = pending)
         $totalInvoiced = Invoice::where('tenant_id', $tenant->id)->sum('amount');
         $totalPaid     = Payment::where('tenant_id', $tenant->id)->sum('amount_paid');

@@ -11,12 +11,13 @@ use App\Models\Invoice;
 
 use App\Helpers\SmsHelper;
 use App\Helpers\SmsTemplateHelper;
+use App\Models\Concerns\BelongsToLandlord;
 
 
 class Payment extends Model
 {
     //
-    use HasFactory;
+    use HasFactory, BelongsToLandlord;
 
     protected $fillable = [
         'tenant_id', 'invoice_id',
@@ -24,6 +25,7 @@ class Payment extends Model
         'payment_reference', 'payment_date',
         'note', 'payment_type',
         'payment_method', 'transaction_id', 'status',
+        'landlord_id',
     ];
 
     public function tenant()
@@ -39,6 +41,11 @@ class Payment extends Model
     //model listener for updating invoice status
     protected static function booted()
 {
+    static::creating(function ($payment) {
+        if (!$payment->landlord_id && $payment->tenant_id) {
+            $payment->landlord_id = \App\Models\Tenant::withoutGlobalScopes()->find($payment->tenant_id)?->landlord_id;
+        }
+    });
 
     static::created(function ($payment) {
         $invoice = $payment->invoice;
@@ -107,7 +114,7 @@ class Payment extends Model
             // ignore SMS failures (e.g. gateway not configured)
         }
         // Also create database notification for admins and tenant user
-        $admins = \App\Models\User::where('role', 'admin')->get();
+        $admins = \App\Models\User::where('role', 'admin')->where('landlord_id', $payment->landlord_id)->get();
         foreach ($admins as $admin) {
             $admin->notify(new \App\Notifications\DatabaseNotification(
                 'Payment Received',

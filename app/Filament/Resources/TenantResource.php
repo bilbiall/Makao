@@ -128,6 +128,7 @@ class TenantResource extends Resource
                             'phone_number' => $data['phone_number'],
                             'password' => bcrypt($password),
                             'role' => 'tenant', // ✅ Automatically assign tenant role
+                            'landlord_id' => auth()->user()->landlord_id,
                         ]);
 
                         // ✅ Send SMS
@@ -273,5 +274,16 @@ class TenantResource extends Resource
         }
 
         return $query;
+    }
+
+    public static function canCreate(): bool
+    {
+        $user = auth()->user();
+        if (!$user || !$user->landlord_id) {
+            return true;
+        }
+
+        return app(\App\Services\PackageLimitService::class)
+            ->canAdd('tenants', \App\Models\Landlord::find($user->landlord_id));
     }
 }

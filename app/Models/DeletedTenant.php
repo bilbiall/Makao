@@ -3,10 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Concerns\BelongsToLandlord;
 
 class DeletedTenant extends Model
 {
+    use BelongsToLandlord;
+
     protected $fillable = [
+        'landlord_id',
         'tenant_name',
         'phone_number',
         'email',

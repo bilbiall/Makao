@@ -4,15 +4,19 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\Concerns\BelongsToLandlord;
 
 class Issue extends Model
 {
+    use BelongsToLandlord;
+
      // Allow these attributes to be mass-assigned
     protected $fillable = [
         'tenant_id',
         'title',
         'description',
         'status',
+        'landlord_id',
     ];
 
      /**
@@ -25,6 +29,12 @@ class Issue extends Model
 
     protected static function booted()
     {
+        static::creating(function ($issue) {
+            if (!$issue->landlord_id && $issue->tenant_id) {
+                $issue->landlord_id = \App\Models\Tenant::withoutGlobalScopes()->find($issue->tenant_id)?->landlord_id;
+            }
+        });
+
         // Notify when new issue is created
         static::created(function ($issue) {
             try {
@@ -49,7 +59,7 @@ class Issue extends Model
                 }
 
                 // Notify admins about new issue
-                $admins = \App\Models\User::where('role', 'admin')->get();
+                $admins = \App\Models\User::where('role', 'admin')->where('landlord_id', $issue->landlord_id)->get();
                 foreach ($admins as $admin) {
                     $admin->notify(new \App\Notifications\DatabaseNotification(
                         'New Issue Reported',
@@ -95,7 +105,7 @@ class Issue extends Model
                     }
 
                     // Notify admins about the status change
-                    $admins = \App\Models\User::where('role', 'admin')->get();
+                    $admins = \App\Models\User::where('role', 'admin')->where('landlord_id', $issue->landlord_id)->get();
                     foreach ($admins as $admin) {
                         try {
                             $admin->notify(new \App\Notifications\DatabaseNotification(

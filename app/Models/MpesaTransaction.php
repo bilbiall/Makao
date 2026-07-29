@@ -4,9 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\Concerns\BelongsToLandlord;
 
 class MpesaTransaction extends Model
 {
+    use BelongsToLandlord;
+
     protected $table = 'mpesa_transactions';
     protected $fillable = [
         'invoice_id',
@@ -23,7 +26,17 @@ class MpesaTransaction extends Model
         'result_code',
         'result_desc',
         'meta',
+        'landlord_id',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function ($transaction) {
+            if (!$transaction->landlord_id && $transaction->tenant_id) {
+                $transaction->landlord_id = \App\Models\Tenant::withoutGlobalScopes()->find($transaction->tenant_id)?->landlord_id;
+            }
+        });
+    }
 
     protected $casts = [
         'meta' => 'array',

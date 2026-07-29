@@ -5,12 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Helpers\ActivityLogger;
+use App\Models\Concerns\BelongsToLandlord;
 
 
 class House extends Model
 {
     //
-    use HasFactory;
+    use HasFactory, BelongsToLandlord;
 
     protected $fillable = [
         'house_name',
@@ -19,6 +20,7 @@ class House extends Model
         'location_id',
         'house_type',
         'house_status',
+        'landlord_id',
     ];
 
     //relationship with the location model
@@ -35,14 +37,35 @@ class House extends Model
 
     protected static function booted()
     {
+        static::creating(function ($house) {
+            if (!$house->landlord_id && $house->location_id) {
+                $house->landlord_id = \App\Models\Location::withoutGlobalScopes()->find($house->location_id)?->landlord_id;
+            }
+        });
+
+        static::creating(function ($house) {
+            $landlord = $house->landlord_id ? \App\Models\Landlord::find($house->landlord_id) : null;
+            $limitService = app(\App\Services\PackageLimitService::class);
+
+            if ($landlord && !$limitService->canAdd('houses', $landlord)) {
+                \Filament\Notifications\Notification::make()
+                    ->danger()
+                    ->title('Plan limit reached')
+                    ->body($limitService->limitMessage('houses', $landlord))
+                    ->send();
+
+                return false;
+            }
+        });
+
         static::created(function ($house) {
             try {
                 $actor = auth()->id() ?? null;
                 $details = "House created: {$house->house_name} (Rent: {$house->rent_amount})";
                 ActivityLogger::log('create_house', $actor, $details);
 
-                // Notify admins about new house
-                $admins = \App\Models\User::where('role', 'admin')->get();
+                // Notify this landlord's own admins about the new house
+                $admins = \App\Models\User::where('role', 'admin')->where('landlord_id', $house->landlord_id)->get();
                 foreach ($admins as $admin) {
                     $admin->notify(new \App\Notifications\DatabaseNotification(
                         'House Created',

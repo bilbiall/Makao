@@ -20,6 +20,9 @@ class CreateUser extends CreateRecord
     {
         // Store plain password before hashing for notification
         $data['plain_password'] = $data['password'];
+        // New staff (admin/caretaker) belong to the creating landlord's own account -
+        // landlord_id is never a form field, so it can't be tampered with by the submitter.
+        $data['landlord_id'] = auth()->user()->landlord_id;
         return $data;
     }
 

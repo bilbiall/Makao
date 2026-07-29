@@ -9,13 +9,14 @@ use App\Helpers\SmsHelper; // if your function is inside a helper class
 use App\Helpers\SmsTemplateHelper;
 use Illuminate\Support\Facades\Config;
 use App\Helpers\ActivityLogger;
+use App\Models\Concerns\BelongsToLandlord;
 
 
 
 class Invoice extends Model
 {
     //
-    use HasFactory;
+    use HasFactory, BelongsToLandlord;
 
     protected $fillable = [
         'tenant_id',
@@ -26,6 +27,7 @@ class Invoice extends Model
         'status',
         'balance',
         'comment',
+        'landlord_id',
     ];
 
     // An invoice belongs to a tenant relationship
@@ -54,7 +56,12 @@ class Invoice extends Model
 
         //push amount to the database
         static::creating(function ($invoice) {
-            $tenant = $invoice->tenant;
+            $tenant = \App\Models\Tenant::withoutGlobalScopes()->find($invoice->tenant_id);
+
+            if (!$invoice->landlord_id) {
+                $invoice->landlord_id = $tenant?->landlord_id;
+            }
+
             $rent = $tenant->house->rent_amount ?? 0;
             $bills = $tenant->bills()
                 ->whereMonth('bill_month', now()->month)
@@ -95,7 +102,7 @@ class Invoice extends Model
             }
 
             // Send database notification to admins
-            $admins = \App\Models\User::where('role', 'admin')->get();
+            $admins = \App\Models\User::where('role', 'admin')->where('landlord_id', $invoice->landlord_id)->get();
             foreach ($admins as $admin) {
                 $admin->notify(new \App\Notifications\DatabaseNotification(
                     'New Invoice Created',

@@ -5,16 +5,19 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Helpers\ActivityLogger;
+use App\Models\Concerns\BelongsToLandlord;
+use App\Support\CurrentLandlord;
 
 
 class Location extends Model
 {
     // app/Models/Location.php
-    use HasFactory;
+    use HasFactory, BelongsToLandlord;
 
     protected $fillable = [
         'location_name',
         'geo_id',
+        'landlord_id',
     ];
 
     public function houses()
@@ -24,14 +27,35 @@ class Location extends Model
 
     protected static function booted()
     {
+        static::creating(function ($location) {
+            if (!$location->landlord_id) {
+                $location->landlord_id = CurrentLandlord::id();
+            }
+        });
+
+        static::creating(function ($location) {
+            $landlord = $location->landlord_id ? \App\Models\Landlord::find($location->landlord_id) : null;
+            $limitService = app(\App\Services\PackageLimitService::class);
+
+            if ($landlord && !$limitService->canAdd('locations', $landlord)) {
+                \Filament\Notifications\Notification::make()
+                    ->danger()
+                    ->title('Plan limit reached')
+                    ->body($limitService->limitMessage('locations', $landlord))
+                    ->send();
+
+                return false;
+            }
+        });
+
         static::created(function ($location) {
             try {
                 $actor = auth()->id() ?? null;
                 $details = "Location created: {$location->location_name} (geo_id: {$location->geo_id})";
                 ActivityLogger::log('create_location', $actor, $details);
 
-                // Notify admins about new location
-                $admins = \App\Models\User::where('role', 'admin')->get();
+                // Notify this landlord's own admins about the new location (not every landlord's)
+                $admins = \App\Models\User::where('role', 'admin')->where('landlord_id', $location->landlord_id)->get();
                 foreach ($admins as $admin) {
                     $admin->notify(new \App\Notifications\DatabaseNotification(
                         'Location Created',

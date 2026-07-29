@@ -12,9 +12,12 @@ use App\Models\Invoice;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 use Illuminate\Database\Eloquent\Relations\HasMany; // for relationship with issues
+use App\Models\Concerns\BelongsToLandlord;
 
 class Tenant extends Model
 {
+    use BelongsToLandlord;
+
     //all tenant db related stuff here
     protected $fillable = [
         'house_id',
@@ -23,6 +26,7 @@ class Tenant extends Model
         'phone_number',
         'date_admitted',
         'balance',
+        'landlord_id',
     ];
 
     //relationship for with the house model
@@ -83,6 +87,27 @@ class Tenant extends Model
     //to update status of house to occupied
     protected static function booted()
     {
+        static::creating(function ($tenant) {
+            if (!$tenant->landlord_id && $tenant->house_id) {
+                $tenant->landlord_id = \App\Models\House::withoutGlobalScopes()->find($tenant->house_id)?->landlord_id;
+            }
+        });
+
+        static::creating(function ($tenant) {
+            $landlord = $tenant->landlord_id ? \App\Models\Landlord::find($tenant->landlord_id) : null;
+            $limitService = app(\App\Services\PackageLimitService::class);
+
+            if ($landlord && !$limitService->canAdd('tenants', $landlord)) {
+                \Filament\Notifications\Notification::make()
+                    ->danger()
+                    ->title('Plan limit reached')
+                    ->body($limitService->limitMessage('tenants', $landlord))
+                    ->send();
+
+                return false;
+            }
+        });
+
         static::created(function ($tenant) {
             $tenant->house->update(['house_status' => 'Occupied']);
             
@@ -104,8 +129,8 @@ class Tenant extends Model
                 // ignore SMS failures (e.g. gateway not configured)
             }
 
-            // Notify admins via database about new tenant admission
-            $admins = \App\Models\User::where('role', 'admin')->get();
+            // Notify this landlord's own admins via database about new tenant admission
+            $admins = \App\Models\User::where('role', 'admin')->where('landlord_id', $tenant->landlord_id)->get();
             foreach ($admins as $admin) {
                 $admin->notify(new \App\Notifications\DatabaseNotification(
                     'New Tenant Admitted',

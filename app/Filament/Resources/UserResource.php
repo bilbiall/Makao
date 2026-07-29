@@ -134,6 +134,23 @@ class UserResource extends Resource
         ];
     }
 
+    /**
+     * User carries no automatic landlord global scope (adding one risks infinite
+     * recursion through SessionGuard::user()), so this Resource scopes explicitly -
+     * the same pattern already used here for caretaker-location narrowing.
+     */
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+        $user = auth()->user();
+
+        if ($user && $user->role !== 'superadmin') {
+            $query->where('landlord_id', $user->landlord_id);
+        }
+
+        return $query;
+    }
+
     public static function getPages(): array
     {
         return [

@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Concerns\BelongsToLandlord;
 
 class Message extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToLandlord;
 
     protected $fillable = [
         'sender_id',
@@ -17,11 +18,23 @@ class Message extends Model
         'parent_id',
         'body',
         'read_at',
+        'landlord_id',
     ];
 
     protected $casts = [
         'read_at' => 'datetime',
     ];
+
+    protected static function booted(): void
+    {
+        // Stamped from the sender's landlord_id - broadcast messages have no house_id,
+        // so this can't be derived via house the way other models derive it via tenant.
+        static::creating(function ($message) {
+            if (!$message->landlord_id && $message->sender_id) {
+                $message->landlord_id = \App\Models\User::find($message->sender_id)?->landlord_id;
+            }
+        });
+    }
 
     public function sender()
     {

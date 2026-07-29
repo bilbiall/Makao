@@ -84,6 +84,7 @@ class TenantObserver
 
         // Create deleted tenant record
         DeletedTenant::create([
+            'landlord_id' => $tenant->landlord_id,
             'tenant_name' => $tenant->tenant_name,
             'phone_number' => $tenant->phone_number,
             'email' => $tenant->email,

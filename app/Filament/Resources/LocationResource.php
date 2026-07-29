@@ -81,4 +81,15 @@ class LocationResource extends Resource
         $user = auth()->user();
         return $user && in_array($user->role, ['admin', 'landlord']);
     }
+
+    public static function canCreate(): bool
+    {
+        $user = auth()->user();
+        if (!$user || !$user->landlord_id) {
+            return true;
+        }
+
+        return app(\App\Services\PackageLimitService::class)
+            ->canAdd('locations', \App\Models\Landlord::find($user->landlord_id));
+    }
 }
