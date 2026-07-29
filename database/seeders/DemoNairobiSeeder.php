@@ -144,10 +144,11 @@ class DemoNairobiSeeder extends Seeder
                 'owner_name' => 'Susan Otieno',
                 'package' => 'starter',
                 'subscription_status' => 'trialing',
-                // Kept small on purpose - the Starter package caps this landlord at
-                // 15 houses/tenants total, and package limits are actually enforced.
+                // Deliberately a single building - a landlord just starting out on a
+                // trial, for visible contrast against Mwangi's and Kariuki's larger
+                // portfolios. Well within the Starter package's 15 house/tenant cap,
+                // which also leaves headroom to demo "add another property" live.
                 'locations' => [
-                    ['name' => 'Kileleshwa Gardens', 'area' => 'Kileleshwa', 'rates' => $upperMid, 'mix' => ['Bedsitter' => 1, '1 Bedroom' => 2, '2 Bedroom' => 2, '3 Bedroom' => 1]],
                     ['name' => 'South B Pines', 'area' => 'South B', 'rates' => $mid, 'mix' => ['Bedsitter' => 2, '1 Bedroom' => 3, '2 Bedroom' => 3, '3 Bedroom' => 1]],
                 ],
             ],
@@ -157,10 +158,13 @@ class DemoNairobiSeeder extends Seeder
                 'owner_name' => 'Daniel Kariuki',
                 'package' => 'pro',
                 'subscription_status' => 'active',
+                // The biggest portfolio - Pro has no location/house/tenant caps, so this
+                // is the one landlord it makes sense to show with 4 buildings.
                 'locations' => [
                     ['name' => 'Ruaka Riverside Apartments', 'area' => 'Ruaka', 'rates' => $mid, 'mix' => ['Bedsitter' => 4, '1 Bedroom' => 7, '2 Bedroom' => 4, '3 Bedroom' => 1]],
                     ['name' => 'Syokimau Palm Court', 'area' => 'Syokimau', 'rates' => $mid, 'mix' => ['Bedsitter' => 3, '1 Bedroom' => 4, '2 Bedroom' => 2, '3 Bedroom' => 1]],
                     ['name' => 'Westlands Vista Annex', 'area' => 'Westlands', 'rates' => $upperMid, 'mix' => ['Bedsitter' => 1, '1 Bedroom' => 2, '2 Bedroom' => 2, '3 Bedroom' => 1]],
+                    ['name' => 'Karen Manor Apartments', 'area' => 'Karen', 'rates' => $upperMid, 'mix' => ['1 Bedroom' => 2, '2 Bedroom' => 4, '3 Bedroom' => 2]],
                 ],
             ],
         ];
