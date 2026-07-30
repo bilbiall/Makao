@@ -31,9 +31,12 @@ class GenericLoginController extends Controller
         $user = Auth::user();
 
         return match ($user->role) {
-            'admin', 'landlord', 'caretaker' => redirect()->intended(route('filament.admin.pages.dashboard')),
-            'tenant' => redirect()->intended(route('filament.tenant.pages.tenant-dashboard')),
-            'superadmin' => redirect()->intended(route('filament.superadmin.pages.superadmin-dashboard')),
+            // Land in the new mobile-first app shell by default, not Filament's admin-
+            // panel chrome. The Filament panels are untouched and still fully reachable
+            // directly at /admin, /tenant, /superadmin for anyone who navigates there.
+            'admin', 'landlord', 'caretaker' => redirect()->intended(route('app.admin.dashboard')),
+            'tenant' => redirect()->intended(route('app.tenant.dashboard')),
+            'superadmin' => redirect()->intended(route('app.superadmin.dashboard')),
             default  => abort(403, 'Role not allowed'),
         };
     }

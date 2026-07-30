@@ -67,4 +67,55 @@ Route::middleware(['auth'])->group(function () {
     }
 });
 
+// Unified "app-like" logout for the new mobile-first app shell - the Filament panels
+// each ship their own logout, but the app shell sits outside any panel, so it needs
+// its own route hitting the same underlying "web" guard session every panel shares.
+Route::post('/app/logout', function (\Illuminate\Http\Request $request) {
+    \Illuminate\Support\Facades\Auth::logout();
+    $request->session()->invalidate();
+    $request->session()->regenerateToken();
+    return redirect()->route('generic.login');
+})->middleware('auth')->name('app.logout');
+
+// The mobile-first "app" experience - a custom Blade/Livewire shell (bottom tab bar on
+// mobile, sidebar on desktop) that sits in front of the Filament panels. Filament itself
+// is untouched and still fully reachable at /admin, /tenant, /superadmin; this is just
+// the primary place login sends people now, since Filament's own chrome always reads as
+// an admin dashboard rather than a product tenants/landlords use day to day.
+Route::middleware(['auth', \App\Http\Middleware\EnsureTenantRole::class])->prefix('app/tenant')->group(function () {
+    Route::get('/dashboard', \App\Livewire\Tenant\Dashboard::class)->name('app.tenant.dashboard');
+    Route::get('/invoices', \App\Livewire\Tenant\Invoices::class)->name('app.tenant.invoices');
+    Route::get('/bills', \App\Livewire\Tenant\Bills::class)->name('app.tenant.bills');
+    Route::get('/payments', \App\Livewire\Tenant\Payments::class)->name('app.tenant.payments');
+    Route::get('/issues', \App\Livewire\Tenant\Issues::class)->name('app.tenant.issues');
+    Route::get('/notices', \App\Livewire\Tenant\Notices::class)->name('app.tenant.notices');
+    Route::get('/chat', fn () => view('tenant-app.chat'))->name('app.tenant.chat');
+    Route::get('/profile', \App\Livewire\Profile::class)->name('app.tenant.profile');
+});
+
+Route::middleware(['auth', \App\Http\Middleware\EnsureAdminRole::class])->prefix('app/admin')->group(function () {
+    Route::get('/dashboard', \App\Livewire\AdminApp\Dashboard::class)->name('app.admin.dashboard');
+    Route::get('/tenants', \App\Livewire\AdminApp\Tenants::class)->name('app.admin.tenants');
+    Route::get('/properties', \App\Livewire\AdminApp\Properties::class)->name('app.admin.properties');
+    Route::get('/invoices', \App\Livewire\AdminApp\Invoices::class)->name('app.admin.invoices');
+    Route::get('/payments', \App\Livewire\AdminApp\Payments::class)->name('app.admin.payments');
+    Route::get('/bills', \App\Livewire\AdminApp\Bills::class)->name('app.admin.bills');
+    Route::get('/issues', \App\Livewire\AdminApp\Issues::class)->name('app.admin.issues');
+    Route::get('/notices', \App\Livewire\AdminApp\Notices::class)->name('app.admin.notices');
+    Route::get('/reports', \App\Livewire\AdminApp\Reports::class)->name('app.admin.reports');
+    Route::get('/users', \App\Livewire\AdminApp\Users::class)->name('app.admin.users');
+    Route::get('/chat', fn () => view('admin-app.chat'))->name('app.admin.chat');
+    Route::get('/settings', \App\Livewire\AdminApp\Settings::class)->name('app.admin.settings');
+    Route::get('/profile', \App\Livewire\Profile::class)->name('app.admin.profile');
+});
+
+Route::middleware(['auth', \App\Http\Middleware\EnsureSuperadminRole::class])->prefix('app/superadmin')->group(function () {
+    Route::get('/dashboard', \App\Livewire\SuperadminApp\Dashboard::class)->name('app.superadmin.dashboard');
+    Route::get('/landlords', \App\Livewire\SuperadminApp\Landlords::class)->name('app.superadmin.landlords');
+    Route::get('/packages', \App\Livewire\SuperadminApp\Packages::class)->name('app.superadmin.packages');
+    Route::get('/subscriptions', \App\Livewire\SuperadminApp\Subscriptions::class)->name('app.superadmin.subscriptions');
+    Route::get('/settings', \App\Livewire\SuperadminApp\PlatformSettings::class)->name('app.superadmin.settings');
+    Route::get('/profile', \App\Livewire\Profile::class)->name('app.superadmin.profile');
+});
+
 
