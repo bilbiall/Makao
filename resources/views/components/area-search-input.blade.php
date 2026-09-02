@@ -42,21 +42,33 @@
         // Collapsed to just city names (no areas listed) until the visitor
         // actually types something - 100+ areas in one list is overwhelming;
         // typing a city or area name is what expands it.
+        //
+        // Matches word-by-word, not one contiguous substring - "Nairobi Kahawa"
+        // or "Kahawa Nairobi" (any order, either word alone or both) all find
+        // "Kahawa Sukari" in Nairobi, because each area is matched against
+        // "<area name> <its city>" together, not the area name in isolation.
+        // A single-substring match (the old behaviour) breaks the moment
+        // someone qualifies the area with its city or types more than one word.
         get filtered() {
-            const q = this.query.trim().toLowerCase();
-            if (!q) {
+            const tokens = this.query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+            if (tokens.length === 0) {
                 return this.groups.map((g) => ({ city: g.city, count: g.count, areas: [] }));
             }
+            const matchesAll = (text) => tokens.every((t) => text.includes(t));
             return this.groups
                 .map((g) => {
-                    const cityMatches = g.city.toLowerCase().includes(q);
+                    const cityLower = g.city.toLowerCase();
+                    const cityMatches = matchesAll(cityLower);
                     return {
                         city: g.city,
                         count: g.count,
-                        areas: cityMatches ? g.areas : g.areas.filter((a) => a.name.toLowerCase().includes(q)),
+                        cityMatches,
+                        areas: cityMatches
+                            ? g.areas
+                            : g.areas.filter((a) => matchesAll(a.name.toLowerCase() + ' ' + cityLower)),
                     };
                 })
-                .filter((g) => g.areas.length > 0 || g.city.toLowerCase().includes(q));
+                .filter((g) => g.cityMatches || g.areas.length > 0);
         },
         select(value) {
             this.query = value;
@@ -79,11 +91,14 @@
     >
 
     <div
-        x-show="open && filtered.length > 0"
+        x-show="open && (filtered.length > 0 || query.trim().length > 0)"
         x-cloak
         x-transition.opacity.duration.100ms
         class="absolute z-40 mt-1 max-h-72 w-full overflow-y-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-800"
     >
+        <div x-show="filtered.length === 0" class="px-3 py-2 text-xs text-slate-400 dark:text-slate-500">
+            No matching city or area yet - that's fine, you can still use exactly what you've typed.
+        </div>
         <template x-for="group in filtered" :key="group.city">
             <div>
                 <button
