@@ -39,12 +39,13 @@ class PropertyListingController extends Controller
         $houses = $query->orderBy('rent_amount')->paginate(12)->withQueryString();
 
         $cities = City::breakdown();
+        $counts = House::availabilityCountsByArea('long_term');
 
         $watchlistedIds = Auth::check() && Auth::user()->isUser()
             ? Auth::user()->watchlist()->pluck('houses.id')->all()
             : [];
 
-        return view('listings.index', compact('houses', 'cities', 'watchlistedIds'));
+        return view('listings.index', compact('houses', 'cities', 'counts', 'watchlistedIds'));
     }
 
     public function show(House $house)

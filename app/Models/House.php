@@ -117,6 +117,26 @@ class House extends Model
     }
 
     /**
+     * Live "N available" counts per canonical Area, for the location-search
+     * dropdown's pulsing badges - $mode is 'long_term' (publiclyVisible) or
+     * 'short_term' (bnbVisible). Only ever reflects houses linked to a master
+     * Area record (whereHas('location.area')) - a location with a custom,
+     * un-seeded geo_id simply has no badge anywhere, which is correct since the
+     * dropdown itself only ever suggests seeded areas.
+     */
+    public static function availabilityCountsByArea(string $mode): array
+    {
+        $query = $mode === 'short_term' ? static::bnbVisible() : static::publiclyVisible();
+
+        return $query->whereHas('location.area')
+            ->with('location.area:id,name')
+            ->get()
+            ->groupBy(fn (House $house) => $house->location->area->name)
+            ->map->count()
+            ->all();
+    }
+
+    /**
      * Public discovery visibility is mostly derived (Vacant, minimum listing info
      * filled in, disappears for free via the same house_status flips
      * Tenant::booted() already does on admission/vacate) but gated on top by

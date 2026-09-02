@@ -36,8 +36,9 @@ class StayListingController extends Controller
         $houses = $query->paginate(12)->withQueryString();
 
         $cities = City::breakdown();
+        $counts = House::availabilityCountsByArea('short_term');
 
-        return view('stays.index', compact('houses', 'cities'));
+        return view('stays.index', compact('houses', 'cities', 'counts'));
     }
 
     public function show(House $house)

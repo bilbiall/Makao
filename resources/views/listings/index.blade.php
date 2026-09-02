@@ -4,7 +4,7 @@
             <div class="mx-auto max-w-6xl px-4 py-3 sm:px-6">
                 <form method="GET" class="grid gap-2 sm:grid-cols-3 lg:grid-cols-[1fr_1fr_1fr_auto] lg:items-center">
                     @php $fieldClass = 'w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition-colors focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100'; @endphp
-                    <x-area-search-input :cities="$cities" :value="request('area')" :input-class="$fieldClass" />
+                    <x-area-search-input :cities="$cities" :counts="$counts" :value="request('area')" :input-class="$fieldClass" />
                     <select name="house_type" class="{{ $fieldClass }}" onchange="this.form.submit()">
                         <option value="">Any type</option>
                         @foreach (['Bedsitter', 'Single Room', '1 Bedroom', '2 Bedroom', '3 Bedroom'] as $type)

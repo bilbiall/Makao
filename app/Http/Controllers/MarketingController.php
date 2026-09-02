@@ -29,8 +29,15 @@ class MarketingController extends Controller
             ->shuffle();
 
         $cities = City::breakdown();
+        $longTermCounts = House::availabilityCountsByArea('long_term');
+        $shortTermCounts = House::availabilityCountsByArea('short_term');
 
-        return view('marketing.home', ['featured' => $featured, 'cities' => $cities]);
+        return view('marketing.home', [
+            'featured' => $featured,
+            'cities' => $cities,
+            'longTermCounts' => $longTermCounts,
+            'shortTermCounts' => $shortTermCounts,
+        ]);
     }
 
     public function forLandlords()

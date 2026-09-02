@@ -13,7 +13,7 @@
             </p>
 
             <div class="mt-8 sm:mt-12">
-                <x-marketing.search-widget :cities="$cities" />
+                <x-marketing.search-widget :cities="$cities" :long-term-counts="$longTermCounts" :short-term-counts="$shortTermCounts" />
             </div>
         </div>
     </section>
