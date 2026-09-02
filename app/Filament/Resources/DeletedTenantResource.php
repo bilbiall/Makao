@@ -207,12 +207,9 @@ class DeletedTenantResource extends Resource
         $query = parent::getEloquentQuery();
         $user = auth()->user();
 
-        // Caretakers can only see deleted tenants from their assigned location
-        if ($user && $user->role === 'caretaker' && $user->location_id) {
-            // Note: The house_id is stored in house_name or we need location_id in DeletedTenant
-            // For now, we filter by location_id if it exists in the model
-            $query->where('location_id', $user->location_id);
-        }
+        // Manager/Caretaker are narrowed to their assigned properties (staff_assignments pivot).
+        // DeletedTenant carries a direct location_id column (archived at deletion time).
+        $query = \App\Support\StaffScope::onHouse($query);
 
         return $query;
     }

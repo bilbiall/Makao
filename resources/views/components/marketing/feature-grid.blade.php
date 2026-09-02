@@ -7,7 +7,7 @@ $features = [
     ['icon' => 'heroicon-o-wrench-screwdriver', 'title' => 'Maintenance tracking', 'body' => 'Tenants report issues; you track them to resolution from one queue.'],
     ['icon' => 'heroicon-o-document-text', 'title' => 'Notice-to-vacate workflow', 'body' => 'A structured move-out process with dates, reasons, and approvals.'],
     ['icon' => 'heroicon-o-clipboard-document-list', 'title' => 'Activity audit log', 'body' => 'Every action is logged and reviewable - who created a tenant, who recorded a payment.'],
-    ['icon' => 'heroicon-o-chat-bubble-oval-left-ellipsis', 'title' => 'Tenant-landlord chat', 'body' => 'Built-in messaging tied to a house or an issue thread, so conversations do not get lost.'],
+    ['icon' => 'heroicon-o-chat-bubble-oval-left-ellipsis', 'title' => 'Tenant-owner chat', 'body' => 'Built-in messaging tied to a house or an issue thread, so conversations do not get lost.'],
 ];
 @endphp
 

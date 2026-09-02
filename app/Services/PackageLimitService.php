@@ -39,6 +39,9 @@ class PackageLimitService
             'locations' => $landlord->locations()->count(),
             'houses' => $landlord->houses()->count(),
             'tenants' => $landlord->tenants()->count(),
+            // Staff seats - the landlord's own account and its tenants are never
+            // counted, only provisioned staff.
+            'users' => $landlord->users()->whereIn('role', ['admin', 'manager', 'caretaker', 'agent'])->count(),
             default => 0,
         };
 

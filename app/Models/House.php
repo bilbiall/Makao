@@ -13,6 +13,22 @@ class House extends Model
     //
     use HasFactory, BelongsToLandlord;
 
+    // Canonical unit-type options offered wherever a unit's type is picked from a
+    // dropdown (Units::addUnit(), its search filter) - keeps the value free-text in
+    // the column (house_type) but consistent enough to filter/search on reliably.
+    public const UNIT_TYPES = [
+        'Single Room',
+        'Bedsitter',
+        'Studio',
+        '1 Bedroom',
+        '2 Bedroom',
+        '3 Bedroom',
+        '4 Bedroom',
+        'Maisonette',
+        'Townhouse',
+        'Own Compound',
+    ];
+
     protected $fillable = [
         'house_name',
         //'number_of_rooms',
@@ -21,7 +37,20 @@ class House extends Model
         'house_type',
         'house_status',
         'landlord_id',
+        'description',
+        'size_label',
+        'listing_mode',
+        'amenities',
+        'is_published',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'amenities' => 'array',
+            'is_published' => 'boolean',
+        ];
+    }
 
     //relationship with the location model
     public function location()
@@ -33,6 +62,70 @@ class House extends Model
     public function tenant()
     {
         return $this->hasOne(Tenant::class);
+    }
+
+    public function photos()
+    {
+        return $this->hasMany(HousePhoto::class)->orderBy('sort_order');
+    }
+
+    // BnB pricing tiers (Nightly/Weekly/Monthly, etc). Only meaningful when
+    // listing_mode is 'short_term' - the actual booking/reservation engine that
+    // consumes these prices is Phase 2, not implemented yet.
+    public function pricePackages()
+    {
+        return $this->hasMany(HousePricePackage::class)->orderBy('sort_order');
+    }
+
+    public function isShortTerm(): bool
+    {
+        return $this->listing_mode === 'short_term';
+    }
+
+    public function watchlistedBy()
+    {
+        return $this->belongsToMany(User::class, 'house_user_watchlist')->withTimestamps();
+    }
+
+    public function viewingRequests()
+    {
+        return $this->hasMany(ViewingRequest::class);
+    }
+
+    public function bookings()
+    {
+        return $this->hasMany(Booking::class);
+    }
+
+    /**
+     * Public discovery visibility is mostly derived (Vacant, minimum listing info
+     * filled in, disappears for free via the same house_status flips
+     * Tenant::booted() already does on admission/vacate) but gated on top by
+     * is_published - the owner's manual on/off switch. Turning a unit off hides it
+     * from every public surface (home page, /houses or /stays search, "all units")
+     * without touching occupancy/tenancy; turning it back on makes it searchable
+     * again immediately, same as any other eligible unit.
+     */
+    public function scopePubliclyVisible($query)
+    {
+        return $query->where('house_status', 'Vacant')
+            ->where('listing_mode', 'long_term')
+            ->where('is_published', true)
+            ->whereNotNull('rent_amount')
+            ->whereHas('photos')
+            ->whereHas('location.landlord', fn ($q) => $q->where('status', '!=', 'suspended'));
+    }
+
+    /**
+     * Short-stay (BnB) equivalent of scopePubliclyVisible() - a short_term house needs
+     * no vacancy check (occupancy lives in the bookings calendar, not house_status).
+     */
+    public function scopeBnbVisible($query)
+    {
+        return $query->where('listing_mode', 'short_term')
+            ->where('is_published', true)
+            ->whereHas('photos')
+            ->whereHas('location.landlord', fn ($q) => $q->where('status', '!=', 'suspended'));
     }
 
     protected static function booted()

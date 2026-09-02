@@ -3,7 +3,7 @@
 namespace App\Livewire\AdminApp;
 
 use App\Models\Invoice;
-use App\Support\CaretakerScope;
+use App\Support\StaffScope;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -20,7 +20,7 @@ class Invoices extends Component
 
     public function render()
     {
-        $query = CaretakerScope::onTenantChild(Invoice::query())->with('tenant')->latest();
+        $query = StaffScope::onTenantChild(Invoice::query())->with('tenant')->latest();
 
         if ($this->statusFilter) {
             $query->where('status', $this->statusFilter);

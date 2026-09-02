@@ -3,7 +3,7 @@
 namespace App\Livewire\AdminApp;
 
 use App\Models\Issue;
-use App\Support\CaretakerScope;
+use App\Support\StaffScope;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -13,14 +13,14 @@ class Issues extends Component
 
     public function updateStatus($issueId, $status): void
     {
-        $issue = CaretakerScope::onTenantChild(Issue::query())->findOrFail($issueId);
+        $issue = StaffScope::onTenantChild(Issue::query())->findOrFail($issueId);
         $issue->status = $status;
         $issue->save();
     }
 
     public function render()
     {
-        $issues = CaretakerScope::onTenantChild(Issue::query())
+        $issues = StaffScope::onTenantChild(Issue::query())
             ->with('tenant')
             ->latest()
             ->paginate(10);

@@ -57,8 +57,9 @@ class PackageResource extends Resource
                         Forms\Components\TextInput::make('max_locations')->numeric()->label('Max Locations'),
                         Forms\Components\TextInput::make('max_houses')->numeric()->label('Max Houses/Units'),
                         Forms\Components\TextInput::make('max_tenants')->numeric()->label('Max Tenants'),
+                        Forms\Components\TextInput::make('max_users')->numeric()->label('Max Staff Seats'),
                     ])
-                    ->columns(3),
+                    ->columns(4),
 
                 Forms\Components\Section::make('Features')
                     ->schema([
@@ -88,6 +89,7 @@ class PackageResource extends Resource
                 Tables\Columns\TextColumn::make('max_locations')->label('Locations')->default('Unlimited'),
                 Tables\Columns\TextColumn::make('max_houses')->label('Houses')->default('Unlimited'),
                 Tables\Columns\TextColumn::make('max_tenants')->label('Tenants')->default('Unlimited'),
+                Tables\Columns\TextColumn::make('max_users')->label('Staff')->default('Unlimited'),
                 Tables\Columns\TextColumn::make('subscriptions_count')->counts('subscriptions')->label('Landlords'),
                 Tables\Columns\IconColumn::make('is_active')->boolean(),
                 Tables\Columns\TextColumn::make('sort_order')->sortable(),

@@ -19,6 +19,8 @@ class Message extends Model
         'body',
         'read_at',
         'landlord_id',
+        'attachment_type',
+        'attachment_id',
     ];
 
     protected $casts = [
@@ -54,6 +56,12 @@ class Message extends Model
     public function issue()
     {
         return $this->belongsTo(Issue::class);
+    }
+
+    /** The invoice/payment/notice-to-vacate this message references, if any. */
+    public function attachment()
+    {
+        return $this->morphTo();
     }
 
     public function parent()

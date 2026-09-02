@@ -14,10 +14,19 @@ class EmailHelper
      */
     public static function send(string $to, string $subject, string $body, ?int $landlordId = null): void
     {
-        $settings = Setting::forLandlord($landlordId ?? CurrentLandlord::id());
-        $payload = $settings->payload ?? [];
-
-        $smtp = $payload['smtp'] ?? [];
+        // Falls back to the platform-wide SMTP account (Platform Settings > Email) when
+        // this landlord hasn't set their own - a Gmail App Password works fine there,
+        // so a business without its own mail server still gets working email.
+        $resolvedLandlordId = $landlordId ?? CurrentLandlord::id();
+        $smtp = [
+            'host' => Setting::effective($resolvedLandlordId, 'smtp.host'),
+            'port' => Setting::effective($resolvedLandlordId, 'smtp.port'),
+            'encryption' => Setting::effective($resolvedLandlordId, 'smtp.encryption'),
+            'username' => Setting::effective($resolvedLandlordId, 'smtp.username'),
+            'password' => Setting::effective($resolvedLandlordId, 'smtp.password'),
+            'from_email' => Setting::effective($resolvedLandlordId, 'smtp.from_email'),
+            'from_name' => Setting::effective($resolvedLandlordId, 'smtp.from_name'),
+        ];
 
         // Laravel 12's MailManager::createSmtpTransport() does NOT read an "encryption"
         // key at all - it only reads "scheme" (smtp|smtps) and "auto_tls". The old code

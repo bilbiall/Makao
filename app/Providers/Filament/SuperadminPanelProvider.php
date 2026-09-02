@@ -6,10 +6,10 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\MenuItem;
 use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
-use Filament\Support\Colors\Color;
 use Filament\Widgets;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -36,7 +36,7 @@ class SuperadminPanelProvider extends PanelProvider
             ->databaseNotificationsPolling('10s')
             ->login()
             ->colors([
-                'primary' => Color::Emerald,
+                'primary' => \App\Support\BrandPalette::filamentColor(),
             ])
             ->discoverResources(in: app_path('Filament/Superadmin/Resources'), for: 'App\\Filament\\Superadmin\\Resources')
             ->discoverPages(in: app_path('Filament/Superadmin/Pages'), for: 'App\\Filament\\Superadmin\\Pages')
@@ -45,6 +45,12 @@ class SuperadminPanelProvider extends PanelProvider
             ])
             ->widgets([
                 Widgets\AccountWidget::class,
+            ])
+            ->userMenuItems([
+                MenuItem::make()
+                    ->label('Back to App')
+                    ->url(fn () => route('app.superadmin.dashboard'))
+                    ->icon('heroicon-o-device-phone-mobile'),
             ])
             ->middleware([
                 EncryptCookies::class,

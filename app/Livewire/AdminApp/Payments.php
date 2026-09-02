@@ -5,7 +5,7 @@ namespace App\Livewire\AdminApp;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Tenant;
-use App\Support\CaretakerScope;
+use App\Support\StaffScope;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -69,12 +69,12 @@ class Payments extends Component
 
     public function render()
     {
-        $payments = CaretakerScope::onTenantChild(Payment::query())
+        $payments = StaffScope::onTenantChild(Payment::query())
             ->with(['tenant', 'invoice'])
             ->latest()
             ->paginate(10);
 
-        $tenants = CaretakerScope::onTenant(Tenant::query())->orderBy('tenant_name')->get();
+        $tenants = StaffScope::onTenant(Tenant::query())->orderBy('tenant_name')->get();
 
         $invoiceOptions = collect();
         if ($this->tenant_id) {

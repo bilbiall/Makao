@@ -5,7 +5,12 @@ namespace App\Providers;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Auth\Events\Login;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use App\Helpers\ActivityLogger;
+use App\Models\Bill;
+use App\Models\Invoice;
+use App\Models\NoticeToVacate;
+use App\Models\Payment;
 use App\Models\Tenant;
 use App\Observers\TenantObserver;
 use Livewire\Livewire;
@@ -28,6 +33,15 @@ class AppServiceProvider extends ServiceProvider
     {
         // Register Tenant observer
         Tenant::observe(TenantObserver::class);
+
+        // Short, stable keys for Message::attachment_type - decouples the stored value
+        // from the model's namespace/class name (see the messages.attachment_* columns).
+        Relation::morphMap([
+            'invoice' => Invoice::class,
+            'bill' => Bill::class,
+            'payment' => Payment::class,
+            'notice' => NoticeToVacate::class,
+        ]);
 
         // Register Livewire chat-panel component alias (ensures discovery on some setups)
         try {

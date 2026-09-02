@@ -64,14 +64,23 @@ class ManageLandlordSettings extends Page implements HasForms
             ->statePath('data')
             ->schema([
                 Forms\Components\Tabs::make('Settings')
-                    ->tabs(static::landlordSettingsTabs()),
+                    ->tabs(static::landlordSettingsTabs($this->record->id)),
             ]);
     }
 
     public function save(): void
     {
         $settings = Setting::forLandlord($this->record->id);
-        $settings->payload = $this->form->getState();
+        $payload = $settings->payload ?? [];
+        $incoming = $this->form->getState();
+
+        // Superadmin is the one fulfilling a landlord's automatic-payment request -
+        // setting it live here is what clears their pending request banner.
+        if (($incoming['payment_mode'] ?? null) === 'automatic') {
+            $payload['payment_gateway_request']['status'] = 'fulfilled';
+        }
+
+        $settings->payload = array_replace_recursive($payload, $incoming);
         $settings->save();
 
         Notification::make()

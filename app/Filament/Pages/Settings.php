@@ -77,9 +77,29 @@ class Settings extends Page implements HasForms
     public function save(): void
     {
         $settings = Setting::forLandlord(auth()->user()->landlord_id);
+        $payload = $settings->payload ?? [];
+        $incoming = $this->form->getState();
 
-        // Store all form data inside the 'payload' JSON column
-        $settings->payload = $this->form->getState();
+        // Hidden fields aren't proof against a tampered request - a 'landlord' can't
+        // touch admin-only settings server-side either, matching what
+        // HasLandlordSettingsSchema hides from them (see its ->visible() calls).
+        $isAdminRole = in_array(auth()->user()->role, ['admin', 'superadmin'], true);
+        if (!$isAdminRole) {
+            foreach (['app_name', 'sms_url', 'sms_api_key', 'sms_partner_id', 'sms_sender_id', 'smtp', 'mpesa', 'pesapal'] as $lockedKey) {
+                unset($incoming[$lockedKey]);
+            }
+            if (!$settings->hasPaymentGatewayCredentials()) {
+                unset($incoming['payment_mode']);
+            }
+        }
+
+        $payload = array_replace_recursive($payload, $incoming);
+
+        if ($isAdminRole && ($incoming['payment_mode'] ?? null) === 'automatic') {
+            $payload['payment_gateway_request']['status'] = 'fulfilled';
+        }
+
+        $settings->payload = $payload;
         $settings->save();
 
         Notification::make()

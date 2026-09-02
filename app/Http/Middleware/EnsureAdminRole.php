@@ -16,13 +16,16 @@ class EnsureAdminRole
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (Auth::check() && in_array(Auth::user()->role, ['admin', 'caretaker', 'landlord'])) {
+        if (Auth::check() && in_array(Auth::user()->role, ['admin', 'manager', 'caretaker', 'agent', 'landlord'])) {
             return $next($request);
         }
 
-        // Redirect tenant to tenant panel
+        // A tenant landing on an admin app-shell route (e.g. a stale bookmark) goes to
+        // their own app-shell dashboard, not straight into Filament - the app-shell is
+        // the default landing spot for every role; Filament is only reached via the
+        // deliberate "Advanced view" link.
         if (Auth::check() && Auth::user()->role === 'tenant') {
-            return redirect()->route('filament.tenant.pages.tenant-dashboard');
+            return redirect()->route('app.tenant.dashboard');
         }
 
         abort(403, 'Unauthorized');

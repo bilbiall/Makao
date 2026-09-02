@@ -1,6 +1,6 @@
 <div class="space-y-4">
     @if (session('payment-recorded'))
-        <div class="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-700">
+        <div class="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-700 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-400">
             {{ session('payment-recorded') }}
         </div>
     @endif
@@ -10,35 +10,35 @@
     </button>
 
     @if ($showForm)
-        <div class="rounded-2xl bg-white border border-slate-200 shadow-sm p-4 space-y-3">
+        <div class="rounded-2xl bg-white border border-slate-200 shadow-sm p-4 space-y-3 dark:bg-slate-900 dark:border-slate-800">
             <div>
-                <label class="text-xs font-medium text-slate-600">Tenant</label>
-                <select wire:model.live="tenant_id" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Tenant</label>
+                <select wire:model.live="tenant_id" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
                     <option value="">Select tenant</option>
                     @foreach ($tenants as $tenant)
                         <option value="{{ $tenant->id }}">{{ $tenant->tenant_name }}</option>
                     @endforeach
                 </select>
-                @error('tenant_id') <p class="text-xs text-rose-600 mt-1">{{ $message }}</p> @enderror
+                @error('tenant_id') <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p> @enderror
             </div>
             <div>
-                <label class="text-xs font-medium text-slate-600">Invoice</label>
-                <select wire:model="invoice_id" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Invoice</label>
+                <select wire:model="invoice_id" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
                     <option value="">Select invoice</option>
                     @foreach ($invoiceOptions as $invoice)
                         <option value="{{ $invoice->id }}">{{ $invoice->invoice_number }} - Balance KES {{ number_format($invoice->balance) }}</option>
                     @endforeach
                 </select>
-                @error('invoice_id') <p class="text-xs text-rose-600 mt-1">{{ $message }}</p> @enderror
+                @error('invoice_id') <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p> @enderror
             </div>
             <div>
-                <label class="text-xs font-medium text-slate-600">Amount paid (KES)</label>
-                <input type="number" wire:model="amount_paid" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                @error('amount_paid') <p class="text-xs text-rose-600 mt-1">{{ $message }}</p> @enderror
+                <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Amount paid (KES)</label>
+                <input type="number" wire:model="amount_paid" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+                @error('amount_paid') <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p> @enderror
             </div>
             <div>
-                <label class="text-xs font-medium text-slate-600">Payment method</label>
-                <select wire:model="payment_method" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Payment method</label>
+                <select wire:model="payment_method" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
                     <option value="cash">Cash</option>
                     <option value="bank">Bank transfer</option>
                     <option value="mpesa">M-Pesa (manual entry)</option>
@@ -46,16 +46,16 @@
                 </select>
             </div>
             <div>
-                <label class="text-xs font-medium text-slate-600">Reference</label>
-                <input type="text" wire:model="payment_reference" placeholder="e.g. till slip number, M-Pesa code" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                @error('payment_reference') <p class="text-xs text-rose-600 mt-1">{{ $message }}</p> @enderror
+                <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Reference</label>
+                <input type="text" wire:model="payment_reference" placeholder="e.g. till slip number, M-Pesa code" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+                @error('payment_reference') <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p> @enderror
             </div>
             <div>
-                <label class="text-xs font-medium text-slate-600">Payment date</label>
-                <input type="date" wire:model="payment_date" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Payment date</label>
+                <input type="date" wire:model="payment_date" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
             </div>
             <div class="flex gap-3">
-                <button wire:click="$set('showForm', false)" class="flex-1 rounded-lg border border-slate-300 py-2.5 text-sm font-medium text-slate-700">Cancel</button>
+                <button wire:click="$set('showForm', false)" class="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300">Cancel</button>
                 <button wire:click="record" class="flex-1 rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">Save payment</button>
             </div>
         </div>
@@ -63,18 +63,18 @@
 
     <div class="space-y-3">
         @forelse ($payments as $payment)
-            <div class="rounded-2xl bg-white border border-slate-200 shadow-sm p-4 flex items-center justify-between">
+            <div class="rounded-2xl bg-white border border-slate-200 shadow-sm p-4 flex items-center justify-between dark:bg-slate-900 dark:border-slate-800">
                 <div>
-                    <p class="font-semibold text-slate-900">{{ $payment->tenant?->tenant_name ?? 'Unknown' }}</p>
-                    <p class="text-xs text-slate-500 mt-0.5">
+                    <p class="font-semibold text-slate-900 dark:text-slate-100">{{ $payment->tenant?->tenant_name ?? 'Unknown' }}</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                         {{ $payment->invoice?->invoice_number }} &middot;
                         {{ \Carbon\Carbon::parse($payment->payment_date ?? $payment->created_at)->format('d M Y') }}
                     </p>
                 </div>
-                <p class="font-semibold text-emerald-700">KES {{ number_format($payment->amount_paid) }}</p>
+                <p class="font-semibold text-emerald-700 dark:text-emerald-400">KES {{ number_format($payment->amount_paid) }}</p>
             </div>
         @empty
-            <div class="rounded-2xl bg-white border border-slate-200 p-8 text-center text-sm text-slate-500">
+            <div class="rounded-2xl bg-white border border-slate-200 p-8 text-center text-sm text-slate-500 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400">
                 No payments recorded yet.
             </div>
         @endforelse

@@ -6,7 +6,7 @@ use App\Helpers\SmsHelper;
 use App\Models\House;
 use App\Models\Tenant;
 use App\Models\User;
-use App\Support\CaretakerScope;
+use App\Support\StaffScope;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Livewire\Component;
@@ -22,6 +22,9 @@ class Tenants extends Component
     public string $phone_number = '';
     public $house_id = '';
     public string $date_admitted = '';
+
+    // Tenant history/payments popup - which tenant's card is open, if any.
+    public ?int $selectedTenantId = null;
 
     public function mount(): void
     {
@@ -79,14 +82,41 @@ class Tenants extends Component
         session()->flash('tenant-admitted', 'Tenant admitted successfully.');
     }
 
+    public function viewTenant(int $tenantId): void
+    {
+        $this->selectedTenantId = $tenantId;
+    }
+
+    public function closeTenantModal(): void
+    {
+        $this->selectedTenantId = null;
+    }
+
+    public function getSelectedTenantProperty(): ?Tenant
+    {
+        if (!$this->selectedTenantId) {
+            return null;
+        }
+
+        // Re-scoped the same way as the list below - a crafted selectedTenantId
+        // must not leak a tenant outside this staff member's assigned properties.
+        return StaffScope::onTenant(Tenant::query())
+            ->with([
+                'house',
+                'invoices' => fn ($q) => $q->latest('invoice_date')->limit(15),
+                'payments' => fn ($q) => $q->latest('payment_date')->limit(15),
+            ])
+            ->find($this->selectedTenantId);
+    }
+
     public function render()
     {
-        $tenants = CaretakerScope::onTenant(Tenant::query())
+        $tenants = StaffScope::onTenant(Tenant::query())
             ->with('house')
             ->latest()
             ->paginate(10);
 
-        $vacantHouses = CaretakerScope::onHouse(House::where('house_status', 'Vacant'))->get();
+        $vacantHouses = StaffScope::onHouse(House::where('house_status', 'Vacant'))->get();
 
         return view('livewire.admin-app.tenants', [
             'tenants' => $tenants,

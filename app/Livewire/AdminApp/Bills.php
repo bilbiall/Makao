@@ -4,7 +4,7 @@ namespace App\Livewire\AdminApp;
 
 use App\Models\Bill;
 use App\Models\Tenant;
-use App\Support\CaretakerScope;
+use App\Support\StaffScope;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -59,12 +59,12 @@ class Bills extends Component
 
     public function render()
     {
-        $bills = CaretakerScope::onTenantChild(Bill::query())
+        $bills = StaffScope::onTenantChild(Bill::query())
             ->with('tenant')
             ->latest('bill_month')
             ->paginate(10);
 
-        $tenants = CaretakerScope::onTenant(Tenant::query())->orderBy('tenant_name')->get();
+        $tenants = StaffScope::onTenant(Tenant::query())->orderBy('tenant_name')->get();
 
         return view('livewire.admin-app.bills', ['bills' => $bills, 'tenants' => $tenants])
             ->layout('components.layouts.app', ['title' => 'Bills']);

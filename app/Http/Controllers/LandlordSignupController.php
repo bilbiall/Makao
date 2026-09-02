@@ -36,6 +36,6 @@ class LandlordSignupController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->route('filament.admin.pages.dashboard');
+        return redirect()->route('app.admin.setup');
     }
 }

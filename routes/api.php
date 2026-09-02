@@ -44,3 +44,11 @@ Route::post('/payments/pesapal/ipn', [PesapalController::class, 'ipn'])
 Route::post('/mpesa/callback', [MpesaController::class, 'callback'])
     ->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class)
     ->name('api.mpesa.callback');
+
+/**
+ * BnB booking M-Pesa callback - entirely separate from the tenant rent-collection
+ * callback above (App\Services\BnbMpesaService, not MpesaService).
+ */
+Route::post('/bookings/mpesa/callback', [\App\Http\Controllers\BookingPaymentController::class, 'callback'])
+    ->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class)
+    ->name('api.bookings.mpesa.callback');

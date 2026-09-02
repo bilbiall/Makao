@@ -3,7 +3,7 @@
 namespace App\Livewire\AdminApp;
 
 use App\Models\NoticeToVacate;
-use App\Support\CaretakerScope;
+use App\Support\StaffScope;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 
@@ -11,7 +11,7 @@ class Notices extends Component
 {
     public function approve($id): void
     {
-        $notice = CaretakerScope::onTenantChild(NoticeToVacate::query())->findOrFail($id);
+        $notice = StaffScope::onTenantChild(NoticeToVacate::query())->findOrFail($id);
         $notice->status = 'approved';
         $notice->approved_at = now();
         $notice->approved_by = Auth::id();
@@ -20,7 +20,7 @@ class Notices extends Component
 
     public function deny($id): void
     {
-        $notice = CaretakerScope::onTenantChild(NoticeToVacate::query())->findOrFail($id);
+        $notice = StaffScope::onTenantChild(NoticeToVacate::query())->findOrFail($id);
         $notice->status = 'denied';
         $notice->denied_at = now();
         $notice->approved_by = Auth::id();
@@ -29,7 +29,7 @@ class Notices extends Component
 
     public function render()
     {
-        $notices = CaretakerScope::onTenantChild(NoticeToVacate::query())
+        $notices = StaffScope::onTenantChild(NoticeToVacate::query())
             ->with('tenant')
             ->latest()
             ->get();

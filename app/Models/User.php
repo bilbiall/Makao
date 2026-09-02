@@ -132,6 +132,47 @@ class User extends Authenticatable
         return $this->role === 'superadmin';
     }
 
+    // A self-registered, landlord-less "looking for a house" account - promoted to
+    // 'tenant' on admission, demoted back to 'user' when a Notice to Vacate completes.
+    public function isUser(): bool
+    {
+        return $this->role === 'user';
+    }
+
+    public function isManager(): bool
+    {
+        return $this->role === 'manager';
+    }
+
+    // Landlord-provisioned, scoped to specific short_term (BnB) houses via staff_assignments.
+    public function isAgent(): bool
+    {
+        return $this->role === 'agent';
+    }
+
+    // Manager/Caretaker property access - see App\Support\StaffScope, which replaces
+    // the old single-column User.location_id caretaker scoping with this pivot so a
+    // staff member can be assigned to more than one property.
+    public function staffAssignments()
+    {
+        return $this->hasMany(StaffAssignment::class);
+    }
+
+    public function assignedLocations()
+    {
+        return $this->belongsToMany(Location::class, 'staff_assignments')->withPivot('role')->withTimestamps();
+    }
+
+    public function watchlist()
+    {
+        return $this->belongsToMany(House::class, 'house_user_watchlist')->withTimestamps();
+    }
+
+    public function viewingRequests()
+    {
+        return $this->hasMany(ViewingRequest::class);
+    }
+
     // The landlord account this user belongs to (null for superadmin accounts).
     public function landlord()
     {

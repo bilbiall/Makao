@@ -6,9 +6,9 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\MenuItem;
 use Filament\Panel;
 use Filament\PanelProvider;
-use Filament\Support\Colors\Color;
 use Filament\Widgets;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -42,7 +42,7 @@ class AdminPanelProvider extends PanelProvider
             ->databaseNotificationsPolling('10s')
             ->login()
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => \App\Support\BrandPalette::filamentColor(),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             // discoverPages already picks up App\Filament\Pages\Dashboard (this project's
@@ -56,6 +56,15 @@ class AdminPanelProvider extends PanelProvider
             ->widgets([
                 Widgets\AccountWidget::class,
                 Widgets\FilamentInfoWidget::class,
+            ])
+            // This panel is deliberately "advanced mode" - the mobile-first app shell
+            // (/app/admin/...) is the default landing spot after login. This link is
+            // the way back for anyone (admin/landlord/manager/caretaker) who came here.
+            ->userMenuItems([
+                MenuItem::make()
+                    ->label('Back to App')
+                    ->url(fn () => route('app.admin.dashboard'))
+                    ->icon('heroicon-o-device-phone-mobile'),
             ])
             ->middleware([
                 EncryptCookies::class,

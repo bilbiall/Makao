@@ -5,7 +5,99 @@
 @source '../**/*.blade.php';
 @source '../**/*.js';
 
+/* Class-driven dark mode (not just prefers-color-scheme) so the toggle in the app
+   shell / marketing nav can force a theme regardless of OS setting - `dark:` utilities
+   apply whenever an ancestor (in practice <html>) carries the `dark` class. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+/* Hero scrim: strong on the left where text sits, fading right - matches the
+   consumer-facing design system (see the Makao Lovable export). */
+@utility hero-scrim {
+    background-image: linear-gradient(
+        to right,
+        rgb(15 23 42 / 0.92) 0%,
+        rgb(15 23 42 / 0.78) 35%,
+        rgb(15 23 42 / 0.45) 65%,
+        rgb(15 23 42 / 0.2) 100%
+    );
+}
+
+@utility no-scrollbar {
+    scrollbar-width: none;
+    &::-webkit-scrollbar {
+        display: none;
+    }
+}
+
+/* Indeterminate sliding fill for the global "something is loading" bar (see
+   components/layouts/app.blade.php) - an inner bar sweeping left-to-right across its
+   wider, clipped parent, since we don't know how long a Livewire request will take. */
+@keyframes loading-bar {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(300%);
+    }
+}
+
+/* Brand palette switch - set platform-wide by the superadmin (Platform Settings >
+   Appearance, see App\Livewire\SuperadminApp\PlatformSettings). Every `emerald-*`
+   utility across the whole app (buttons, badges, links, nav highlights, dark: variants
+   included) compiles to `var(--color-emerald-*)` under Tailwind v4 - so re-pointing
+   those variables at a different curated Tailwind ramp re-skins the entire site with
+   zero changes to any Blade file. "green" is the default and needs no override since
+   it already *is* emerald. Deliberately unlayered (outside any @layer) so this wins
+   over Tailwind's own `@layer theme` definitions regardless of source order.
+   - blue: Tailwind's `blue` ramp.
+   - gold: Tailwind's `amber` ramp.
+   - red: Tailwind's `red` ramp, NOT `rose` - `rose`/`red` are already the app's
+     destructive/error color everywhere (validation messages, delete buttons); using
+     `red` for the brand keeps a visually distinct (more orange-leaning) hue so a
+     primary "Save" button never reads as an error state. */
+:root[data-palette='blue'] {
+    --color-emerald-50: var(--color-blue-50);
+    --color-emerald-100: var(--color-blue-100);
+    --color-emerald-200: var(--color-blue-200);
+    --color-emerald-300: var(--color-blue-300);
+    --color-emerald-400: var(--color-blue-400);
+    --color-emerald-500: var(--color-blue-500);
+    --color-emerald-600: var(--color-blue-600);
+    --color-emerald-700: var(--color-blue-700);
+    --color-emerald-800: var(--color-blue-800);
+    --color-emerald-900: var(--color-blue-900);
+    --color-emerald-950: var(--color-blue-950);
+}
+
+:root[data-palette='gold'] {
+    --color-emerald-50: var(--color-amber-50);
+    --color-emerald-100: var(--color-amber-100);
+    --color-emerald-200: var(--color-amber-200);
+    --color-emerald-300: var(--color-amber-300);
+    --color-emerald-400: var(--color-amber-400);
+    --color-emerald-500: var(--color-amber-500);
+    --color-emerald-600: var(--color-amber-600);
+    --color-emerald-700: var(--color-amber-700);
+    --color-emerald-800: var(--color-amber-800);
+    --color-emerald-900: var(--color-amber-900);
+    --color-emerald-950: var(--color-amber-950);
+}
+
+:root[data-palette='red'] {
+    --color-emerald-50: var(--color-red-50);
+    --color-emerald-100: var(--color-red-100);
+    --color-emerald-200: var(--color-red-200);
+    --color-emerald-300: var(--color-red-300);
+    --color-emerald-400: var(--color-red-400);
+    --color-emerald-500: var(--color-red-500);
+    --color-emerald-600: var(--color-red-600);
+    --color-emerald-700: var(--color-red-700);
+    --color-emerald-800: var(--color-red-800);
+    --color-emerald-900: var(--color-red-900);
+    --color-emerald-950: var(--color-red-950);
 }

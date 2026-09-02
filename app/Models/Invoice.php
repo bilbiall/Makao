@@ -102,6 +102,7 @@ class Invoice extends Model
                 'invoice_number' => $invoice->invoice_number,
                 'amount' => number_format($invoice->amount),
                 'due_date' => \Carbon\Carbon::parse($invoice->due_date)->format('d/m/Y'),
+                'property_name' => $tenant->house?->location?->location_name ?? '',
             ], $invoice->landlord_id);
 
             try {

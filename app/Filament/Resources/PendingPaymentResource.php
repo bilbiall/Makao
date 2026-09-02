@@ -125,10 +125,11 @@ class PendingPaymentResource extends Resource
         $query = parent::getEloquentQuery();
         $user = auth()->user();
 
-        // Caretakers can only see pending payments for tenants in their assigned location
-        if ($user && $user->role === 'caretaker' && $user->location_id) {
-            $query->whereHas('tenant.house', function ($q) use ($user) {
-                $q->where('location_id', $user->location_id);
+        // Manager/Caretaker are narrowed to their assigned properties (staff_assignments pivot).
+        if (\App\Support\StaffScope::isScopedStaff()) {
+            $locationIds = \App\Support\StaffScope::locationIds();
+            $query->whereHas('tenant.house', function ($q) use ($locationIds) {
+                $q->whereIn('location_id', $locationIds);
             });
         }
 

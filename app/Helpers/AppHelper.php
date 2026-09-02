@@ -15,16 +15,18 @@ class AppHelper
     public static function getAppName(?int $landlordId = null): string
     {
         try {
-            $settings = Setting::forLandlord($landlordId ?? CurrentLandlord::id());
-            $payload = $settings->payload ?? [];
-            
-            if (!empty($payload['app_name'])) {
-                return $payload['app_name'];
+            // Falls back to the platform-wide app name (Platform Settings) before the
+            // hardcoded config default, so a landlord who hasn't set their own still
+            // gets a real business name in tenant-facing messages.
+            $appName = Setting::effective($landlordId ?? CurrentLandlord::id(), 'app_name');
+
+            if (filled($appName)) {
+                return $appName;
             }
         } catch (\Throwable $e) {
             // Fallback if settings not available
         }
-        
+
         return config('app.name', 'Renty');
     }
 }

@@ -16,7 +16,15 @@ class Landlord extends Model
         'contact_email',
         'phone_number',
         'status',
+        'onboarded_at',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'onboarded_at' => 'datetime',
+        ];
+    }
 
     public function locations(): HasMany
     {
@@ -53,5 +61,10 @@ class Landlord extends Model
     public function isSuspended(): bool
     {
         return $this->status === 'suspended';
+    }
+
+    public function isOnboarded(): bool
+    {
+        return $this->onboarded_at !== null || $this->locations()->exists();
     }
 }

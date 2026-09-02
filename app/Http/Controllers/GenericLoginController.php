@@ -34,9 +34,13 @@ class GenericLoginController extends Controller
             // Land in the new mobile-first app shell by default, not Filament's admin-
             // panel chrome. The Filament panels are untouched and still fully reachable
             // directly at /admin, /tenant, /superadmin for anyone who navigates there.
-            'admin', 'landlord', 'caretaker' => redirect()->intended(route('app.admin.dashboard')),
+            'admin', 'landlord', 'manager', 'caretaker' => redirect()->intended(route('app.admin.dashboard')),
+            // Agent has no tenant/invoice/payment data to see (Dashboard's stats don't
+            // apply to it - see AdminApp\Dashboard::mount()), so it lands on Bookings directly.
+            'agent' => redirect()->intended(route('app.admin.bookings')),
             'tenant' => redirect()->intended(route('app.tenant.dashboard')),
             'superadmin' => redirect()->intended(route('app.superadmin.dashboard')),
+            'user' => redirect()->intended(route('app.user.dashboard')),
             default  => abort(403, 'Role not allowed'),
         };
     }

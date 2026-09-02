@@ -15,6 +15,7 @@ class Package extends Model
         'max_locations',
         'max_houses',
         'max_tenants',
+        'max_users',
         'features',
         'trial_days',
         'is_active',
@@ -38,6 +39,7 @@ class Package extends Model
             'locations' => $this->max_locations,
             'houses' => $this->max_houses,
             'tenants' => $this->max_tenants,
+            'users' => $this->max_users,
             default => null,
         };
     }

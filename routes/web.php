@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\MarketingController;
 
 Route::get('/', [MarketingController::class, 'home'])->name('home');
+Route::get('/for-landlords', [MarketingController::class, 'forLandlords'])->name('for-landlords');
 Route::get('/pricing', [MarketingController::class, 'pricing'])->name('pricing');
 Route::get('/privacy', [MarketingController::class, 'privacy'])->name('privacy');
 Route::get('/terms', [MarketingController::class, 'terms'])->name('terms');
@@ -16,11 +17,43 @@ Route::get('/login', fn () => view('generic-login'))->name('generic.login');
 Route::post('/login', \App\Http\Controllers\GenericLoginController::class)
      ->name('generic.login.attempt');
 
+// Registration split - "list and manage properties" (landlord) vs "looking for a
+// house" (user). Browsing listings itself needs no account at all; this is only
+// the fork for the two self-service account types.
+Route::get('/get-started', fn () => view('get-started'))->name('get-started');
+
 // Self-serve landlord signup
 Route::get('/signup', [\App\Http\Controllers\LandlordSignupController::class, 'create'])->name('signup');
 Route::post('/signup', [\App\Http\Controllers\LandlordSignupController::class, 'store'])
     ->name('signup.store')
     ->middleware('throttle:6,1');
+
+// Self-serve "looking for a house" signup
+Route::get('/join', [\App\Http\Controllers\UserSignupController::class, 'create'])->name('user-signup');
+Route::post('/join', [\App\Http\Controllers\UserSignupController::class, 'store'])
+    ->name('user-signup.store')
+    ->middleware('throttle:6,1');
+
+// Public house discovery - no auth required to browse; watchlist/request-viewing
+// redirect to login (with intended() bouncing back here) if not signed in.
+Route::get('/houses', [\App\Http\Controllers\PropertyListingController::class, 'index'])->name('listings.index');
+Route::get('/houses/{house}', [\App\Http\Controllers\PropertyListingController::class, 'show'])->name('listings.show');
+Route::middleware(['auth'])->group(function () {
+    Route::post('/houses/{house}/watchlist', [\App\Http\Controllers\PropertyListingController::class, 'toggleWatchlist'])
+        ->name('listings.watchlist');
+    Route::post('/houses/{house}/request-viewing', [\App\Http\Controllers\PropertyListingController::class, 'requestViewing'])
+        ->name('listings.request-viewing');
+});
+
+// Public short-stay (BnB) discovery + booking - no auth required to browse or book as
+// a guest; an authenticated 'user' account just gets its details autofilled and the
+// booking linked back to it (see BookingController).
+Route::get('/stays', [\App\Http\Controllers\StayListingController::class, 'index'])->name('stays.index');
+Route::get('/stays/{house}', [\App\Http\Controllers\StayListingController::class, 'show'])->name('stays.show');
+Route::post('/stays/{house}/book', [\App\Http\Controllers\BookingController::class, 'store'])->name('bookings.store');
+Route::get('/bookings/{booking}', [\App\Http\Controllers\BookingController::class, 'show'])->name('bookings.show');
+Route::post('/bookings/{booking}/mpesa/initiate', [\App\Http\Controllers\BookingPaymentController::class, 'initiate'])
+    ->name('bookings.mpesa.initiate');
 
 // password reset (email or phone)
 Route::get('/forgot-password', [\App\Http\Controllers\ForgotPasswordController::class, 'showForgotForm'])
@@ -97,16 +130,32 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureAdminRole::class])->prefix
     Route::get('/dashboard', \App\Livewire\AdminApp\Dashboard::class)->name('app.admin.dashboard');
     Route::get('/tenants', \App\Livewire\AdminApp\Tenants::class)->name('app.admin.tenants');
     Route::get('/properties', \App\Livewire\AdminApp\Properties::class)->name('app.admin.properties');
+    Route::get('/units', \App\Livewire\AdminApp\Units::class)->name('app.admin.units');
     Route::get('/invoices', \App\Livewire\AdminApp\Invoices::class)->name('app.admin.invoices');
     Route::get('/payments', \App\Livewire\AdminApp\Payments::class)->name('app.admin.payments');
     Route::get('/bills', \App\Livewire\AdminApp\Bills::class)->name('app.admin.bills');
     Route::get('/issues', \App\Livewire\AdminApp\Issues::class)->name('app.admin.issues');
     Route::get('/notices', \App\Livewire\AdminApp\Notices::class)->name('app.admin.notices');
     Route::get('/reports', \App\Livewire\AdminApp\Reports::class)->name('app.admin.reports');
+    Route::get('/bookings', \App\Livewire\AdminApp\Bookings::class)->name('app.admin.bookings');
     Route::get('/users', \App\Livewire\AdminApp\Users::class)->name('app.admin.users');
     Route::get('/chat', fn () => view('admin-app.chat'))->name('app.admin.chat');
     Route::get('/settings', \App\Livewire\AdminApp\Settings::class)->name('app.admin.settings');
     Route::get('/profile', \App\Livewire\Profile::class)->name('app.admin.profile');
+});
+
+Route::middleware(['auth', \App\Http\Middleware\EnsureUserRole::class])->prefix('app/user')->group(function () {
+    Route::get('/dashboard', \App\Livewire\UserApp\Dashboard::class)->name('app.user.dashboard');
+    Route::get('/watchlist', \App\Livewire\UserApp\Watchlist::class)->name('app.user.watchlist');
+    Route::get('/applications', \App\Livewire\UserApp\Applications::class)->name('app.user.applications');
+    Route::get('/profile', \App\Livewire\Profile::class)->name('app.user.profile');
+});
+
+// One-time guided setup for a brand-new landlord account - creates their first
+// Property (Location) and Unit (House) through a short wizard instead of dropping
+// them straight into an empty dashboard. Skips itself once a landlord has ≥1 Location.
+Route::middleware(['auth', \App\Http\Middleware\EnsureAdminRole::class])->group(function () {
+    Route::get('/app/admin/setup', \App\Livewire\Onboarding\SetupWizard::class)->name('app.admin.setup');
 });
 
 Route::middleware(['auth', \App\Http\Middleware\EnsureSuperadminRole::class])->prefix('app/superadmin')->group(function () {

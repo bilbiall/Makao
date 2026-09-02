@@ -13,12 +13,14 @@ class Invoices extends Component
     use WithPagination;
 
     public $paymentModeIsAutomatic = false;
+    public array $manualPaymentDetails = [];
 
     public function mount(): void
     {
         $landlordId = Auth::user()->landlord_id;
         $payload = Setting::forLandlord($landlordId)->payload ?? [];
         $this->paymentModeIsAutomatic = ($payload['payment_mode'] ?? 'manual') === 'automatic';
+        $this->manualPaymentDetails = array_filter($payload['manual_payment'] ?? []);
     }
 
     public function render()

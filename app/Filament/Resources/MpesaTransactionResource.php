@@ -173,12 +173,11 @@ class MpesaTransactionResource extends Resource
         $query = parent::getEloquentQuery();
         $user = auth()->user();
 
-        // Caretakers can only see M-Pesa transactions for invoices in their assigned location
-        if ($user && $user->role === 'caretaker' && $user->location_id) {
-            $query->whereHas('invoice.tenant.house', function ($q) use ($user) {
-                $q->where('location_id', $user->location_id);
-            });
-        }
+        // Manager/Caretaker are narrowed to their assigned properties (staff_assignments pivot).
+        // MpesaTransaction also carries a direct house_id, but the existing invoice.tenant.house
+        // chain is kept so this still matches records whose invoice/tenant link is more reliably
+        // populated than the direct house_id on older rows.
+        $query = \App\Support\StaffScope::onRelation($query, 'invoice.tenant.house');
 
         return $query;
     }

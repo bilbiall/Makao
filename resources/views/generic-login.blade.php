@@ -3,108 +3,71 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Login – Renty</title>
+    <title>Log in - Makao</title>
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700" rel="stylesheet" />
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
-<body class="relative min-h-screen bg-cover bg-center bg-no-repeat"
-      style="background-image: url('{{ asset('images/background.jpg') }}');">
+<body class="min-h-screen bg-stone-50 text-slate-900 antialiased" style="font-family: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;">
 
-    {{-- dark overlay for readability --}}
-    <div class="absolute inset-0 bg-black bg-opacity-50"></div>
+    <div class="flex items-center justify-center min-h-screen px-4 py-12">
+        <div class="w-full max-w-md">
+            <div class="flex items-center justify-center gap-2 mb-8">
+                <span class="grid h-9 w-9 place-items-center rounded-lg bg-emerald-600 text-sm font-bold text-white">M</span>
+                <span class="text-xl font-semibold tracking-tight text-slate-900">Makao</span>
+            </div>
 
-    {{-- login card --}}
-    <div class="relative z-10 flex items-center justify-center min-h-screen px-4">
-        <form action="{{ route('generic.login.attempt') }}" method="POST"
-              class="w-full max-w-md space-y-6 bg-gray-900/70 backdrop-blur-md rounded-2xl p-8
-                     text-gray-200 shadow-2xl ring-1 ring-white/10">
-            @csrf
+            <form action="{{ route('generic.login.attempt') }}" method="POST"
+                  class="space-y-5 bg-white rounded-2xl border border-slate-200 shadow-sm p-8">
+                @csrf
 
-            <div class="text-center space-y-2">
-                <div class="flex items-center justify-center gap-3">
-                    {{-- mini logo --}}
-                    <svg xmlns="http://www.w3.org/2000/svg"
-                         class="w-10 h-10 text-blue-400 drop-shadow" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 3.172 2.929 11.1a1 1 0 0 0 .672 1.758H5v6.5A1.642 1.642 0 0 0 6.643 21h3.857a.5.5 0 0 0 .5-.5V16a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4.5a.5.5 0 0 0 .5.5h3.857A1.642 1.642 0 0 0 19 19.357V12.86h1.4a1 1 0 0 0 .672-1.758L12 3.172Z"/>
-                    </svg>
-                    <span class="text-2xl font-extrabold tracking-wide">Renty</span>
+                <div class="text-center">
+                    <h1 class="text-xl font-semibold text-slate-900">Sign in to your account</h1>
                 </div>
-                <h2 class="text-xl font-semibold">Sign in to your account</h2>
-            </div>
 
-            {{-- email --}}
-            <div>
-                <label class="block text-sm font-medium mb-1">Email</label>
-                <input name="email" type="email" required autofocus
-                       class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-700
-                              focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-gray-400" />
-            </div>
+                @if ($errors->any())
+                    <div class="rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-sm px-4 py-3 text-center">
+                        Invalid credentials
+                    </div>
+                @endif
 
-            {{-- password --}}
-            <!--<div>
-                <label class="block text-sm font-medium mb-1">Password</label>
-                <input name="password" type="password" required
-                       class="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-700
-                              focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-gray-400" />
-            </div>-->
-            <!--passwordwith  eye for lookup-->
-            {{-- password --}}
-<label class="block text-sm font-medium mb-1">Password</label>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                    <input name="email" type="email" required autofocus value="{{ old('email') }}"
+                           class="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" />
+                </div>
 
-<div x-data="{ show: false }" class="relative">
+                <div x-data="{ show: false }">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Password</label>
+                    <div class="relative">
+                        <input :type="show ? 'text' : 'password'" name="password" required
+                               class="w-full rounded-lg border border-slate-300 px-4 py-2.5 pr-11 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" />
+                        <button type="button" @click="show = !show" class="absolute inset-y-0 right-3 flex items-center text-slate-400 hover:text-slate-600">
+                            <svg x-show="!show" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            <svg x-show="show" x-cloak class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.477 0-8.268-2.943-9.542-7a9.967 9.967 0 012.148-3.482M9.88 9.88a3 3 0 104.24 4.24M6.1 6.1l11.8 11.8" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
 
-    {{-- input --}}
-    <input :type="show ? 'text' : 'password'"
-           name="password" required
-           class="peer w-full px-3 py-2 pr-11 rounded-lg bg-gray-800 border border-gray-700
-                  focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-gray-400" />
+                <button type="submit" class="w-full rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 transition">
+                    Log in
+                </button>
 
-    {{-- toggle button --}}
-    <button type="button"
-            @click="show = !show"
-            class="absolute inset-y-0 right-3 flex items-center
-                   text-gray-400 hover:text-gray-200 focus:outline-none">
+                <div class="text-center text-sm">
+                    <a href="{{ route('password.request') }}" class="text-emerald-700 font-medium hover:underline">Forgot your password?</a>
+                </div>
+            </form>
 
-        {{-- eye (closed) --}}
-        <svg x-show="!show" xmlns="http://www.w3.org/2000/svg"
-             class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-        </svg>
-
-        {{-- eye-off (open) --}}
-        <svg x-show="show" xmlns="http://www.w3.org/2000/svg"
-             class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-                  d="M13.875 18.825A10.05 10.05 0 0112 19c-4.477 0-8.268-2.943-9.542-7a9.967 9.967 0 012.148-3.482M9.88 9.88a3 3 0 104.24 4.24M6.1 6.1l11.8 11.8" />
-        </svg>
-    </button>
-</div>
-
-
-            <button type="submit"
-                    class="w-full py-2 rounded-lg font-semibold bg-blue-600 hover:bg-blue-700
-                           transition-colors shadow-md">
-                Login
-            </button>
-
-            <div class="text-center text-sm">
-                <a href="{{ route('password.request') }}" class="text-blue-400 hover:text-blue-200">Forgot your password?</a>
-            </div>
-
-            @if ($errors->any())
-                <p class="text-red-400 text-sm text-center">Invalid credentials</p>
-            @endif
-        </form>
-
-    </div>
-    {{-- centered footer --}}
-    <div class="absolute bottom-6 inset-x-0 text-center">
-        <p class="text-sm text-gray-300 drop-shadow-md">
-            Powered by <span class="text-white font-medium">Vumaa</span> Digital
-        </p>
+            <p class="mt-6 text-center text-sm text-slate-500">
+                New here? <a href="{{ route('get-started') }}" class="text-emerald-700 font-medium hover:underline">Get started</a>
+            </p>
+        </div>
     </div>
 
 </body>

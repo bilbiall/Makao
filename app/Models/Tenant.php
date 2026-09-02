@@ -118,8 +118,8 @@ class Tenant extends Model
 
             // Replace variables
             $message = str_replace(
-                ['{tenant_name}', '{app_name}', '{house_name}', '{rent_amount}'],
-                [$tenant->tenant_name, \App\Helpers\AppHelper::getAppName($tenant->landlord_id), $tenant->house->house_name, $tenant->house->rent_amount],
+                ['{tenant_name}', '{app_name}', '{house_name}', '{rent_amount}', '{property_name}'],
+                [$tenant->tenant_name, \App\Helpers\AppHelper::getAppName($tenant->landlord_id), $tenant->house->house_name, $tenant->house->rent_amount, $tenant->house->location?->location_name ?? ''],
                 $template
             );
 

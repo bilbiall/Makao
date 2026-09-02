@@ -94,6 +94,7 @@ class Payment extends Model
             '{invoice_no}',
             '{balance}',
             '{app_name}',
+            '{property_name}',
         ];
 
         $replacements = [
@@ -105,6 +106,7 @@ class Payment extends Model
             $invoice->invoice_number,
             number_format($invoiceBalance),
             \App\Helpers\AppHelper::getAppName($payment->landlord_id),
+            $tenant->house?->location?->location_name ?? '',
         ];
 
         $message = str_replace($placeholders, $replacements, $template);

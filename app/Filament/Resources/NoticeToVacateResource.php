@@ -139,12 +139,13 @@ class NoticeToVacateResource extends Resource
 
                             $balance = optional($tenant->latestPayment)->balance ?? 0;
                             $message = str_replace(
-                                ['{tenant_name}', '{balance}', '{approval_date}', '{vacate_date}'],
+                                ['{tenant_name}', '{balance}', '{approval_date}', '{vacate_date}', '{property_name}'],
                                 [
                                     $tenant->tenant_name,
                                     number_format($balance, 2),
                                     now()->format('d M Y'),
                                     $record->vacate_date->format('d M Y'),
+                                    $tenant->house?->location?->location_name ?? '',
                                 ],
                                 $template
                             );
@@ -175,8 +176,21 @@ class NoticeToVacateResource extends Resource
                                 // ignore
                             }
 
+                            // Capture the linked User before delete - TenantObserver
+                            // archives the tenancy itself to DeletedTenant, so this is
+                            // only about returning the User to a clean browsing state.
+                            $tenantUserToDemote = $tenant->user;
+
                             // Delete tenant (observer will archive to Vacated/Deleted tenants)
                             $tenant->delete();
+
+                            // Demote User back to a self-registered "looking for a house"
+                            // account now that the tenancy has ended - only if that's how
+                            // they originally registered (never touch admin/landlord/staff
+                            // accounts that happen to also be linked as a tenant record).
+                            if ($tenantUserToDemote && $tenantUserToDemote->role === 'tenant') {
+                                $tenantUserToDemote->update(['role' => 'user', 'landlord_id' => null]);
+                            }
                         }
                     })
                     ->visible(fn (NoticeToVacate $record) => $record->status === 'pending'),
@@ -209,11 +223,12 @@ class NoticeToVacateResource extends Resource
                             );
                             $balance = optional($tenant->latestPayment)->balance ?? 0;
                             $message = str_replace(
-                                ['{tenant_name}', '{balance}', '{vacate_date}'],
+                                ['{tenant_name}', '{balance}', '{vacate_date}', '{property_name}'],
                                 [
                                     $tenant->tenant_name,
                                     number_format($balance, 2),
                                     $record->vacate_date->format('d M Y'),
+                                    $tenant->house?->location?->location_name ?? '',
                                 ],
                                 $template
                             );
@@ -273,10 +288,11 @@ class NoticeToVacateResource extends Resource
         $query = parent::getEloquentQuery();
         $user = auth()->user();
 
-        // Caretakers can only see notices for tenants in their assigned location
-        if ($user && $user->role === 'caretaker' && $user->location_id) {
-            $query->whereHas('tenant.house', function ($q) use ($user) {
-                $q->where('location_id', $user->location_id);
+        // Manager/Caretaker are narrowed to their assigned properties (staff_assignments pivot).
+        if (\App\Support\StaffScope::isScopedStaff()) {
+            $locationIds = \App\Support\StaffScope::locationIds();
+            $query->whereHas('tenant.house', function ($q) use ($locationIds) {
+                $q->whereIn('location_id', $locationIds);
             });
         }
 

@@ -1,44 +1,48 @@
 @php
-    // Only the homepage opens on a full-bleed dark photo (the hero) - there the nav
-    // starts transparent/light-text so the photo shows through behind it, then swaps
-    // to the normal solid bar once the user scrolls past the hero. Every other
-    // marketing page opens on plain light content, so the nav stays solid throughout,
-    // exactly as before.
+    // Only the homepage opens on a full-bleed hero photo - there the nav starts
+    // transparent/light-text so the photo shows through behind it, then swaps to a
+    // solid bar once scrolled. Every other page has no hero to float over, so the
+    // nav stays solid and in-flow (sticky) throughout.
     $floatsOverHero = request()->routeIs('home');
 @endphp
 <header
-    x-data="{ open: false, scrolled: {{ $floatsOverHero ? 'false' : 'true' }} }"
+    x-data="{ scrolled: {{ $floatsOverHero ? 'false' : 'true' }} }"
     @if ($floatsOverHero)
         x-init="scrolled = window.scrollY > 10; window.addEventListener('scroll', () => scrolled = window.scrollY > 10)"
     @endif
-    class="{{ $floatsOverHero ? 'fixed' : 'sticky' }} top-0 inset-x-0 z-50 transition-colors duration-300"
-    :class="scrolled ? 'bg-stone-50/90 backdrop-blur border-b border-slate-200' : 'bg-transparent border-b border-transparent'"
+    @class([
+        'inset-x-0 top-0 z-40 transition-colors duration-300',
+        'fixed' => $floatsOverHero,
+        'sticky' => !$floatsOverHero,
+    ])
+    :class="scrolled ? 'bg-stone-50/90 dark:bg-slate-950/90 backdrop-blur border-b border-slate-200 dark:border-slate-800' : 'bg-transparent border-b border-transparent'"
 >
-    <nav class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-        <a href="{{ url('/') }}" class="text-xl font-bold transition-colors" :class="scrolled ? 'text-slate-900' : 'text-white'">Renty</a>
+    <div class="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-4 py-3 sm:px-6">
+        <a href="{{ route('home') }}" class="flex min-w-0 items-center gap-2">
+            <span class="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-emerald-600 text-sm font-bold text-white">M</span>
+            <span class="truncate text-lg font-semibold tracking-tight transition-colors" :class="scrolled ? 'text-slate-900 dark:text-slate-100' : 'text-white'">Makao</span>
+        </a>
 
-        <div class="hidden md:flex items-center gap-8 text-sm font-medium transition-colors" :class="scrolled ? 'text-slate-600' : 'text-white/90'">
-            <a href="{{ url('/#features') }}" :class="scrolled ? 'hover:text-slate-900' : 'hover:text-white'">Features</a>
-            <a href="{{ route('pricing') }}" :class="scrolled ? 'hover:text-slate-900' : 'hover:text-white'">Pricing</a>
-            <a href="{{ route('generic.login') }}" :class="scrolled ? 'hover:text-slate-900' : 'hover:text-white'">Log in</a>
-        </div>
-
-        <div class="hidden md:block">
-            <a href="{{ route('signup') }}" class="inline-flex items-center rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 transition">
-                Start Free Trial
+        <nav class="flex items-center gap-1 sm:gap-2">
+            <a href="{{ route('listings.index') }}"
+               class="hidden rounded-lg px-3 py-2 text-sm font-medium transition-colors sm:block"
+               :class="scrolled ? '{{ request()->routeIs('listings.*') ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-600 hover:text-emerald-700 dark:text-slate-300 dark:hover:text-emerald-400' }}' : 'text-white/90 hover:text-white'">
+                Rent Long-Term
             </a>
-        </div>
-
-        <button @click="open = !open" class="md:hidden p-2 transition-colors" :class="scrolled ? 'text-slate-700' : 'text-white'" aria-label="Toggle menu">
-            <svg x-show="!open" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-            <svg x-show="open" x-cloak class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-        </button>
-    </nav>
-
-    <div x-show="open" x-cloak x-transition class="md:hidden border-t border-slate-200 bg-stone-50 px-6 py-4 space-y-3 text-sm font-medium text-slate-600">
-        <a href="{{ url('/#features') }}" class="block hover:text-slate-900">Features</a>
-        <a href="{{ route('pricing') }}" class="block hover:text-slate-900">Pricing</a>
-        <a href="{{ route('generic.login') }}" class="block hover:text-slate-900">Log in</a>
-        <a href="{{ route('signup') }}" class="block rounded-lg bg-emerald-600 px-5 py-2.5 text-center font-semibold text-white">Start Free Trial</a>
+            <a href="{{ route('stays.index') }}"
+               class="hidden rounded-lg px-3 py-2 text-sm font-medium transition-colors sm:block"
+               :class="scrolled ? '{{ request()->routeIs('stays.*') || request()->routeIs('bookings.*') ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-600 hover:text-emerald-700 dark:text-slate-300 dark:hover:text-emerald-400' }}' : 'text-white/90 hover:text-white'">
+                Find a BnB
+            </a>
+            <x-theme-toggle class="h-9 w-9 text-slate-400 hover:bg-slate-200/60 dark:text-slate-400 dark:hover:bg-slate-800" />
+            <a href="{{ route('generic.login') }}"
+               class="rounded-lg border px-4 py-2 text-sm font-medium transition-colors"
+               :class="scrolled ? 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800' : 'border-white/40 bg-transparent text-white hover:border-white/70'">
+                Log in
+            </a>
+            <a href="{{ route('get-started') }}" class="hidden rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700 sm:block">
+                Get started
+            </a>
+        </nav>
     </div>
 </header>

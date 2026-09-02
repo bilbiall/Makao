@@ -264,16 +264,9 @@ class TenantResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery();
-        $user = auth()->user();
 
-        // Caretakers can only see tenants in their assigned location
-        if ($user && $user->role === 'caretaker' && $user->location_id) {
-            $query->whereHas('house', function ($q) use ($user) {
-                $q->where('location_id', $user->location_id);
-            });
-        }
-
-        return $query;
+        // Manager/Caretaker are narrowed to their assigned properties (staff_assignments pivot).
+        return \App\Support\StaffScope::onTenant($query);
     }
 
     public static function canCreate(): bool

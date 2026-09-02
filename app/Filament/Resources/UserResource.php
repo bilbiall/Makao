@@ -55,29 +55,70 @@ class UserResource extends Resource
                     ->label('Password'),
 
                 // ✅ Role selection dropdown
-                // Note: 'landlord' and 'superadmin' are deliberately not assignable here -
-                // they're only created via the signup flow / superadmin panel, so staff can't self-escalate.
+                // Note: 'landlord', 'superadmin', and 'user' are deliberately not assignable
+                // here - 'landlord'/'superadmin' are only created via the signup flow /
+                // superadmin panel, and 'user' is self-registered only, so staff can't
+                // self-escalate or manufacture prospective-tenant accounts.
+                // 'admin' is only offered to the landlord (property owner) - a staff
+                // 'admin' account must not be able to mint peer admins. Also kept visible
+                // when editing a record that's already 'admin' so the field doesn't blank
+                // out from under an existing admin-staff editor. Actually enforced
+                // server-side in CreateUser::beforeCreate()/EditUser::beforeSave(), since
+                // hiding the option alone doesn't stop a tampered request.
                 Select::make('role')
                     ->required()
                     ->label('User Role')
-                    ->options([
-                        'admin' => 'Admin',
-                        'caretaker' => 'Caretaker',
-                        'tenant' => 'Tenant',
-                    ])
+                    ->options(function (?\App\Models\User $record) {
+                        $options = [
+                            'manager' => 'Manager',
+                            'caretaker' => 'Caretaker',
+                            'agent' => 'Agent (BnB bookings)',
+                            'tenant' => 'Tenant',
+                        ];
+
+                        if (auth()->user()?->role === 'landlord' || $record?->role === 'admin') {
+                            $options = ['admin' => 'Admin'] + $options;
+                        }
+
+                        return $options;
+                    })
                     ->reactive()
-                    ->afterStateUpdated(fn ($state, callable $set) => 
-                        $state !== 'caretaker' ? $set('location_id', null) : null
-                    )
+                    ->afterStateUpdated(function ($state, callable $set) {
+                        if (!in_array($state, ['manager', 'caretaker'])) {
+                            $set('location_ids', []);
+                        }
+                        if ($state !== 'agent') {
+                            $set('house_ids', []);
+                        }
+                    })
                     ->native(false), // optional: to use searchable dropdown
 
-                // Location selection (only for caretakers)
-                Select::make('location_id')
-                    ->label('Assigned Location')
-                    ->relationship('location', 'location_name')
-                    ->required(fn (callable $get) => $get('role') === 'caretaker')
-                    ->visible(fn (callable $get) => $get('role') === 'caretaker')
-                    ->helperText('Caretaker will only access resources in this location')
+                // Assigned properties (only for manager/caretaker) - writes to the
+                // staff_assignments pivot via CreateUser::afterCreate()/EditUser::afterSave(),
+                // not a direct model attribute, since a staff member can hold more than one.
+                Select::make('location_ids')
+                    ->label('Assigned Properties')
+                    ->multiple()
+                    ->options(fn () => Location::pluck('location_name', 'id'))
+                    ->required(fn (callable $get) => in_array($get('role'), ['manager', 'caretaker']))
+                    ->visible(fn (callable $get) => in_array($get('role'), ['manager', 'caretaker']))
+                    ->helperText('This staff member will only access resources in these properties')
+                    ->dehydrated(false)
+                    ->searchable()
+                    ->preload()
+                    ->native(false),
+
+                // Assigned houses (agent only) - a specific short_term (BnB) unit, not a
+                // whole property. Also writes to staff_assignments, via house_id instead
+                // of location_id.
+                Select::make('house_ids')
+                    ->label('Assigned Houses (short-stay only)')
+                    ->multiple()
+                    ->options(fn () => \App\Models\House::where('listing_mode', 'short_term')->pluck('house_name', 'id'))
+                    ->required(fn (callable $get) => $get('role') === 'agent')
+                    ->visible(fn (callable $get) => $get('role') === 'agent')
+                    ->helperText('This agent will only manage bookings for these houses')
+                    ->dehydrated(false)
                     ->searchable()
                     ->preload()
                     ->native(false),
@@ -94,9 +135,12 @@ class UserResource extends Resource
                 TextColumn::make('role')
                     ->label('Role')
                     ->badge()
+                    ->formatStateUsing(fn (string $state) => \App\Support\AppNavigation::roleLabel($state))
                     ->color(fn(string $state): string => match ($state) {
                         'admin' => 'danger',
+                        'manager' => 'primary',
                         'caretaker' => 'warning',
+                        'agent' => 'success',
                         'tenant' => 'info',
                         default => 'gray',
                     }),
@@ -111,8 +155,10 @@ class UserResource extends Resource
                     ->label('User Type')
                     ->options([
                         'admin' => 'Admin',
-                        'landlord' => 'Landlord',
+                        'landlord' => 'Property Owner',
+                        'manager' => 'Manager',
                         'caretaker' => 'Caretaker',
+                        'agent' => 'Agent',
                         'tenant' => 'Tenant',
                     ])
                     ->query(fn (Builder $query, $value = null) => $query->when($value !== null, fn () => $query->where('role', $value))),

@@ -9,7 +9,7 @@
     <div class="max-w-6xl mx-auto px-6 pt-20 pb-24 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
         <div>
             <span class="inline-block rounded-full bg-emerald-400/20 text-emerald-300 text-xs font-semibold px-3 py-1 ring-1 ring-emerald-300/30">
-                Built for Kenyan landlords &amp; property managers
+                Built for Kenyan property owners &amp; managers
             </span>
             <h1 class="mt-6 text-4xl sm:text-5xl font-bold tracking-tight text-white">
                 Run every building you own from one dashboard.
@@ -39,7 +39,7 @@
                     <span class="h-2.5 w-2.5 rounded-full bg-rose-300"></span>
                     <span class="h-2.5 w-2.5 rounded-full bg-amber-300"></span>
                     <span class="h-2.5 w-2.5 rounded-full bg-emerald-300"></span>
-                    <span class="ml-2 text-xs font-medium text-slate-500">Landlord Dashboard</span>
+                    <span class="ml-2 text-xs font-medium text-slate-500">Owner Dashboard</span>
                 </div>
                 <div class="p-6 space-y-5">
                     <div class="grid grid-cols-2 gap-3">

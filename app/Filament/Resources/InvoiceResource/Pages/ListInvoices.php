@@ -111,6 +111,7 @@ class ListInvoices extends ListRecords
                             'invoice_number' => $invoice->invoice_number,
                             'amount' => number_format($invoice->balance),
                             'due_date' => $invoice->due_date ? Carbon::parse($invoice->due_date)->format('d M Y') : 'N/A',
+                            'property_name' => $tenant->house?->location?->location_name ?? '',
                         ], $invoice->landlord_id);
 
                         try {

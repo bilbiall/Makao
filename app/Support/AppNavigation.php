@@ -33,34 +33,54 @@ class AppNavigation
             'admin', 'landlord' => [
                 ['label' => 'Dashboard', 'icon' => 'heroicon-o-home', 'route' => 'app.admin.dashboard', 'tab' => true],
                 ['label' => 'Tenants', 'icon' => 'heroicon-o-users', 'route' => 'app.admin.tenants', 'tab' => true],
-                ['label' => 'Properties', 'icon' => 'heroicon-o-building-office-2', 'route' => 'app.admin.properties', 'tab' => false],
+                ['label' => 'Properties', 'icon' => 'heroicon-o-building-office-2', 'route' => 'app.admin.properties', 'tab' => true],
+                ['label' => 'Units', 'icon' => 'heroicon-o-home-modern', 'route' => 'app.admin.units', 'tab' => false],
                 ['label' => 'Invoices', 'icon' => 'heroicon-o-credit-card', 'route' => 'app.admin.invoices', 'tab' => true],
                 ['label' => 'Payments', 'icon' => 'heroicon-o-banknotes', 'route' => 'app.admin.payments', 'tab' => false],
                 ['label' => 'Bills', 'icon' => 'heroicon-o-receipt-percent', 'route' => 'app.admin.bills', 'tab' => false],
                 ['label' => 'Issues', 'icon' => 'heroicon-o-wrench-screwdriver', 'route' => 'app.admin.issues', 'tab' => false],
                 ['label' => 'Notices', 'icon' => 'heroicon-o-flag', 'route' => 'app.admin.notices', 'tab' => false],
+                ['label' => 'Bookings', 'icon' => 'heroicon-o-calendar-days', 'route' => 'app.admin.bookings', 'tab' => false],
                 ['label' => 'Reports', 'icon' => 'heroicon-o-chart-bar', 'route' => 'app.admin.reports', 'tab' => false],
                 ['label' => 'Staff', 'icon' => 'heroicon-o-identification', 'route' => 'app.admin.users', 'tab' => false],
-                ['label' => 'Chat', 'icon' => 'heroicon-o-chat-bubble-left-right', 'route' => 'app.admin.chat', 'tab' => true],
+                ['label' => 'Chat', 'icon' => 'heroicon-o-chat-bubble-left-right', 'route' => 'app.admin.chat', 'tab' => false],
                 ['label' => 'Settings', 'icon' => 'heroicon-o-cog-6-tooth', 'route' => 'app.admin.settings', 'tab' => false],
             ],
-            'caretaker' => [
+            // Manager and Caretaker share an identical, trimmed nav for now (see the
+            // Phase 1 plan for why) - missing Reports/Staff/Settings, matching
+            // UserResource::canAccess(), Reports::mount(), Settings::mount().
+            'caretaker', 'manager' => [
                 ['label' => 'Dashboard', 'icon' => 'heroicon-o-home', 'route' => 'app.admin.dashboard', 'tab' => true],
                 ['label' => 'Tenants', 'icon' => 'heroicon-o-users', 'route' => 'app.admin.tenants', 'tab' => true],
-                ['label' => 'Properties', 'icon' => 'heroicon-o-building-office-2', 'route' => 'app.admin.properties', 'tab' => false],
+                ['label' => 'Properties', 'icon' => 'heroicon-o-building-office-2', 'route' => 'app.admin.properties', 'tab' => true],
+                ['label' => 'Units', 'icon' => 'heroicon-o-home-modern', 'route' => 'app.admin.units', 'tab' => false],
                 ['label' => 'Invoices', 'icon' => 'heroicon-o-credit-card', 'route' => 'app.admin.invoices', 'tab' => true],
                 ['label' => 'Payments', 'icon' => 'heroicon-o-banknotes', 'route' => 'app.admin.payments', 'tab' => false],
                 ['label' => 'Bills', 'icon' => 'heroicon-o-receipt-percent', 'route' => 'app.admin.bills', 'tab' => false],
                 ['label' => 'Issues', 'icon' => 'heroicon-o-wrench-screwdriver', 'route' => 'app.admin.issues', 'tab' => false],
                 ['label' => 'Notices', 'icon' => 'heroicon-o-flag', 'route' => 'app.admin.notices', 'tab' => false],
+                ['label' => 'Bookings', 'icon' => 'heroicon-o-calendar-days', 'route' => 'app.admin.bookings', 'tab' => false],
+                ['label' => 'Chat', 'icon' => 'heroicon-o-chat-bubble-left-right', 'route' => 'app.admin.chat', 'tab' => false],
+            ],
+            // Agent is scoped to specific short_term houses only (staff_assignments.house_id)
+            // - it manages bookings for those units, not long-term tenancy, so the nav is
+            // trimmed to just Bookings + Chat (matching StaffScope::onHouseOrAssignedHouse()).
+            'agent' => [
+                ['label' => 'Bookings', 'icon' => 'heroicon-o-calendar-days', 'route' => 'app.admin.bookings', 'tab' => true],
                 ['label' => 'Chat', 'icon' => 'heroicon-o-chat-bubble-left-right', 'route' => 'app.admin.chat', 'tab' => true],
+            ],
+            'user' => [
+                ['label' => 'Home', 'icon' => 'heroicon-o-home', 'route' => 'app.user.dashboard', 'tab' => true],
+                ['label' => 'Watchlist', 'icon' => 'heroicon-o-heart', 'route' => 'app.user.watchlist', 'tab' => true],
+                ['label' => 'Applications', 'icon' => 'heroicon-o-clipboard-document-list', 'route' => 'app.user.applications', 'tab' => true],
+                ['label' => 'Profile', 'icon' => 'heroicon-o-user-circle', 'route' => 'app.user.profile', 'tab' => false],
             ],
             'superadmin' => [
                 ['label' => 'Dashboard', 'icon' => 'heroicon-o-home', 'route' => 'app.superadmin.dashboard', 'tab' => true],
                 ['label' => 'Landlords', 'icon' => 'heroicon-o-building-office-2', 'route' => 'app.superadmin.landlords', 'tab' => true],
                 ['label' => 'Packages', 'icon' => 'heroicon-o-cube', 'route' => 'app.superadmin.packages', 'tab' => false],
                 ['label' => 'Subscriptions', 'icon' => 'heroicon-o-arrow-path', 'route' => 'app.superadmin.subscriptions', 'tab' => true],
-                ['label' => 'Platform Settings', 'icon' => 'heroicon-o-cog-6-tooth', 'route' => 'app.superadmin.settings', 'tab' => false],
+                ['label' => 'Platform Settings', 'icon' => 'heroicon-o-cog-6-tooth', 'route' => 'app.superadmin.settings', 'tab' => true],
             ],
             default => [],
         };
@@ -96,7 +116,38 @@ class AppNavigation
         return match ($role) {
             'tenant' => 'app.tenant.profile',
             'superadmin' => 'app.superadmin.profile',
+            'user' => 'app.user.profile',
             default => 'app.admin.profile',
+        };
+    }
+
+    /**
+     * Human-facing display name for a role - the underlying `role` column value stays
+     * 'landlord' everywhere in code (permission checks, role options, route names);
+     * this only affects what's shown to a person, so "Landlord" reads as the
+     * gender-neutral "Property Owner" without touching a single permission check.
+     */
+    public static function roleLabel(string $role): string
+    {
+        return match ($role) {
+            'landlord' => 'Property Owner',
+            default => ucfirst($role),
+        };
+    }
+
+    /**
+     * The Filament panel dashboard for this role's "Advanced view" - null for 'user',
+     * which has no Filament panel at all (it's a self-registered, landlord-less
+     * account). The app-shell stays the default landing spot for every role
+     * (GenericLoginController), Filament is reached only via this deliberate link.
+     */
+    public static function filamentDashboardRoute(string $role): ?string
+    {
+        return match ($role) {
+            'admin', 'landlord', 'manager', 'caretaker', 'agent' => 'filament.admin.pages.dashboard',
+            'tenant' => 'filament.tenant.pages.tenant-dashboard',
+            'superadmin' => 'filament.superadmin.pages.superadmin-dashboard',
+            default => null,
         };
     }
 }

@@ -2,28 +2,51 @@
 
 namespace App\Filament\Concerns;
 
+use App\Helpers\PaymentGatewayRequestHelper;
+use App\Helpers\SmsHelper;
+use App\Models\Setting;
 use Filament\Forms;
+use Filament\Notifications\Notification;
 
 /**
  * The full per-landlord settings form (SMS/email templates, SMTP, billing/auto-invoice,
  * payment mode, M-Pesa/Pesapal credentials). Shared by the landlord-facing Settings page
  * (App\Filament\Pages\Settings) and the superadmin's per-landlord settings view
- * (App\Filament\Superadmin\Resources\LandlordResource\Pages\EditLandlordSettings), so a
+ * (App\Filament\Superadmin\Resources\LandlordResource\Pages\ManageLandlordSettings), so a
  * superadmin can view/troubleshoot a landlord's own configuration without a second copy
  * of this schema to keep in sync.
+ *
+ * App name/SMS/SMTP setup and the auto-invoice cronjob guide are technical, platform-
+ * facing configuration left to 'admin'/'superadmin' - a 'landlord' (the property owner)
+ * gets those tabs/sections hidden entirely. Same split for M-Pesa/Pesapal credentials:
+ * a landlord can't self-serve those, they request a gateway and admin/superadmin fills
+ * the real credentials in from here (see PaymentGatewayRequestHelper).
  */
 trait HasLandlordSettingsSchema
 {
-    public static function landlordSettingsTabs(): array
+    /**
+     * @param int|null $landlordId Defaults to the current user's own landlord_id - pass
+     *  explicitly only from ManageLandlordSettings, where a superadmin is viewing a
+     *  landlord other than themselves.
+     */
+    public static function landlordSettingsTabs(?int $landlordId = null): array
     {
+        $landlordId ??= auth()->user()->landlord_id;
+        $isAdminRole = in_array(auth()->user()->role, ['admin', 'superadmin'], true);
+        $hasGatewayCredentials = Setting::forLandlord($landlordId)->hasPaymentGatewayCredentials();
+
         return [
             Forms\Components\Tabs\Tab::make('General')
                 ->schema([
+                    // The app_name field itself is admin/superadmin-only - everything
+                    // else on this tab is onboarding-type business info a landlord
+                    // keeps being able to update themselves.
                     Forms\Components\TextInput::make('app_name')
                         ->label('Application Name')
                         ->helperText('Display name for your application')
                         ->maxLength(255)
-                        ->required(),
+                        ->visible($isAdminRole)
+                        ->required($isAdminRole),
 
                     Forms\Components\TextInput::make('company_name')
                         ->label('Company/Business Name')
@@ -79,6 +102,7 @@ trait HasLandlordSettingsSchema
                 ->columns(2),
 
             Forms\Components\Tabs\Tab::make('SMS')
+                ->visible($isAdminRole)
                 ->schema([
                     Forms\Components\TextInput::make('sms_url')
                         ->label('SMS API URL')
@@ -97,18 +121,58 @@ trait HasLandlordSettingsSchema
                     Forms\Components\TextInput::make('sms_sender_id')
                         ->label('SMS Sender ID')
                         ->maxLength(50),
+
+                    Forms\Components\Section::make('Send a test SMS')
+                        ->description('Verify these credentials actually work before relying on them - sends using whatever is currently typed above, not the last saved values.')
+                        ->schema([
+                            Forms\Components\TextInput::make('test_sms_phone')
+                                ->label('Phone number')
+                                ->tel()
+                                ->placeholder('e.g. 0712345678')
+                                ->dehydrated(false),
+
+                            Forms\Components\Actions::make([
+                                Forms\Components\Actions\Action::make('send_test_sms')
+                                    ->label('Send test SMS')
+                                    ->color('gray')
+                                    ->action(function ($livewire) {
+                                        // Read straight off the page's own $data (rather than the
+                                        // Get utility) for the same reason as the gateway request
+                                        // action below - not sensitive to nesting depth.
+                                        $phone = trim((string) ($livewire->data['test_sms_phone'] ?? ''));
+
+                                        if ($phone === '') {
+                                            Notification::make()->danger()->title('Enter a phone number first')->send();
+                                            return;
+                                        }
+
+                                        try {
+                                            SmsHelper::sendWithConfig($phone, 'This is a test message from ' . ($livewire->data['app_name'] ?? config('app.name')) . ' - your SMS settings are working.', [
+                                                'sms_url' => $livewire->data['sms_url'] ?? null,
+                                                'sms_api_key' => $livewire->data['sms_api_key'] ?? null,
+                                                'sms_partner_id' => $livewire->data['sms_partner_id'] ?? null,
+                                                'sms_sender_id' => $livewire->data['sms_sender_id'] ?? null,
+                                            ]);
+
+                                            Notification::make()->success()->title('Test SMS sent - check the phone.')->send();
+                                        } catch (\Throwable $e) {
+                                            Notification::make()->danger()->title('Failed to send test SMS')->body($e->getMessage())->send();
+                                        }
+                                    }),
+                            ]),
+                        ]),
                 ]),
 
             Forms\Components\Tabs\Tab::make('Templates')
                 ->schema([
                     Forms\Components\Textarea::make('template_invoice')
                         ->label('Invoice Notification Template')
-                        ->helperText('Variables: {tenant_name}, {invoice_number}, {amount}, {due_date}')
+                        ->helperText('Variables: {tenant_name}, {invoice_number}, {amount}, {due_date}, {property_name}')
                         ->rows(4),
 
                     Forms\Components\Textarea::make('template_payment')
                         ->label('Payment Confirmation Template')
-                        ->helperText('Variables: {tenant_name}, {amount_paid}, {invoice_number}, {balance}, {app_name}')
+                        ->helperText('Variables: {tenant_name}, {amount_paid}, {invoice_number}, {balance}, {app_name}, {property_name}')
                         ->default('Hi {tenant_name}, we\'ve received your payment of KES {amount_paid} for Invoice #{invoice_number}. Your remaining balance is KES {balance}. Thank you. - {app_name}')
                         ->rows(4),
 
@@ -119,7 +183,7 @@ trait HasLandlordSettingsSchema
 
                     Forms\Components\Textarea::make('template_mass_reminder')
                         ->label('Mass Reminder Template')
-                        ->helperText('Variables: {tenant_name}, {invoice_number}, {amount}, {due_date}, {app_name}')
+                        ->helperText('Variables: {tenant_name}, {invoice_number}, {amount}, {due_date}, {app_name}, {property_name}')
                         ->default('Hi {tenant_name}, this is a reminder for Invoice {invoice_number}: KES {amount} due by {due_date}. Thank you, {app_name}.')
                         ->rows(4),
 
@@ -130,19 +194,19 @@ trait HasLandlordSettingsSchema
 
                     Forms\Components\Textarea::make('template_tenant_welcome')
                         ->label('Tenant Welcome Template')
-                        ->helperText('Variables: {tenant_name}, {app_name}, {house_name}, {rent_amount}')
+                        ->helperText('Variables: {tenant_name}, {app_name}, {house_name}, {rent_amount}, {property_name}')
                         ->default('Hello {tenant_name}, welcome to {app_name}. You were admitted to {house_name} with a monthly rent of KES {rent_amount}')
                         ->rows(4),
 
                     Forms\Components\Textarea::make('template_notice_approved')
                         ->label('Notice Approved Template')
-                        ->helperText('Variables: {tenant_name}, {balance}, {approval_date}, {vacate_date}')
+                        ->helperText('Variables: {tenant_name}, {balance}, {approval_date}, {vacate_date}, {property_name}')
                         ->default('Hi {tenant_name}, your vacate notice has been approved. Balance: KES {balance}. Approval date: {approval_date}. Vacate date: {vacate_date}.')
                         ->rows(4),
 
                     Forms\Components\Textarea::make('template_notice_denied')
                         ->label('Notice Denied Template')
-                        ->helperText('Variables: {tenant_name}, {balance}, {vacate_date}')
+                        ->helperText('Variables: {tenant_name}, {balance}, {vacate_date}, {property_name}')
                         ->default('Hi {tenant_name}, your vacate notice has been denied. Balance: KES {balance}. Date requested: {vacate_date}.')
                         ->rows(4),
 
@@ -160,6 +224,7 @@ trait HasLandlordSettingsSchema
                 ]),
 
             Forms\Components\Tabs\Tab::make('Email')
+                ->visible($isAdminRole)
                 ->schema([
                     Forms\Components\Section::make('SMTP')
                         ->schema([
@@ -251,6 +316,7 @@ trait HasLandlordSettingsSchema
 
                     Forms\Components\Placeholder::make('cronjob_guide')
                         ->label('Cronjob Setup Guide')
+                        ->visible($isAdminRole)
                         ->content(new \Illuminate\Support\HtmlString('
                             <div class="text-sm space-y-4">
                                 <p class="font-semibold text-gray-700 dark:text-gray-300">
@@ -340,26 +406,144 @@ trait HasLandlordSettingsSchema
 
             Forms\Components\Tabs\Tab::make('Payments')
                 ->schema([
+                    Forms\Components\Section::make('Manual payment details')
+                        ->description('Shown to tenants paying you directly - bank account, paybill, or till number.')
+                        ->schema([
+                            Forms\Components\TextInput::make('manual_payment.bank_name')
+                                ->label('Bank name')
+                                ->maxLength(255),
+
+                            Forms\Components\TextInput::make('manual_payment.account_name')
+                                ->label('Account name')
+                                ->maxLength(255),
+
+                            Forms\Components\TextInput::make('manual_payment.account_number')
+                                ->label('Account number')
+                                ->maxLength(100),
+
+                            Forms\Components\TextInput::make('manual_payment.paybill_number')
+                                ->label('Paybill number')
+                                ->maxLength(100),
+
+                            Forms\Components\TextInput::make('manual_payment.till_number')
+                                ->label('Till number')
+                                ->maxLength(100),
+
+                            Forms\Components\Textarea::make('manual_payment.instructions')
+                                ->label('Other instructions')
+                                ->placeholder('e.g. use your house number as the M-Pesa reference')
+                                ->rows(2),
+                        ])
+                        ->columns(2),
+
                     Forms\Components\Section::make('Collection Method')
                         ->description('Choose how rent payments are collected from tenants.')
                         ->schema([
                             Forms\Components\Radio::make('payment_mode')
                                 ->label('Payment Mode')
-                                ->options([
-                                    'manual' => 'Manual - tenants pay you directly (cash, bank, M-Pesa till) and you record it yourself',
-                                    'automatic' => 'Automatic - tenants pay in-app via M-Pesa STK push / Pesapal using your credentials below',
+                                ->options(fn () => $hasGatewayCredentials || $isAdminRole ? [
+                                    'manual' => 'Manual - tenants pay you directly (details above) and you record it yourself',
+                                    'automatic' => 'Automatic - tenants pay in-app via M-Pesa STK push / Pesapal',
+                                ] : [
+                                    'manual' => 'Manual - tenants pay you directly (details above) and you record it yourself',
                                 ])
                                 ->descriptions([
                                     'manual' => 'The tenant portal will not show M-Pesa/Pesapal pay buttons. Use this if you are not ready to connect a payment gateway yet.',
-                                    'automatic' => 'Requires valid M-Pesa (Daraja) and/or Pesapal credentials configured below.',
+                                    'automatic' => 'Requires M-Pesa (Daraja) and/or Pesapal credentials, set up below.',
                                 ])
                                 ->default('manual')
                                 ->inline(false)
                                 ->required(),
                         ]),
 
+                    Forms\Components\Section::make('Request automatic payments')
+                        ->description('This needs real M-Pesa/Pesapal business credentials - request it and our team sets it up for you.')
+                        ->visible(!$isAdminRole && !$hasGatewayCredentials)
+                        ->schema([
+                            Forms\Components\Placeholder::make('gateway_request_status')
+                                ->label('')
+                                ->visible(fn () => (bool) Setting::forLandlord($landlordId)->pendingPaymentGatewayRequest())
+                                ->content(function () use ($landlordId) {
+                                    $request = Setting::forLandlord($landlordId)->pendingPaymentGatewayRequest();
+                                    if (!$request) {
+                                        return '';
+                                    }
+                                    $when = \Illuminate\Support\Carbon::parse($request['requested_at'])->diffForHumans();
+                                    $label = PaymentGatewayRequestHelper::methodLabel($request['method']);
+
+                                    return new \Illuminate\Support\HtmlString(
+                                        "<div class=\"text-sm text-amber-700\">Request sent - {$label}. Submitted {$when}. Our team will set this up and notify you once it's ready.</div>"
+                                    );
+                                }),
+
+                            Forms\Components\Select::make('gateway_request_method')
+                                ->label('Which gateway?')
+                                ->options(['mpesa' => 'M-Pesa', 'pesapal' => 'Pesapal', 'both' => 'Both'])
+                                ->default('mpesa')
+                                ->dehydrated(false)
+                                ->visible(fn () => !Setting::forLandlord($landlordId)->pendingPaymentGatewayRequest()),
+
+                            Forms\Components\Textarea::make('gateway_request_note')
+                                ->label('Note (optional)')
+                                ->rows(2)
+                                ->dehydrated(false)
+                                ->visible(fn () => !Setting::forLandlord($landlordId)->pendingPaymentGatewayRequest()),
+
+                            Forms\Components\Actions::make([
+                                Forms\Components\Actions\Action::make('request_gateway')
+                                    ->label('Request automatic payment setup')
+                                    ->visible(fn () => !Setting::forLandlord($landlordId)->pendingPaymentGatewayRequest())
+                                    ->action(function ($livewire) use ($landlordId) {
+                                        // Read straight off the page's own $data (rather than the
+                                        // Get utility) so this isn't sensitive to how deeply this
+                                        // Action sits nested inside its Actions/Section wrapper.
+                                        PaymentGatewayRequestHelper::submit(
+                                            $landlordId,
+                                            $livewire->data['gateway_request_method'] ?? 'mpesa',
+                                            $livewire->data['gateway_request_note'] ?? null,
+                                            auth()->id(),
+                                        );
+
+                                        $livewire->form->fill(array_replace_recursive(
+                                            $livewire->form->getState(),
+                                            Setting::forLandlord($landlordId)->payload,
+                                        ));
+
+                                        Notification::make()
+                                            ->title('Request sent - our team will follow up.')
+                                            ->success()
+                                            ->send();
+                                    }),
+                            ]),
+                        ]),
+
+                    Forms\Components\Section::make('Pending request')
+                        ->visible(fn () => $isAdminRole && Setting::forLandlord($landlordId)->pendingPaymentGatewayRequest())
+                        ->schema([
+                            Forms\Components\Placeholder::make('pending_gateway_request')
+                                ->label('')
+                                ->content(function () use ($landlordId) {
+                                    $request = Setting::forLandlord($landlordId)->pendingPaymentGatewayRequest();
+                                    if (!$request) {
+                                        return '';
+                                    }
+                                    $when = \Illuminate\Support\Carbon::parse($request['requested_at'])->diffForHumans();
+                                    $label = PaymentGatewayRequestHelper::methodLabel($request['method']);
+                                    $note = $request['note'] ?? null;
+
+                                    $html = "<div class=\"text-sm text-amber-700 space-y-1\">"
+                                        . "<p class=\"font-semibold\">Property owner requested {$label}</p>"
+                                        . ($note ? '<p>"' . e($note) . '"</p>' : '')
+                                        . "<p>Requested {$when}. Fill in the credentials below, set Collection Method to Automatic, then Save to mark this fulfilled.</p>"
+                                        . '</div>';
+
+                                    return new \Illuminate\Support\HtmlString($html);
+                                }),
+                        ]),
+
                     // Pesapal Settings
                     Forms\Components\Section::make('Pesapal')
+                        ->visible($isAdminRole)
                         ->schema([
                             Forms\Components\TextInput::make('pesapal.consumer_key')
                                 ->label('Pesapal Consumer Key')
@@ -399,6 +583,7 @@ trait HasLandlordSettingsSchema
 
                     // M-Pesa Daraja Settings
                     Forms\Components\Section::make('M-Pesa (Daraja API)')
+                        ->visible($isAdminRole)
                         ->schema([
                             Forms\Components\TextInput::make('mpesa.consumer_key')
                                 ->label('Daraja API Key')

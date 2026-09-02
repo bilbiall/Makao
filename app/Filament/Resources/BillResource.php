@@ -188,10 +188,14 @@ class BillResource extends Resource
         $query = parent::getEloquentQuery();
         $user = auth()->user();
 
-        // Caretakers can only see bills for houses in their assigned location
-        if ($user && $user->role === 'caretaker' && $user->location_id) {
-            $query->whereHas('house', function ($q) use ($user) {
-                $q->where('location_id', $user->location_id);
+        // Manager/Caretaker are narrowed to their assigned properties (staff_assignments pivot).
+        // Note: Bill has no direct house() relation, only tenant() - the previous version of
+        // this check called whereHas('house', ...) which doesn't exist on Bill and would have
+        // thrown for any caretaker/manager viewing this resource. Fixed to go via tenant.house.
+        if (\App\Support\StaffScope::isScopedStaff()) {
+            $locationIds = \App\Support\StaffScope::locationIds();
+            $query->whereHas('tenant.house', function ($q) use ($locationIds) {
+                $q->whereIn('location_id', $locationIds);
             });
         }
 
