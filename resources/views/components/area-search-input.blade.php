@@ -34,21 +34,28 @@
         ? "\$wire.entangle('{$wireModel}')"
         : \Illuminate\Support\Js::from($value ?? '');
 @endphp
+{{--
+    Collapsed to just city names (no areas listed) until the visitor actually
+    types something - 100+ areas in one list is overwhelming; typing a city or
+    area name is what expands it.
+
+    filtered() matches word-by-word, not one contiguous substring - typing a
+    city and an area together (in either order) still finds the area, because
+    each one is matched against its own name plus its city's name combined,
+    not the area name alone. A single-substring match (the old behaviour)
+    broke the moment more than one word was typed.
+
+    IMPORTANT: x-data below is a double-quoted HTML attribute - never put a
+    literal " character in any comment or string inside it (including this
+    kind of explanation); it silently closes the attribute early and the rest
+    renders as literal page text. Keep prose like this in a Blade comment
+    instead, exactly as done here.
+--}}
 <div
     x-data="{
         query: {{ $queryInit }},
         open: false,
         groups: @js($groups),
-        // Collapsed to just city names (no areas listed) until the visitor
-        // actually types something - 100+ areas in one list is overwhelming;
-        // typing a city or area name is what expands it.
-        //
-        // Matches word-by-word, not one contiguous substring - "Nairobi Kahawa"
-        // or "Kahawa Nairobi" (any order, either word alone or both) all find
-        // "Kahawa Sukari" in Nairobi, because each area is matched against
-        // "<area name> <its city>" together, not the area name in isolation.
-        // A single-substring match (the old behaviour) breaks the moment
-        // someone qualifies the area with its city or types more than one word.
         get filtered() {
             const tokens = this.query.trim().toLowerCase().split(/\s+/).filter(Boolean);
             if (tokens.length === 0) {
