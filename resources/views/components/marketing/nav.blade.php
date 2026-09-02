@@ -19,8 +19,8 @@
 >
     <div class="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-4 py-3 sm:px-6">
         <a href="{{ route('home') }}" class="flex min-w-0 items-center gap-2">
-            <span class="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-emerald-600 text-sm font-bold text-white">M</span>
-            <span class="truncate text-lg font-semibold tracking-tight transition-colors" :class="scrolled ? 'text-slate-900 dark:text-slate-100' : 'text-white'">Makao</span>
+            <span class="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-emerald-600 text-sm font-bold text-white">R</span>
+            <span class="truncate text-lg font-semibold tracking-tight transition-colors" :class="scrolled ? 'text-slate-900 dark:text-slate-100' : 'text-white'">Renty</span>
         </a>
 
         <nav class="flex items-center gap-1 sm:gap-2">

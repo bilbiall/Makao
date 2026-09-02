@@ -98,6 +98,25 @@ class House extends Model
     }
 
     /**
+     * Powers the "area" search filter on /houses and /stays - $input can be either
+     * a specific area name (e.g. "Nyali", exact match against Location.geo_id, same
+     * as before) or a city/town name (e.g. "Mombasa"), in which case it matches
+     * every house whose Location is linked to ANY area within that city. Falls
+     * back to a plain geo_id match for anything that isn't a known city name,
+     * including areas typed before the city/area master list existed.
+     */
+    public function scopeInAreaOrCity($query, string $input)
+    {
+        $city = \App\Models\City::whereRaw('LOWER(name) = ?', [strtolower($input)])->first();
+
+        if ($city) {
+            return $query->whereHas('location.area', fn ($q) => $q->where('city_id', $city->id));
+        }
+
+        return $query->whereHas('location', fn ($q) => $q->where('geo_id', $input));
+    }
+
+    /**
      * Public discovery visibility is mostly derived (Vacant, minimum listing info
      * filled in, disappears for free via the same house_status flips
      * Tenant::booted() already does on admission/vacate) but gated on top by

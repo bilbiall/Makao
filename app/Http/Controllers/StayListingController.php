@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Area;
 use App\Models\Booking;
+use App\Models\City;
 use App\Models\House;
-use App\Models\Location;
 use Illuminate\Http\Request;
 
 /**
@@ -19,10 +18,10 @@ class StayListingController extends Controller
     {
         $query = House::bnbVisible()->with(['location', 'photos', 'pricePackages']);
 
-        // Same area/neighbourhood filter dimension as PropertyListingController -
-        // Location.geo_id, not a specific Location.
+        // Same area-or-city filter dimension as PropertyListingController - see
+        // House::scopeInAreaOrCity().
         if ($request->filled('area')) {
-            $query->whereHas('location', fn ($q) => $q->where('geo_id', $request->string('area')));
+            $query->inAreaOrCity($request->string('area')->toString());
         }
 
         if ($request->filled('check_in') && $request->filled('check_out')) {
@@ -36,14 +35,9 @@ class StayListingController extends Controller
 
         $houses = $query->paginate(12)->withQueryString();
 
-        $areas = Area::suggestionNames(
-            Location::whereHas('houses', fn ($q) => $q->bnbVisible())
-                ->whereNotNull('geo_id')
-                ->distinct()
-                ->pluck('geo_id')
-        );
+        $cities = City::breakdown();
 
-        return view('stays.index', compact('houses', 'areas'));
+        return view('stays.index', compact('houses', 'cities'));
     }
 
     public function show(House $house)

@@ -2,9 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Area;
+use App\Models\City;
 use App\Models\House;
-use App\Models\Location;
 use App\Models\ViewingRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -21,12 +20,12 @@ class PropertyListingController extends Controller
     {
         $query = House::publiclyVisible()->with(['location', 'photos']);
 
-        // Filtered by area/neighbourhood (Location.geo_id, e.g. "Kilimani") rather than
-        // a specific Location (a single property/compound) - that's how a renter
-        // actually searches ("something in Kilimani"), and geo_id already holds
-        // exactly that neighbourhood-level value for every seeded property.
+        // Filtered by area/neighbourhood (Location.geo_id, e.g. "Kilimani") or by an
+        // entire city (e.g. "Mombasa", matching every area within it) - see
+        // House::scopeInAreaOrCity(). That's how a tenant actually searches -
+        // either "something in Kilimani" or more broadly "something in Mombasa".
         if ($request->filled('area')) {
-            $query->whereHas('location', fn ($q) => $q->where('geo_id', $request->string('area')));
+            $query->inAreaOrCity($request->string('area')->toString());
         }
 
         if ($request->filled('house_type')) {
@@ -39,18 +38,13 @@ class PropertyListingController extends Controller
 
         $houses = $query->orderBy('rent_amount')->paginate(12)->withQueryString();
 
-        $areas = Area::suggestionNames(
-            Location::whereHas('houses', fn ($q) => $q->publiclyVisible())
-                ->whereNotNull('geo_id')
-                ->distinct()
-                ->pluck('geo_id')
-        );
+        $cities = City::breakdown();
 
         $watchlistedIds = Auth::check() && Auth::user()->isUser()
             ? Auth::user()->watchlist()->pluck('houses.id')->all()
             : [];
 
-        return view('listings.index', compact('houses', 'areas', 'watchlistedIds'));
+        return view('listings.index', compact('houses', 'cities', 'watchlistedIds'));
     }
 
     public function show(House $house)

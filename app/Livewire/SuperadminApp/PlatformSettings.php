@@ -11,7 +11,7 @@ use Livewire\Component;
  * - App name/SMS/SMTP here act as the fallback used by any landlord who hasn't
  *   configured their own in their own Settings (see Setting::effective()).
  * - Subscription Billing (subscription_mpesa/subscription_pesapal) is unrelated to
- *   that fallback - it's the gateway used to charge LANDLORDS for their own Makao
+ *   that fallback - it's the gateway used to charge LANDLORDS for their own Renty
  *   subscription, never a fallback for a landlord's tenant rent collection (each
  *   landlord's own mpesa/pesapal for that stays individual, set in their own Settings).
  */

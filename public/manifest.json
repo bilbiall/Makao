@@ -1,6 +1,6 @@
 {
-    "name": "Makao",
-    "short_name": "Makao",
+    "name": "Renty",
+    "short_name": "Renty",
     "description": "Find verified houses, manage tenants, and book short stays in Kenya.",
     "start_url": ".",
     "display": "standalone",

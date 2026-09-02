@@ -13,7 +13,7 @@
             </p>
 
             <div class="mt-8 sm:mt-12">
-                <x-marketing.search-widget :areas="$areas" />
+                <x-marketing.search-widget :cities="$cities" />
             </div>
         </div>
     </section>
@@ -21,7 +21,7 @@
     {{-- How it works --}}
     <section class="py-14 sm:py-20" x-data="{ step: 0 }">
         <div class="mx-auto max-w-6xl px-4 sm:px-6">
-            <h2 class="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 sm:text-3xl">How Makao works</h2>
+            <h2 class="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 sm:text-3xl">How Renty works</h2>
             <p class="mt-2 max-w-xl text-slate-500 dark:text-slate-400">Three steps from searching to keys in hand.</p>
         </div>
 
@@ -93,7 +93,7 @@
                         No fake listings, no phantom viewing fees.
                     </h2>
                     <p class="mt-3 text-slate-500 dark:text-slate-400">
-                        Every listing you see is managed by a real property owner through Makao's own management platform -
+                        Every listing you see is managed by a real property owner through Renty's own management platform -
                         vacancy is live, not a stale post from three months ago.
                     </p>
                     <a href="{{ route('listings.index') }}" class="mt-6 inline-flex rounded-lg bg-emerald-600 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-700">
@@ -136,7 +136,7 @@
                     </h2>
                     <p class="mt-3 text-slate-500 dark:text-slate-400">
                         There's no separate system to juggle - the same dashboard you use to list a vacancy also
-                        collects rent, messages tenants and tracks every unit, on the very platform renters are
+                        collects rent, messages tenants and tracks every unit, on the very platform tenants are
                         searching right now.
                     </p>
                     <a href="{{ route('get-started') }}" class="mt-6 inline-flex rounded-lg bg-emerald-600 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-700">
@@ -145,7 +145,7 @@
                 </div>
                 <ul class="grid gap-4 md:grid-cols-3 lg:grid-cols-1">
                     @foreach ([
-                        ['icon' => 'heroicon-o-building-office-2', 'title' => 'List once, reach renters instantly', 'body' => 'A vacant unit you add shows up in search the moment it\'s published - no separate listing site to maintain.'],
+                        ['icon' => 'heroicon-o-building-office-2', 'title' => 'List once, reach tenants instantly', 'body' => 'A vacant unit you add shows up in search the moment it\'s published - no separate listing site to maintain.'],
                         ['icon' => 'heroicon-o-squares-2x2', 'title' => 'One dashboard for everything', 'body' => 'Rent collection, tenant messaging, maintenance and move-outs, alongside the listing itself - not a separate tool.'],
                         ['icon' => 'heroicon-o-banknotes', 'title' => 'Get paid via M-Pesa or Pesapal', 'body' => 'Tenants pay in-app, straight to the method you set up for your business.'],
                     ] as $t)

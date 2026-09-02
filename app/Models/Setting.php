@@ -68,7 +68,7 @@ class Setting extends Model
      * pay into that landlord's own till/paybill, so credentials can't be shared
      * across landlords the way app name/SMS/SMTP can. The platform's own mpesa/pesapal
      * settings (Platform Settings > Payments) are a separate concern entirely - the
-     * gateway used to charge landlords for their own Makao subscription, not something
+     * gateway used to charge landlords for their own Renty subscription, not something
      * a landlord's tenant payments could ever fall back to.
      */
     public function hasPaymentGatewayCredentials(): bool

@@ -369,10 +369,10 @@ trait HasLandlordSettingsSchema
                                                     cd /home/rentyke/public_html && php artisan schedule:run >> /dev/null 2>&1
                                                 </code>
                                                 <p class="text-xs text-green-700 dark:text-green-400 mt-2">
-                                                    Or if in a subfolder like <strong>public_html/makao</strong>:
+                                                    Or if in a subfolder like <strong>public_html/renty</strong>:
                                                 </p>
                                                 <code class="text-xs bg-white dark:bg-gray-800 px-2 py-1 rounded block border border-green-300 dark:border-green-700">
-                                                    cd /home/rentyke/public_html/makao && php artisan schedule:run >> /dev/null 2>&1
+                                                    cd /home/rentyke/public_html/renty && php artisan schedule:run >> /dev/null 2>&1
                                                 </code>
                                             </div>
                                         </li>

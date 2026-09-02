@@ -6,7 +6,7 @@
         </div>
 
         <p>
-            Makao ("we", "us") provides rental management software to property owners and managers
+            Renty ("we", "us") provides rental management software to property owners and managers
             ("Property Owners") and their tenants ("Tenants"). This policy explains what information we collect
             and how it is used.
         </p>

@@ -21,7 +21,7 @@
                 </div>
                 <h2 class="text-xl font-bold text-slate-900 dark:text-slate-100">Looking for a house</h2>
                 <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Browse verified vacant houses, save favourites, and request a viewing when you find one you like.</p>
-                <span class="mt-4 inline-flex items-center text-sm font-semibold text-amber-700 group-hover:underline dark:text-amber-400">Get started as a renter →</span>
+                <span class="mt-4 inline-flex items-center text-sm font-semibold text-amber-700 group-hover:underline dark:text-amber-400">Get started as a tenant →</span>
             </a>
         </div>
 

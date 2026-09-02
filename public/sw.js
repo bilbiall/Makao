@@ -2,7 +2,7 @@
 // offline strategy. Cache-first for static assets (versioned by Vite's own filename
 // hashing, so stale-cache is a non-issue), network-first for everything else (app
 // pages are session/role-specific and must always be fresh).
-const STATIC_CACHE = 'makao-static-v1';
+const STATIC_CACHE = 'renty-static-v2';
 
 self.addEventListener('install', (event) => {
     self.skipWaiting();

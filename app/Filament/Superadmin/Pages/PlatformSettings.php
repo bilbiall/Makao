@@ -202,7 +202,7 @@ class PlatformSettings extends Page implements HasForms
                             ->schema([
                                 Forms\Components\Placeholder::make('subscription_billing_note')
                                     ->label('')
-                                    ->content('These credentials collect payment FROM landlords FOR their own Makao subscription - completely separate from a landlord\'s own M-Pesa/Pesapal, which each business sets individually in their own Settings > Payments tab to collect rent from their tenants.'),
+                                    ->content('These credentials collect payment FROM landlords FOR their own Renty subscription - completely separate from a landlord\'s own M-Pesa/Pesapal, which each business sets individually in their own Settings > Payments tab to collect rent from their tenants.'),
 
                                 Forms\Components\Section::make('Pesapal')
                                     ->schema([

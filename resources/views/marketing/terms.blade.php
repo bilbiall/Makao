@@ -5,7 +5,7 @@
             <p class="text-sm text-slate-400 mt-1">Last updated: {{ now()->format('F Y') }}</p>
         </div>
 
-        <p>These terms govern your use of Makao. By creating an account, you agree to them.</p>
+        <p>These terms govern your use of Renty. By creating an account, you agree to them.</p>
 
         <div>
             <h2 class="text-xl font-semibold text-slate-900 mb-2">Accounts</h2>
@@ -35,7 +35,7 @@
         <div>
             <h2 class="text-xl font-semibold text-slate-900 mb-2">Payments processed on your behalf</h2>
             <p>
-                M-Pesa and Pesapal payments initiated by Tenants are processed by those providers directly; Makao
+                M-Pesa and Pesapal payments initiated by Tenants are processed by those providers directly; Renty
                 records the resulting transaction against the relevant invoice.
             </p>
         </div>

@@ -144,7 +144,7 @@
                 </div>
             </div>
         @elseif ($activeTab === 'billing')
-            <p class="text-xs text-slate-500 dark:text-slate-400">These credentials collect payment FROM landlords FOR their own Makao subscription - completely separate from a landlord's own M-Pesa/Pesapal, which each business sets individually in their own Settings &gt; Payments tab to collect rent from their tenants.</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">These credentials collect payment FROM landlords FOR their own Renty subscription - completely separate from a landlord's own M-Pesa/Pesapal, which each business sets individually in their own Settings &gt; Payments tab to collect rent from their tenants.</p>
 
             <p class="text-sm font-semibold text-slate-900 dark:text-slate-100 pt-2 border-t border-slate-100 dark:border-slate-800">Pesapal</p>
             <div class="grid grid-cols-2 gap-3">

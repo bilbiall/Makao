@@ -16,7 +16,7 @@
 }
 
 /* Hero scrim: strong on the left where text sits, fading right - matches the
-   consumer-facing design system (see the Makao Lovable export). */
+   consumer-facing design system (see the Renty Lovable export). */
 @utility hero-scrim {
     background-image: linear-gradient(
         to right,
