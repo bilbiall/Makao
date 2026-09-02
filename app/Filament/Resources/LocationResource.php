@@ -14,7 +14,10 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 //for the input form for users
+use App\Models\City;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Get;
 
 //to display columns in users
 use Filament\Tables\Columns\TextColumn;
@@ -31,7 +34,31 @@ class LocationResource extends Resource
             ->schema([
                 //inputs
                 TextInput::make('location_name')->required(),
-                TextInput::make('geo_id'),
+
+                Select::make('city_id')
+                    ->label('City / town')
+                    ->options(City::orderBy('name')->pluck('name', 'id'))
+                    ->searchable()
+                    ->live()
+                    // Not a real Location column - purely narrows the area_id
+                    // options below, stripped in CreateLocation/EditLocation
+                    // before save the same way HouseResource does is_short_term.
+                    ->dehydrated(false)
+                    ->afterStateHydrated(fn ($component, $record) => $component->state($record?->area?->city_id)),
+
+                Select::make('area_id')
+                    ->label('Area')
+                    ->options(fn (Get $get) => $get('city_id')
+                        ? \App\Models\Area::where('city_id', $get('city_id'))->orderBy('name')->pluck('name', 'id')
+                        : [])
+                    ->searchable()
+                    ->live()
+                    ->helperText('Pick a city above first. Setting this also fills in "Area (free text)" below automatically.')
+                    ->afterStateUpdated(fn ($state, callable $set) => $set('geo_id', \App\Models\Area::find($state)?->name)),
+
+                TextInput::make('geo_id')
+                    ->label('Area (free text)')
+                    ->helperText('Used as-is if the area above isn\'t in our list yet - e.g. a city/town not seeded yet.'),
             ]);
     }
 
@@ -41,7 +68,8 @@ class LocationResource extends Resource
             ->columns([
                 //column heads
                 TextColumn::make('location_name'),
-                TextColumn::make('geo_id')->label('City'),
+                TextColumn::make('area.city.name')->label('City'),
+                TextColumn::make('geo_id')->label('Area'),
                 //TextColumn::make('timestamp'),
             ])
             ->filters([

@@ -19,5 +19,9 @@ class DatabaseSeeder extends Seeder
             'name' => 'Test User',
             'email' => 'test@example.com',
         ]);
+
+        // Reference data (cities/areas for the location picker) - not demo data,
+        // always safe/idempotent to run.
+        $this->call(KenyaLocationsSeeder::class);
     }
 }

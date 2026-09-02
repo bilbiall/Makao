@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Area;
 use App\Models\House;
 use App\Models\Location;
 use App\Models\ViewingRequest;
@@ -38,11 +39,12 @@ class PropertyListingController extends Controller
 
         $houses = $query->orderBy('rent_amount')->paginate(12)->withQueryString();
 
-        $areas = Location::whereHas('houses', fn ($q) => $q->publiclyVisible())
-            ->whereNotNull('geo_id')
-            ->distinct()
-            ->orderBy('geo_id')
-            ->pluck('geo_id');
+        $areas = Area::suggestionNames(
+            Location::whereHas('houses', fn ($q) => $q->publiclyVisible())
+                ->whereNotNull('geo_id')
+                ->distinct()
+                ->pluck('geo_id')
+        );
 
         $watchlistedIds = Auth::check() && Auth::user()->isUser()
             ? Auth::user()->watchlist()->pluck('houses.id')->all()

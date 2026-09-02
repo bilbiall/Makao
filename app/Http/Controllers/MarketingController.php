@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Area;
 use App\Models\House;
 use App\Models\Location;
 use App\Models\Package;
@@ -28,7 +29,10 @@ class MarketingController extends Controller
             )
             ->shuffle();
 
-        $areas = Location::whereNotNull('geo_id')->distinct()->orderBy('geo_id')->pluck('geo_id');
+        // Every seeded area (Nairobi, Mombasa, etc.) plus any custom geo_id typed
+        // before that master list existed, so search suggestions aren't limited
+        // to places that already happen to have a listing.
+        $areas = Area::suggestionNames(Location::whereNotNull('geo_id')->distinct()->pluck('geo_id'));
 
         return view('marketing.home', ['featured' => $featured, 'areas' => $areas]);
     }
