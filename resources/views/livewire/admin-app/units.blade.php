@@ -30,7 +30,14 @@
             <div>
                 <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Unit name</label>
                 <input type="text" wire:model="unit_name" placeholder="e.g. A1, Bedsitter 3" class="{{ $fieldClass }}">
+                <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">For your own records - not shown to renters.</p>
                 @error('unit_name') <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p> @enderror
+            </div>
+            <div>
+                <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Listing display name (optional)</label>
+                <input type="text" wire:model="unit_display_name" placeholder="e.g. Spacious Bedsitter Near Town" class="{{ $fieldClass }}">
+                <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">What renters see on the public listing, if different from the name above.</p>
+                @error('unit_display_name') <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p> @enderror
             </div>
             <div>
                 <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Unit type</label>
@@ -227,7 +234,12 @@
         @forelse ($units as $unit)
             <div class="flex items-center justify-between px-4 py-3 text-sm">
                 <div class="min-w-0">
-                    <p class="text-slate-900 dark:text-slate-100 font-medium truncate">{{ $unit->house_name }}</p>
+                    <p class="text-slate-900 dark:text-slate-100 font-medium truncate">
+                        {{ $unit->house_name }}
+                        @if ($unit->display_name)
+                            <span class="font-normal text-slate-400 dark:text-slate-500">&middot; {{ $unit->display_name }}</span>
+                        @endif
+                    </p>
                     <p class="text-xs text-slate-500 dark:text-slate-400 truncate">{{ $unit->house_type }} · {{ $unit->location?->location_name ?? '—' }}</p>
                 </div>
                 <div class="flex items-center gap-3 shrink-0">

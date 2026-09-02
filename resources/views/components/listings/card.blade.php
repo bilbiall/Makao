@@ -8,7 +8,7 @@
 <div class="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
     <div class="relative aspect-video overflow-hidden bg-slate-100 dark:bg-slate-800">
         @if ($photo)
-            <img src="{{ $photo->url() }}" alt="{{ $house->house_name }}" loading="lazy" class="h-full w-full object-cover">
+            <img src="{{ $photo->url() }}" alt="{{ $house->publicName() }}" loading="lazy" class="h-full w-full object-cover">
         @endif
         <div class="absolute left-3 top-3">
             <x-listings.kind-tag :mode="$house->listing_mode" />
@@ -41,7 +41,7 @@
             </p>
         </div>
 
-        <h3 class="mt-1 truncate text-sm font-medium text-slate-900 dark:text-slate-100">{{ $house->house_name }}</h3>
+        <h3 class="mt-1 truncate text-sm font-medium text-slate-900 dark:text-slate-100">{{ $house->publicName() }}</h3>
 
         <p class="mt-1 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
             @svg('heroicon-o-map-pin', 'w-4 h-4 shrink-0')
@@ -53,6 +53,6 @@
             {{ $house->house_type }}
         </p>
 
-        <a href="{{ $showRoute }}" class="absolute inset-0" aria-label="View {{ $house->house_name }}"></a>
+        <a href="{{ $showRoute }}" class="absolute inset-0" aria-label="View {{ $house->publicName() }}"></a>
     </div>
 </div>

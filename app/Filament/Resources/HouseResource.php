@@ -32,7 +32,14 @@ class HouseResource extends Resource
         return $form
             ->schema([
                 //form for new house
-                TextInput::make('house_name')->required(),
+                TextInput::make('house_name')
+                    ->label('Unit name/number')
+                    ->helperText('For your own records - not shown to renters unless the display name below is left blank.')
+                    ->required(),
+
+                TextInput::make('display_name')
+                    ->label('Listing display name (optional)')
+                    ->helperText('What renters see on the public listing, e.g. "Spacious Bedsitter Near Town" - falls back to the unit name above if left blank.'),
                 //TextInput::make('number_of_rooms')->numeric()->required(),
                 //TextInput::make('num_of_bedrooms')->required(),
                 Select::make('house_type')
@@ -79,15 +86,28 @@ class HouseResource extends Resource
                     ->helperText('Shown on the public "Find a house" listing page when this unit is vacant.')
                     ->rows(3),
 
-                Forms\Components\TagsInput::make('amenities')
+                Forms\Components\CheckboxList::make('amenities')
                     ->label('Amenities')
-                    ->placeholder('Type an amenity and press Enter')
-                    ->helperText('e.g. Borehole water, Backup generator, Secure parking, Wi-Fi - shown on the public listing page.')
-                    ->suggestions([
-                        'Borehole water', 'Backup generator', 'Secure parking', 'CCTV', 'Wi-Fi',
-                        'Balcony', 'Lift', 'Master ensuite', 'Gym', 'Swimming pool', 'DSQ', 'Garden',
-                        'Pet friendly', 'Kitchenette', 'Air conditioning', 'Washing machine', 'Self check-in',
-                    ]),
+                    ->helperText('Shown on the public listing page.')
+                    ->options(array_combine(House::AMENITIES, House::AMENITIES))
+                    ->columns(2)
+                    ->gridDirection('row'),
+
+                Forms\Components\Section::make('Nearby places')
+                    ->description('Roughly how many minutes away is each, on foot or by matatu - whichever\'s natural? Leave any blank to leave it off the listing. Renters searching for a house see this as "5 min to School", etc.')
+                    ->schema(
+                        collect(House::NEARBY_CATEGORIES)
+                            ->map(fn (string $label, string $slug) => Forms\Components\TextInput::make("nearby_places.{$slug}")
+                                ->label($label)
+                                ->numeric()
+                                ->minValue(0)
+                                ->suffix('min'))
+                            ->values()
+                            ->all()
+                    )
+                    ->columns(2)
+                    ->collapsible()
+                    ->collapsed(),
 
                 // Not a direct House column - saved to the house_photos table via
                 // CreateHouse::afterCreate()/EditHouse::afterSave(), since a house has

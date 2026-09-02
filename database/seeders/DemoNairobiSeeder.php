@@ -401,6 +401,32 @@ class DemoNairobiSeeder extends Seeder
     }
 
     /**
+     * A plausible display_name, amenities and nearby_places for one seeded
+     * house - so the demo actually shows off the "listing display name",
+     * curated-amenities and "N min to school" features instead of every
+     * seeded unit having them blank.
+     */
+    private function randomListingExtras(string $type): array
+    {
+        $adjectives = ['Cozy', 'Spacious', 'Modern', 'Bright', 'Elegant', 'Charming', 'Stylish', 'Sunny'];
+        $displayName = $adjectives[array_rand($adjectives)] . ' ' . $type;
+
+        $amenities = collect(House::AMENITIES)->shuffle()->take(random_int(3, 6))->values()->all();
+
+        $nearbyPlaces = collect(array_keys(House::NEARBY_CATEGORIES))
+            ->shuffle()
+            ->take(random_int(2, 4))
+            ->mapWithKeys(fn ($slug) => [$slug => random_int(2, 20)])
+            ->all();
+
+        return [
+            'display_name' => $displayName,
+            'amenities' => $amenities,
+            'nearby_places' => $nearbyPlaces,
+        ];
+    }
+
+    /**
      * @return array{0: \Illuminate\Support\Collection, 1: \Illuminate\Support\Collection} [tenants, vacant houses]
      */
     private function seedLocationHouses(Location $location, array $locConfig): array
@@ -428,6 +454,7 @@ class DemoNairobiSeeder extends Seeder
                         'house_status' => 'Vacant',
                         'listing_mode' => 'long_term',
                         'description' => "A well-kept {$type} in {$location->location_name}, {$location->geo_id}. Close to shops, matatu routes and schools.",
+                        ...$this->randomListingExtras($type),
                     ]);
                     $unitNumber++;
 
@@ -449,6 +476,7 @@ class DemoNairobiSeeder extends Seeder
                     'house_status' => 'Vacant',
                     'listing_mode' => 'short_term',
                     'description' => "Furnished {$bnb['type']} short-stay unit in {$location->location_name}, {$location->geo_id}. Self check-in, wifi, backup water.",
+                    ...$this->randomListingExtras($bnb['type']),
                 ]);
                 $unitNumber++;
 
@@ -470,6 +498,13 @@ class DemoNairobiSeeder extends Seeder
         foreach ($location->houses()->get() as $house) {
             if ($house->photos()->count() === 0 && ($house->listing_mode === 'short_term' || $house->house_status === 'Vacant')) {
                 $this->seedHousePhotos($house);
+            }
+
+            // Backfill for houses seeded before display_name/amenities/nearby_places
+            // existed - never overwrites a value someone (or a prior seeder run)
+            // already set.
+            if ($house->display_name === null) {
+                $house->update($this->randomListingExtras($house->house_type));
             }
         }
 

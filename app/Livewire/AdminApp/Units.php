@@ -41,6 +41,7 @@ class Units extends Component
     public bool $showAddUnit = false;
     public string $unit_property_id = '';
     public string $unit_name = '';
+    public string $unit_display_name = '';
     public string $unit_type = '';
     public string $unit_listing_mode = 'long_term'; // 'long_term' | 'short_term'
     public string $unit_rent_amount = '';
@@ -268,6 +269,7 @@ class Units extends Component
         return [
             'unit_property_id' => 'required|exists:locations,id',
             'unit_name' => 'required|string|max:255',
+            'unit_display_name' => 'nullable|string|max:255',
             'unit_type' => 'required|string|in:' . implode(',', House::UNIT_TYPES),
             'unit_listing_mode' => 'required|in:long_term,short_term',
             'unit_rent_amount' => 'nullable|numeric',
@@ -314,6 +316,7 @@ class Units extends Component
 
         $house = House::create([
             'house_name' => $this->unit_name,
+            'display_name' => $this->unit_display_name ?: null,
             'house_type' => $this->unit_type,
             'rent_amount' => $this->unit_listing_mode === 'long_term' ? $this->unit_rent_amount : null,
             'location_id' => $location->id,
@@ -326,7 +329,7 @@ class Units extends Component
         }
 
         $this->reset([
-            'unit_property_id', 'unit_name', 'unit_type', 'unit_rent_amount',
+            'unit_property_id', 'unit_name', 'unit_display_name', 'unit_type', 'unit_rent_amount',
             'unit_bnb_nightly', 'unit_bnb_weekly', 'unit_bnb_monthly', 'showAddUnit',
         ]);
         $this->unit_listing_mode = 'long_term';

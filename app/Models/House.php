@@ -29,8 +29,54 @@ class House extends Model
         'Own Compound',
     ];
 
+    // A fixed, curated list - not free text - so every listing's amenities stay
+    // consistent and searchable/filterable later, and so this reads as amenities
+    // relevant to Kenyan rentals specifically rather than a generic Western list.
+    public const AMENITIES = [
+        'Borehole water',
+        'Backup water tank',
+        'Backup generator',
+        'Secure parking',
+        'CCTV',
+        'Electric fence',
+        'Perimeter wall',
+        'Wi-Fi',
+        'Balcony',
+        'Lift',
+        'Master ensuite',
+        'Gym',
+        'Swimming pool',
+        'DSQ (servant quarter)',
+        'Garden',
+        'Pet friendly',
+        'Kitchenette',
+        'Furnished',
+        'Air conditioning',
+        'Washing machine allowed',
+        'DSTV/Netflix ready',
+        'Self check-in',
+    ];
+
+    // Slug => label for the "how far is X" section on a listing - fixed, not
+    // free text, for the same reason AMENITIES is: consistent, and specific to
+    // what actually matters when house-hunting in a Kenyan town. Each holds an
+    // optional {minutes, km} pair in House.nearby_places - see nearbyPlaces().
+    public const NEARBY_CATEGORIES = [
+        'school' => 'School',
+        'hospital' => 'Hospital/Clinic',
+        'mall' => 'Shopping mall',
+        'supermarket' => 'Supermarket',
+        'market' => 'Local market',
+        'bus_stage' => 'Bus/matatu stage',
+        'main_road' => 'Main road/highway',
+        'place_of_worship' => 'Church/mosque',
+        'bank_atm' => 'Bank/ATM',
+        'police_station' => 'Police station',
+    ];
+
     protected $fillable = [
         'house_name',
+        'display_name',
         //'number_of_rooms',
         'rent_amount',
         'location_id',
@@ -41,6 +87,7 @@ class House extends Model
         'size_label',
         'listing_mode',
         'amenities',
+        'nearby_places',
         'is_published',
     ];
 
@@ -48,8 +95,37 @@ class House extends Model
     {
         return [
             'amenities' => 'array',
+            'nearby_places' => 'array',
             'is_published' => 'boolean',
         ];
+    }
+
+    /** What a renter should see as this unit's name - falls back to the internal house_name when no display_name is set. */
+    public function publicName(): string
+    {
+        return $this->display_name ?: $this->house_name;
+    }
+
+    /**
+     * Only the categories the owner actually filled in (minutes away, on
+     * foot/by matatu - whichever's the natural way to describe it), in
+     * House::NEARBY_CATEGORIES' own order - e.g.
+     * ['school' => ['label' => 'School', 'minutes' => 5], ...].
+     */
+    public function nearbyPlacesForDisplay(): array
+    {
+        $raw = $this->nearby_places ?? [];
+        $result = [];
+
+        foreach (self::NEARBY_CATEGORIES as $slug => $label) {
+            $minutes = $raw[$slug] ?? null;
+
+            if ($minutes !== null && $minutes !== '') {
+                $result[$slug] = ['label' => $label, 'minutes' => (int) $minutes];
+            }
+        }
+
+        return $result;
     }
 
     //relationship with the location model

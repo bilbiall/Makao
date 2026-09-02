@@ -19,6 +19,7 @@ class Properties extends Component
 
     public ?int $addingHouseTo = null;
     public string $house_name = '';
+    public string $display_name = '';
     public string $house_type = '';
     public $rent_amount = '';
     public string $listing_mode = 'long_term';
@@ -85,13 +86,14 @@ class Properties extends Component
     public function startAddingHouse(int $locationId): void
     {
         $this->addingHouseTo = $locationId;
-        $this->reset(['house_name', 'house_type', 'rent_amount', 'listing_mode', 'bnb_nightly_price', 'bnb_weekly_price', 'bnb_monthly_price']);
+        $this->reset(['house_name', 'display_name', 'house_type', 'rent_amount', 'listing_mode', 'bnb_nightly_price', 'bnb_weekly_price', 'bnb_monthly_price']);
     }
 
     public function createHouse(): void
     {
         $this->validate([
             'house_name' => 'required|string|max:255',
+            'display_name' => 'nullable|string|max:255',
             'house_type' => 'required|string|in:' . implode(',', House::UNIT_TYPES),
             'listing_mode' => 'required|in:long_term,short_term',
             'rent_amount' => $this->listing_mode === 'long_term' ? 'required|numeric|min:0' : 'nullable|numeric|min:0',
@@ -118,6 +120,7 @@ class Properties extends Component
 
         $house = House::create([
             'house_name' => $this->house_name,
+            'display_name' => $this->display_name ?: null,
             'house_type' => $this->house_type,
             'rent_amount' => $this->listing_mode === 'long_term' ? $this->rent_amount : null,
             'location_id' => $location->id,
@@ -143,8 +146,8 @@ class Properties extends Component
             }
         }
 
-        $this->reset(['house_name', 'house_type', 'rent_amount', 'listing_mode', 'bnb_nightly_price', 'bnb_weekly_price', 'bnb_monthly_price', 'addingHouseTo']);
-        session()->flash('properties-status', 'Unit added. Add photos, a description and amenities via Advanced view to make it visible on the public site.');
+        $this->reset(['house_name', 'display_name', 'house_type', 'rent_amount', 'listing_mode', 'bnb_nightly_price', 'bnb_weekly_price', 'bnb_monthly_price', 'addingHouseTo']);
+        session()->flash('properties-status', 'Unit added. Add photos, a description, amenities and nearby places via Advanced view to make it visible on the public site.');
     }
 
     public function render()

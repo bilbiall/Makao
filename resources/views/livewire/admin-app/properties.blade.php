@@ -61,6 +61,12 @@
                         @error('house_name') <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p> @enderror
                     </div>
                     <div>
+                        <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Listing display name (optional)</label>
+                        <input type="text" wire:model="display_name" placeholder="e.g. Spacious Bedsitter Near Town" class="{{ $fieldClass }}">
+                        <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">What renters see publicly, if different from the name above.</p>
+                        @error('display_name') <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
                         <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Unit type</label>
                         <select wire:model="house_type" class="{{ $fieldClass }}">
                             <option value="">Select a type</option>

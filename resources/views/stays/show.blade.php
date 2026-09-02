@@ -1,4 +1,4 @@
-<x-layouts.marketing :title="$house->house_name">
+<x-layouts.marketing :title="$house->publicName()">
     <div class="pb-14">
         <div class="mx-auto max-w-5xl px-4 py-6 sm:px-6">
             @if ($errors->any())
@@ -11,11 +11,11 @@
             @if ($house->photos->isNotEmpty())
                 <div class="grid grid-cols-4 gap-2 overflow-hidden rounded-2xl" style="grid-auto-rows: 9rem;">
                     <div class="col-span-4 row-span-2 sm:col-span-2 sm:row-span-2 bg-slate-100 dark:bg-slate-800">
-                        <img src="{{ $house->photos->first()->url() }}" class="h-full w-full object-cover" alt="{{ $house->house_name }}">
+                        <img src="{{ $house->photos->first()->url() }}" class="h-full w-full object-cover" alt="{{ $house->publicName() }}">
                     </div>
                     @foreach ($house->photos->skip(1)->take(4) as $photo)
                         <div class="hidden sm:block bg-slate-100 dark:bg-slate-800">
-                            <img src="{{ $photo->url() }}" class="h-full w-full object-cover" alt="{{ $house->house_name }}">
+                            <img src="{{ $photo->url() }}" class="h-full w-full object-cover" alt="{{ $house->publicName() }}">
                         </div>
                     @endforeach
                 </div>
@@ -26,7 +26,7 @@
             <div class="mt-6 grid gap-8 lg:grid-cols-[1fr_360px]">
                 <div class="min-w-0">
                     <x-listings.kind-tag :mode="$house->listing_mode" />
-                    <h1 class="mt-3 text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">{{ $house->house_name }}</h1>
+                    <h1 class="mt-3 text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">{{ $house->publicName() }}</h1>
                     <p class="mt-1 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
                         @svg('heroicon-o-map-pin', 'w-4 h-4 shrink-0')
                         {{ $house->location?->geo_id ?? $house->location?->location_name }} &middot; {{ $house->house_type }}
@@ -49,6 +49,8 @@
                             </div>
                         </div>
                     @endif
+
+                    <x-listings.nearby-places :house="$house" />
                 </div>
 
                 <div>
