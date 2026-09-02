@@ -35,6 +35,12 @@ class UserSignupController extends Controller
             'role' => 'user',
         ]);
 
+        try {
+            $user->sendEmailVerificationNotification();
+        } catch (\Throwable $e) {
+            // ignore email failures (e.g. SMTP not configured) - signup must still succeed
+        }
+
         Auth::login($user);
         $request->session()->regenerate();
 

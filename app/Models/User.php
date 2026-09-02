@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -16,7 +16,7 @@ use TomatoPHP\FilamentAlerts\Traits\InteractsWithNotifications;
 
 
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
@@ -105,6 +105,21 @@ class User extends Authenticatable
                 // ignore
             }
         });
+    }
+
+    /**
+     * Laravel's default MailChannel just uses whatever mailer mail.default already
+     * points at - it has no notion of "this landlord's own SMTP". Prime it first
+     * (same per-landlord/platform-fallback resolution EmailHelper::send() uses for
+     * every other outgoing email) so the verification link actually goes out
+     * through the right account instead of silently falling through to .env's
+     * default mailer.
+     */
+    public function sendEmailVerificationNotification(): void
+    {
+        EmailHelper::configureMailer($this->landlord_id);
+
+        $this->notify(new \Illuminate\Auth\Notifications\VerifyEmail);
     }
 
     public function isAdmin(): bool

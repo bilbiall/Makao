@@ -2,6 +2,8 @@
 
 namespace App\Livewire\Onboarding;
 
+use App\Models\Area;
+use App\Models\City;
 use App\Models\House;
 use App\Models\Location;
 use Illuminate\Support\Facades\Auth;
@@ -46,9 +48,18 @@ class SetupWizard extends Component
             'geo_id' => 'nullable|string|max:255',
         ]);
 
+        // Same "typed value happens to match a seeded area" linking as
+        // AdminApp\Properties::createProperty() - matches across every city
+        // since this single field isn't scoped to one (unlike Properties' city
+        // + area picker), same as the public search widgets.
+        $area = $this->geo_id !== ''
+            ? Area::whereRaw('LOWER(name) = ?', [strtolower($this->geo_id)])->first()
+            : null;
+
         $this->createdLocation = Location::create([
             'location_name' => $this->location_name,
             'geo_id' => $this->geo_id ?: null,
+            'area_id' => $area?->id,
         ]);
 
         $this->step = 2;
@@ -88,6 +99,7 @@ class SetupWizard extends Component
     {
         return view('livewire.onboarding.setup-wizard', [
             'unitTypes' => House::UNIT_TYPES,
+            'cities' => City::breakdown(),
         ])
             ->layout('components.layouts.app', ['title' => 'Set up your account']);
     }

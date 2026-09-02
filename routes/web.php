@@ -48,7 +48,11 @@ Route::get('/houses/{house}', [\App\Http\Controllers\PropertyListingController::
 Route::middleware(['auth'])->group(function () {
     Route::post('/houses/{house}/watchlist', [\App\Http\Controllers\PropertyListingController::class, 'toggleWatchlist'])
         ->name('listings.watchlist');
+    // Verified only - unlike watchlisting (harmless) or a guest booking a stay (no
+    // account to gate at all), this is the one unauthenticated-feeling, no-other-
+    // friction action a bot account could spam landlords with.
     Route::post('/houses/{house}/request-viewing', [\App\Http\Controllers\PropertyListingController::class, 'requestViewing'])
+        ->middleware('verified')
         ->name('listings.request-viewing');
 });
 
@@ -71,6 +75,20 @@ Route::get('/reset-password/{token}', [\App\Http\Controllers\ResetPasswordContro
     ->name('password.reset');
 Route::post('/reset-password', [\App\Http\Controllers\ResetPasswordController::class, 'reset'])
     ->name('password.update');
+
+// Email verification - a soft gate (every role still lands in their own dashboard
+// at signup regardless of verified_at) except for the couple of specific,
+// bot-abusable actions that require it - see EmailVerificationController.
+Route::middleware('auth')->group(function () {
+    Route::get('/email/verify', [\App\Http\Controllers\EmailVerificationController::class, 'notice'])
+        ->name('verification.notice');
+    Route::get('/email/verify/{id}/{hash}', [\App\Http\Controllers\EmailVerificationController::class, 'verify'])
+        ->middleware(['signed', 'throttle:6,1'])
+        ->name('verification.verify');
+    Route::post('/email/verification-notification', [\App\Http\Controllers\EmailVerificationController::class, 'resend'])
+        ->middleware('throttle:6,1')
+        ->name('verification.send');
+});
 
 use App\Http\Controllers\PesapalController;
 use App\Http\Controllers\MpesaController;

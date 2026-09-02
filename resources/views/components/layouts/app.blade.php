@@ -113,6 +113,24 @@
     {{-- Main content --}}
     <main class="lg:pl-64 pb-24 lg:pb-8">
         <div class="px-4 py-5 lg:px-8 lg:py-6 max-w-5xl mx-auto">
+            @if (session('status'))
+                <div class="mb-4 rounded-lg bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-700 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-400">
+                    {{ session('status') }}
+                </div>
+            @endif
+
+            @if (!$user->hasVerifiedEmail())
+                <div class="mb-4 flex flex-col gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-400 sm:flex-row sm:items-center sm:justify-between">
+                    <span>Verify your email to unlock every feature - check your inbox for the link we sent to {{ $user->email }}.</span>
+                    <form method="POST" action="{{ route('verification.send') }}" class="shrink-0">
+                        @csrf
+                        <button type="submit" class="whitespace-nowrap rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-100 dark:border-amber-500/30 dark:bg-transparent dark:text-amber-400 dark:hover:bg-amber-500/10">
+                            Resend email
+                        </button>
+                    </form>
+                </div>
+            @endif
+
             @if ($title && !$hideHeading)
                 <h1 class="lg:hidden text-2xl font-bold text-slate-900 dark:text-slate-100 mb-5">{{ $title }}</h1>
             @endif

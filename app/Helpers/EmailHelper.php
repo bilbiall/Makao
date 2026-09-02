@@ -14,6 +14,29 @@ class EmailHelper
      */
     public static function send(string $to, string $subject, string $body, ?int $landlordId = null): void
     {
+        static::configureMailer($landlordId);
+
+        $fromEmail = config('mail.from.address');
+        $fromName = config('mail.from.name');
+
+        Mail::raw($body, function ($message) use ($to, $subject, $fromEmail, $fromName) {
+            $message->to($to)->subject($subject);
+            if ($fromEmail) {
+                $message->from($fromEmail, $fromName ?? $fromEmail);
+            }
+        });
+    }
+
+    /**
+     * Points the "smtp" mailer at this landlord's SMTP settings (or the platform-wide
+     * fallback) for the rest of the request - same config used by send() above, but
+     * exposed separately so anything that sends mail through Laravel's own channels
+     * (e.g. a Notification's toMail(), which goes through mail.default rather than a
+     * direct Mail::raw() call) still goes out via the right account. User::
+     * sendEmailVerificationNotification() is the first caller of this.
+     */
+    public static function configureMailer(?int $landlordId = null): void
+    {
         // Falls back to the platform-wide SMTP account (Platform Settings > Email) when
         // this landlord hasn't set their own - a Gmail App Password works fine there,
         // so a business without its own mail server still gets working email.
@@ -58,15 +81,5 @@ class EmailHelper
         // even if something earlier in the same request already resolved the "smtp"
         // mailer with different settings (e.g. a different landlord's credentials).
         Mail::purge('smtp');
-
-        $fromEmail = config('mail.from.address');
-        $fromName = config('mail.from.name');
-
-        Mail::raw($body, function ($message) use ($to, $subject, $fromEmail, $fromName) {
-            $message->to($to)->subject($subject);
-            if ($fromEmail) {
-                $message->from($fromEmail, $fromName ?? $fromEmail);
-            }
-        });
     }
 }

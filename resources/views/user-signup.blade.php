@@ -42,13 +42,11 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     <label class="{{ $labelClass }}">Password</label>
-                    <input type="password" name="password" required
-                        class="{{ $inputClass }}">
+                    <x-password-input name="password" required :input-class="$inputClass" />
                 </div>
                 <div>
                     <label class="{{ $labelClass }}">Confirm Password</label>
-                    <input type="password" name="password_confirmation" required
-                        class="{{ $inputClass }}">
+                    <x-password-input name="password_confirmation" required :input-class="$inputClass" />
                 </div>
             </div>
 

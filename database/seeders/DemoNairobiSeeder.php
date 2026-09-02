@@ -100,7 +100,24 @@ class DemoNairobiSeeder extends Seeder
         $this->seedViewingRequests($prospects, $allVacantHouses);
         $this->seedWatchlist($prospects, $allVacantHouses);
 
+        $this->markDemoAccountsVerified();
+
         $this->command?->info('Done. Superadmin login: superadmin@rentydemo.co.ke / ' . self::DEMO_PASSWORD);
+    }
+
+    /**
+     * Every demo account is trusted, pre-vetted data - not a real signup - so the
+     * new "verify your email" banner/gate (added for real registrations, to deter
+     * bots) shouldn't nag on any of them. Scoped to this seeder's own two email
+     * domains (see the class docstring), same as every other step here - never
+     * touches a real user's account.
+     */
+    private function markDemoAccountsVerified(): void
+    {
+        User::where(function ($q) {
+            $q->where('email', 'like', '%@rentydemo.co.ke')
+                ->orWhere('email', 'like', '%@example.test');
+        })->whereNull('email_verified_at')->update(['email_verified_at' => now()]);
     }
 
     private function packages(): array

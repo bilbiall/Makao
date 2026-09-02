@@ -3,6 +3,7 @@
     'counts' => [],
     'name' => 'area',
     'value' => '',
+    'wireModel' => null,
     'placeholder' => 'Search a location...',
     'inputClass' => '',
 ])
@@ -23,10 +24,19 @@
             'areas' => $areas,
         ];
     })->all();
+
+    // Two ways this field's value can live: a plain native <input name="...">
+    // for the public GET-based search forms, or - when used inside a Livewire
+    // component (wireModel set) - entangled straight to that component's
+    // property, so typing/selecting here updates it exactly like wire:model
+    // would, without Alpine's own x-model fighting Livewire for the DOM value.
+    $queryInit = $wireModel
+        ? "\$wire.entangle('{$wireModel}')"
+        : \Illuminate\Support\Js::from($value ?? '');
 @endphp
 <div
     x-data="{
-        query: @js($value ?? ''),
+        query: {{ $queryInit }},
         open: false,
         groups: @js($groups),
         // Collapsed to just city names (no areas listed) until the visitor

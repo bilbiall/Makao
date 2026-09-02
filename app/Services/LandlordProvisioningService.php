@@ -50,6 +50,7 @@ class LandlordProvisioningService
             ]);
 
             $this->sendWelcomeEmail($user, $landlord, $package);
+            $this->sendVerificationEmail($user);
 
             Auth::login($user);
 
@@ -69,6 +70,15 @@ class LandlordProvisioningService
             ], $user->landlord_id);
 
             EmailHelper::send($user->email, 'Welcome to ' . config('app.name'), $body, $user->landlord_id);
+        } catch (\Throwable $e) {
+            // ignore email failures (e.g. SMTP not configured) - signup must still succeed
+        }
+    }
+
+    protected function sendVerificationEmail(User $user): void
+    {
+        try {
+            $user->sendEmailVerificationNotification();
         } catch (\Throwable $e) {
             // ignore email failures (e.g. SMTP not configured) - signup must still succeed
         }

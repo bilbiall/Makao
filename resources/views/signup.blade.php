@@ -49,18 +49,22 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     <label class="{{ $labelClass }}">Password</label>
-                    <input type="password" name="password" required
-                        class="{{ $inputClass }}">
+                    <x-password-input name="password" required :input-class="$inputClass" />
                 </div>
                 <div>
                     <label class="{{ $labelClass }}">Confirm Password</label>
-                    <input type="password" name="password_confirmation" required
-                        class="{{ $inputClass }}">
+                    <x-password-input name="password_confirmation" required :input-class="$inputClass" />
                 </div>
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2 dark:text-slate-300">Choose a Plan</label>
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Choose a Plan</label>
+                    <span class="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                        @svg('heroicon-o-shield-check', 'w-3.5 h-3.5')
+                        No credit card required
+                    </span>
+                </div>
                 @if ($packages->isEmpty())
                     <p class="text-sm text-slate-500 rounded-lg border border-slate-200 p-4 dark:text-slate-400 dark:border-slate-800">Pricing is being finalized - contact us to get started.</p>
                 @else
@@ -78,6 +82,9 @@
                             </label>
                         @endforeach
                     </div>
+                    <p class="mt-3 text-xs text-slate-400 dark:text-slate-500">
+                        This just sets how many properties, tenants and staff you can add - it isn't a payment, and you won't be asked for card details to start your trial.
+                    </p>
                 @endif
             </div>
 

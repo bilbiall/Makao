@@ -16,7 +16,12 @@
             </div>
             <div>
                 <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Area / town (optional)</label>
-                <input type="text" wire:model="geo_id" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100" placeholder="e.g. Kahawa West, Nairobi">
+                <x-area-search-input
+                    :cities="$cities"
+                    wire-model="geo_id"
+                    placeholder="e.g. Kahawa West, Nairobi"
+                    input-class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                />
             </div>
             <button wire:click="createLocation" class="w-full rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">
                 Continue

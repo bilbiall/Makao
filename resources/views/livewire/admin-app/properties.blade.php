@@ -26,29 +26,9 @@
                     @error('location_name') <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div>
-                    <label class="text-xs font-medium text-slate-600 dark:text-slate-400">City / town</label>
-                    <select wire:model.live="city_id" class="{{ $fieldClass }}">
-                        <option value="">Select a city (optional)</option>
-                        @foreach ($cities as $city)
-                            <option value="{{ $city->id }}">{{ $city->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div>
-                    <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Area</label>
-                    <input type="text" wire:model="geo_id" list="area-options" placeholder="e.g. Kilimani" class="{{ $fieldClass }}">
-                    <datalist id="area-options">
-                        @foreach ($this->areaOptions as $areaName)
-                            <option value="{{ $areaName }}"></option>
-                        @endforeach
-                    </datalist>
-                    <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">
-                        @if ($city_id === '')
-                            Pick a city above to narrow this down, or just type the area/estate name directly.
-                        @else
-                            Start typing to see areas in {{ $cities->firstWhere('id', (int) $city_id)?->name }} - or type your own if it's not listed yet.
-                        @endif
-                    </p>
+                    <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Area / town</label>
+                    <x-area-search-input :cities="$cities" wire-model="geo_id" placeholder="e.g. Kilimani, Westlands" :input-class="$fieldClass" />
+                    <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">Start typing a city (e.g. "Nairobi") to see its areas, or type the area/estate name directly.</p>
                 </div>
                 <div class="flex gap-3">
                     <button wire:click="$set('showPropertyForm', false)" class="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300">Cancel</button>

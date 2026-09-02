@@ -15,7 +15,6 @@ class Properties extends Component
 {
     public bool $showPropertyForm = false;
     public string $location_name = '';
-    public string $city_id = '';
     public string $geo_id = '';
 
     public ?int $addingHouseTo = null;
@@ -51,16 +50,6 @@ class Properties extends Component
         return in_array(Auth::user()->role, ['admin', 'landlord']);
     }
 
-    /** Areas for the currently selected city - powers the area field's datalist. */
-    public function getAreaOptionsProperty()
-    {
-        if ($this->city_id === '') {
-            return collect();
-        }
-
-        return Area::where('city_id', $this->city_id)->orderBy('name')->pluck('name');
-    }
-
     public function createProperty(): void
     {
         abort_unless($this->canManageProperties(), 403);
@@ -77,11 +66,10 @@ class Properties extends Component
         }
 
         // Only linked to a canonical Area when the typed value actually matches
-        // one in the chosen city (case-insensitive) - anything else (a city/area
-        // combo we haven't seeded yet) still just saves as a plain geo_id string,
-        // exactly as before.
-        $area = ($this->city_id !== '' && $this->geo_id !== '')
-            ? Area::where('city_id', $this->city_id)->whereRaw('LOWER(name) = ?', [strtolower($this->geo_id)])->first()
+        // one already seeded (case-insensitive) - anything else (a city/area
+        // combo we haven't seeded yet) still just saves as a plain geo_id string.
+        $area = $this->geo_id !== ''
+            ? Area::whereRaw('LOWER(name) = ?', [strtolower($this->geo_id)])->first()
             : null;
 
         Location::create([
@@ -90,7 +78,7 @@ class Properties extends Component
             'area_id' => $area?->id,
         ]);
 
-        $this->reset(['location_name', 'city_id', 'geo_id', 'showPropertyForm']);
+        $this->reset(['location_name', 'geo_id', 'showPropertyForm']);
         session()->flash('properties-status', 'Property added.');
     }
 
@@ -166,7 +154,7 @@ class Properties extends Component
         return view('livewire.admin-app.properties', [
             'locations' => $locations,
             'unitTypes' => House::UNIT_TYPES,
-            'cities' => City::orderBy('name')->get(),
+            'cities' => City::breakdown(),
         ])
             ->layout('components.layouts.app', ['title' => 'Properties']);
     }
