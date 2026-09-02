@@ -19,25 +19,47 @@
     </section>
 
     {{-- How it works --}}
-    <section class="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
-        <h2 class="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 sm:text-3xl">How Makao works</h2>
-        <p class="mt-2 max-w-xl text-slate-500 dark:text-slate-400">Three steps from searching to keys in hand.</p>
-        <ol class="mt-8 grid gap-4 md:grid-cols-3">
+    <section class="py-14 sm:py-20" x-data="{ step: 0 }">
+        <div class="mx-auto max-w-6xl px-4 sm:px-6">
+            <h2 class="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 sm:text-3xl">How Makao works</h2>
+            <p class="mt-2 max-w-xl text-slate-500 dark:text-slate-400">Three steps from searching to keys in hand.</p>
+        </div>
+
+        {{-- Below md: a swipeable, snap-scrolling carousel (each card peeks the next
+             one at its edge, hinting it's swipeable) with dot indicators driven by
+             scroll position - plain Alpine, no carousel library or plugin. From md
+             up: back to the plain 3-column grid, unchanged. --}}
+        <ol
+            @scroll.passive="step = Math.round(($el.scrollLeft / (($el.scrollWidth - $el.clientWidth) || 1)) * 2)"
+            class="mt-8 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 sm:px-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-auto md:max-w-6xl md:grid md:grid-cols-3 md:overflow-visible md:px-4 md:pb-0 md:[scrollbar-width:auto] lg:px-6"
+        >
             @foreach ([
                 ['icon' => 'heroicon-o-magnifying-glass', 'title' => 'Search listings', 'body' => 'Filter by area, type and budget across long-term homes and short stays.'],
                 ['icon' => 'heroicon-o-calendar-days', 'title' => 'Request a viewing or book instantly', 'body' => 'Long-term homes get a scheduled viewing. Furnished stays can be booked on the spot.'],
                 ['icon' => 'heroicon-o-key', 'title' => 'Move in or check in', 'body' => 'Agree terms in the app, pay securely and collect your keys.'],
             ] as $i => $step)
-                <li class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                    <div class="grid h-11 w-11 place-items-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
-                        @svg($step['icon'], 'w-5 h-5')
+                <li class="w-[80%] shrink-0 snap-center rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:w-[60%] md:w-auto md:p-6">
+                    <div class="flex items-center gap-3 md:block">
+                        <div class="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
+                            @svg($step['icon'], 'w-5 h-5')
+                        </div>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400 md:mt-4">Step {{ $i + 1 }}</p>
                     </div>
-                    <p class="mt-4 text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400">Step {{ $i + 1 }}</p>
-                    <h3 class="mt-1 text-base font-semibold text-slate-900 dark:text-slate-100">{{ $step['title'] }}</h3>
+                    <h3 class="mt-3 text-base font-semibold text-slate-900 dark:text-slate-100 md:mt-1">{{ $step['title'] }}</h3>
                     <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">{{ $step['body'] }}</p>
                 </li>
             @endforeach
         </ol>
+
+        {{-- Dot indicators - mobile only, purely reflecting scroll position above. --}}
+        <div class="mt-4 flex justify-center gap-1.5 md:hidden">
+            <template x-for="i in 3" :key="i">
+                <span
+                    class="h-1.5 rounded-full transition-all"
+                    :class="step === i - 1 ? 'w-5 bg-emerald-600 dark:bg-emerald-400' : 'w-1.5 bg-slate-300 dark:bg-slate-700'"
+                ></span>
+            </template>
+        </div>
     </section>
 
     {{-- Featured listings --}}
