@@ -28,8 +28,17 @@ class GenericLoginController extends Controller
 
         // Regenerate session & redirect by role
         $request->session()->regenerate();
-        $user = Auth::user();
 
+        return static::redirectForRole(Auth::user());
+    }
+
+    /**
+     * Shared by the real login form above and DemoLoginController's one-click
+     * "try the demo" buttons - both need the exact same "which dashboard does
+     * this role land on" logic, just reached via a different auth step.
+     */
+    public static function redirectForRole(\App\Models\User $user)
+    {
         return match ($user->role) {
             // Land in the new mobile-first app shell by default, not Filament's admin-
             // panel chrome. The Filament panels are untouched and still fully reachable

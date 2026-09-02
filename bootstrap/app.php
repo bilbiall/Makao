@@ -12,7 +12,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // Laravel's auth middleware redirects an unauthenticated visitor to
+        // route('login') by default - this app names that route 'generic.login'
+        // instead, so without this every guest hitting a protected route (an
+        // expired session, a bookmarked dashboard link, etc.) got a hard 500
+        // (RouteNotFoundException) rather than a clean bounce to the login page.
+        $middleware->redirectGuestsTo(fn () => route('generic.login'));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

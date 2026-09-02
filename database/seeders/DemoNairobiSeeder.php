@@ -226,7 +226,12 @@ class DemoNairobiSeeder extends Seeder
                 'package' => 'growth',
                 'subscription_status' => 'active',
                 'payment_mode' => 'automatic',
-                'has_manager' => false,
+                // This is the "flagship" demo landlord DemoLoginController points the
+                // homepage's one-click "try the demo" buttons at - the only manifest
+                // entry with long-term units, BnB units, a manager, caretakers and an
+                // agent all at once, so every role in that demo tells one coherent
+                // story instead of five unrelated accounts.
+                'has_manager' => true,
                 // The BnB-focused demo landlord - Kilimani Skyline mixes long-term
                 // units with a handful of short-stay (BnB) units, priced nightly/
                 // weekly/monthly, so the booking calendar/agent-staff features have

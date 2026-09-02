@@ -144,6 +144,52 @@
         </div>
     </section>
 
+    {{-- Try the demo --}}
+    @if (config('demo.enabled'))
+        <section class="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
+            <div class="text-center">
+                <span class="inline-block rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
+                    Check the demo
+                </span>
+                <h2 class="mt-4 text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 sm:text-3xl">
+                    See every side of the platform, no signup needed.
+                </h2>
+                <p class="mx-auto mt-3 max-w-xl text-slate-500 dark:text-slate-400">
+                    All six accounts below belong to the same real portfolio - Coastal Vista BnB & Apartments in
+                    Kilimani and Nyali - so a tenant you see is genuinely renting from the owner, manager and
+                    caretaker you'd see too.
+                </p>
+            </div>
+
+            <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                @foreach ([
+                    ['role' => 'owner', 'icon' => 'heroicon-o-building-office-2', 'title' => 'Property owner', 'body' => 'The portfolio-wide view - every property, tenant and shilling in one dashboard.'],
+                    ['role' => 'admin', 'icon' => 'heroicon-o-clipboard-document-list', 'title' => 'Property manager', 'body' => 'Day-to-day operations: tenants, invoices, payments, issues, across the whole portfolio.'],
+                    ['role' => 'manager', 'icon' => 'heroicon-o-user-group', 'title' => 'Portfolio manager', 'body' => 'Oversees several caretakers across multiple properties on the owner\'s behalf.'],
+                    ['role' => 'caretaker', 'icon' => 'heroicon-o-wrench-screwdriver', 'title' => 'Caretaker', 'body' => 'Scoped to a single property - Kilimani Skyline Suites, the BnB-mixed one.'],
+                    ['role' => 'agent', 'icon' => 'heroicon-o-calendar-days', 'title' => 'BnB agent', 'body' => 'Manages short-stay bookings and guest check-ins/check-outs.'],
+                    ['role' => 'tenant', 'icon' => 'heroicon-o-home', 'title' => 'Tenant', 'body' => 'Pays rent, raises maintenance issues, chats with the landlord.'],
+                ] as $account)
+                    <form method="POST" action="{{ route('demo-login', $account['role']) }}">
+                        @csrf
+                        <button type="submit" class="group flex w-full items-start gap-3 rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm transition-colors hover:border-emerald-300 hover:bg-emerald-50/50 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-emerald-500/30 dark:hover:bg-emerald-500/5">
+                            <span class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
+                                @svg($account['icon'], 'w-5 h-5')
+                            </span>
+                            <span class="min-w-0">
+                                <span class="block text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                    {{ $account['title'] }}
+                                    <span class="ml-1 font-normal text-emerald-700 dark:text-emerald-400">&rarr;</span>
+                                </span>
+                                <span class="mt-1 block text-sm text-slate-500 dark:text-slate-400">{{ $account['body'] }}</span>
+                            </span>
+                        </button>
+                    </form>
+                @endforeach
+            </div>
+        </section>
+    @endif
+
     {{-- Closing CTA --}}
     <section class="bg-emerald-600 dark:bg-emerald-700">
         <div class="mx-auto max-w-6xl px-4 py-14 text-center sm:px-6 sm:py-20">

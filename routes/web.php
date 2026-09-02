@@ -17,6 +17,13 @@ Route::get('/login', fn () => view('generic-login'))->name('generic.login');
 Route::post('/login', \App\Http\Controllers\GenericLoginController::class)
      ->name('generic.login.attempt');
 
+// Homepage "try the demo" buttons - {role} is one of owner/admin/manager/
+// caretaker/agent/tenant, resolved server-side against one fixed demo
+// landlord (config('demo.landlord_email')), never a client-supplied account.
+Route::post('/demo-login/{role}', \App\Http\Controllers\DemoLoginController::class)
+    ->name('demo-login')
+    ->middleware('throttle:20,1');
+
 // Registration split - "list and manage properties" (landlord) vs "looking for a
 // house" (user). Browsing listings itself needs no account at all; this is only
 // the fork for the two self-service account types.
