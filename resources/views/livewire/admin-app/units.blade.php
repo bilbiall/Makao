@@ -1,8 +1,8 @@
 @php $fieldClass = 'mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100'; @endphp
 <div class="space-y-4">
-    @if (session('unit-added'))
+    @if (session('unit-success'))
         <div class="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-700 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-400">
-            {{ session('unit-added') }}
+            {{ session('unit-success') }}
         </div>
     @endif
     @if (session('unit-error'))
@@ -272,6 +272,16 @@
                             'bg-slate-50 text-slate-400 border-slate-200 dark:bg-slate-800 dark:text-slate-500 dark:border-slate-700' => !$unit->is_published,
                         ])
                     >{{ $unit->is_published ? 'Listed' : 'Unlisted' }}</button>
+                    @if ($unit->house_status !== 'Occupied')
+                        <button
+                            wire:click="deleteUnit({{ $unit->id }})"
+                            wire:confirm="Delete this unit? This can't be undone."
+                            title="Delete unit"
+                            class="text-slate-400 hover:text-rose-600 dark:text-slate-500 dark:hover:text-rose-400"
+                        >
+                            @svg('heroicon-o-trash', 'w-4 h-4')
+                        </button>
+                    @endif
                 </div>
             </div>
         @empty

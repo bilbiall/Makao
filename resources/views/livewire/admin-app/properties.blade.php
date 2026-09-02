@@ -48,9 +48,20 @@
                         <a href="{{ route('app.admin.units', ['propertyFilter' => $location->id]) }}" class="hover:underline">{{ $location->houses->count() }} units</a>
                     </p>
                 </div>
-                <button wire:click="startAddingHouse({{ $location->id }})" class="text-xs font-semibold text-emerald-700 hover:underline whitespace-nowrap">
-                    + Add unit
-                </button>
+                <div class="flex items-center gap-3 shrink-0">
+                    <button wire:click="startAddingHouse({{ $location->id }})" class="text-xs font-semibold text-emerald-700 hover:underline whitespace-nowrap">
+                        + Add unit
+                    </button>
+                    @if ($this->canManageProperties() && $location->houses->count() === 0)
+                        <button
+                            wire:click="deleteLocation({{ $location->id }})"
+                            wire:confirm="Delete this property? This can't be undone."
+                            class="text-xs font-semibold text-rose-600 hover:underline whitespace-nowrap dark:text-rose-400"
+                        >
+                            Delete
+                        </button>
+                    @endif
+                </div>
             </div>
 
             @if ($addingHouseTo === $location->id)

@@ -117,6 +117,27 @@ class Units extends Component
         $house->update(['is_published' => !$house->is_published]);
     }
 
+    /**
+     * Blocked for an Occupied unit - deleting it would cascade-delete the
+     * tenant living there and their entire bills/invoices/payments history
+     * along with it. Vacant/Unavailable units carry no such risk (a tenant
+     * who's since left is archived separately in deleted_tenants, decoupled
+     * from house_id, so nothing there is lost either).
+     */
+    public function deleteUnit(int $houseId): void
+    {
+        $house = $this->unitsQuery()->whereKey($houseId)->firstOrFail();
+
+        if ($house->house_status === 'Occupied') {
+            session()->flash('unit-error', 'This unit has a tenant - move them out (via Notices) before deleting it.');
+            return;
+        }
+
+        $house->delete();
+        $this->resetPage();
+        session()->flash('unit-success', 'Unit deleted.');
+    }
+
     public function downloadTemplate()
     {
         $header = implode(',', self::IMPORT_COLUMNS);
@@ -334,7 +355,7 @@ class Units extends Component
         ]);
         $this->unit_listing_mode = 'long_term';
         $this->resetPage();
-        session()->flash('unit-added', 'Unit added successfully.');
+        session()->flash('unit-success', 'Unit added successfully.');
     }
 
     public function render()

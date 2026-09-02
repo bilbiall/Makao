@@ -83,6 +83,28 @@ class Properties extends Component
         session()->flash('properties-status', 'Property added.');
     }
 
+    /**
+     * Only when empty - deleting a property with units still in it would
+     * cascade-delete those houses (and, for any occupied one, its tenant and
+     * their entire bills/invoices/payments history along with it). Delete the
+     * units first (see Units::deleteUnit()) and the property itself becomes a
+     * safe, no-history-lost delete.
+     */
+    public function deleteLocation(int $locationId): void
+    {
+        abort_unless($this->canManageProperties(), 403);
+
+        $location = $this->baseQuery()->withCount('houses')->whereKey($locationId)->firstOrFail();
+
+        if ($location->houses_count > 0) {
+            session()->flash('properties-error', 'Delete all units in this property first, then you can delete the property itself.');
+            return;
+        }
+
+        $location->delete();
+        session()->flash('properties-status', 'Property deleted.');
+    }
+
     public function startAddingHouse(int $locationId): void
     {
         $this->addingHouseTo = $locationId;
