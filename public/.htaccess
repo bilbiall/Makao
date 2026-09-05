@@ -5,6 +5,13 @@
 
     RewriteEngine On
 
+    # Force HTTPS (checks X-Forwarded-Proto too, for hosts that terminate SSL
+    # behind a proxy/load balancer where %{HTTPS} alone doesn't reflect the
+    # original scheme)
+    RewriteCond %{HTTPS} off
+    RewriteCond %{HTTP:X-Forwarded-Proto} !https
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
