@@ -80,6 +80,18 @@ class HouseSearchAiService
                 return null;
             }
 
+            // Some models emit their native tool-calling control tokens as plain
+            // text when no `tools` schema was actually registered on the request
+            // (e.g. "<|tool_call_start|>[search(...)]<|tool_call_end|>") - treat
+            // that as a failed call rather than showing the raw leak to a visitor.
+            if (str_contains($content, '<|')) {
+                Log::warning('OpenRouter chat request returned leaked control tokens', [
+                    'content' => mb_substr($content, 0, 500),
+                ]);
+
+                return null;
+            }
+
             return $content;
         } catch (\Throwable $e) {
             Log::warning('OpenRouter chat request threw', ['message' => $e->getMessage()]);
@@ -149,7 +161,12 @@ class HouseSearchAiService
 
     /**
      * Turns backend-computed facts (never raw model guesses) into a short,
-     * warm natural-language reply.
+     * warm natural-language reply. Callers must only invoke this when
+     * `facts.sample` actually has real listings behind it (see
+     * ChatAssistant::reply()) - a weak model given nothing concrete to narrate
+     * has been observed fabricating entire listings (fake areas, fake KES/$
+     * prices) instead of admitting it has nothing, so this method is not a
+     * substitute for that check, only a second line of defense.
      */
     public function composeReply(array $history, array $facts): string
     {
@@ -157,6 +174,12 @@ class HouseSearchAiService
             You are Makao's friendly, concise rental-search assistant for Kenya. You are given verified search facts computed by the backend - never invent listings, prices, counts, or areas beyond what appears in the facts below. Reply in 2-4 short sentences, warm and conversational, no markdown, no bullet points.
 
             Facts: {$this->jsonEncode($facts)}
+
+            Critical rules - breaking any of these is worse than a short or incomplete-sounding reply:
+            - The search described in the facts has ALREADY happened. Never say you are about to search, "let me check", "searching now", or ask the user to wait - speak only in the present/past tense about the facts you were given.
+            - Never state a price, area name, or listing detail that does not literally appear in facts.sample or facts.filters. If you are unsure of a number, omit it rather than guess.
+            - All prices are Kenyan Shillings - always write "KES", never "$" or any other currency.
+            - Always finish your sentences - never cut off mid-thought.
 
             Always mention the unit type and area from facts.filters when they're set (e.g. "2 Bedroom places in Westlands") so it's obvious what these results are for - this lets the user immediately spot it if you misunderstood them.
 
@@ -174,7 +197,12 @@ class HouseSearchAiService
         return $raw ?: $this->fallbackReply($facts);
     }
 
-    protected function fallbackReply(array $facts): string
+    /**
+     * Deterministic, hallucination-proof narration - used both as the
+     * composeReply() failure path and, deliberately, as the ONLY narration for
+     * any branch with no real listings behind it (see ChatAssistant::reply()).
+     */
+    public function fallbackReply(array $facts): string
     {
         $criteria = $this->describeFilters($facts['filters'] ?? []);
 
@@ -223,6 +251,70 @@ class HouseSearchAiService
             (bool) $area => " in {$area}",
             default => '',
         };
+    }
+
+    /**
+     * Lightweight keyword/regex extraction, used only when the LLM-based
+     * extractFilters() call fails (no API key, provider error, or - as observed
+     * with the configured free model - a JSON-mode call that silently returns
+     * unparseable output). Matches unit types against House::UNIT_TYPES and
+     * areas/cities against the real Area/City tables so a plain, literal query
+     * like "2 bedroom in Kahawa Sukari" still triggers a real search even when
+     * the AI provider is unreliable. Returns null (keep previous filters
+     * unchanged) if nothing recognizable was found.
+     */
+    public function extractFiltersFallback(string $text, array $currentFilters): ?array
+    {
+        $filters = $currentFilters;
+        $found = false;
+        $lower = mb_strtolower($text);
+
+        if (preg_match('/(\d+)\s*-?\s*bed/i', $text, $m)) {
+            $type = $m[1] . ' Bedroom';
+            if (in_array($type, House::UNIT_TYPES, true)) {
+                $filters['house_type'] = $type;
+                $found = true;
+            }
+        } elseif (str_contains($lower, 'bedsitter')) {
+            $filters['house_type'] = 'Bedsitter';
+            $found = true;
+        } elseif (str_contains($lower, 'studio')) {
+            $filters['house_type'] = 'Studio';
+            $found = true;
+        } elseif (str_contains($lower, 'single room')) {
+            $filters['house_type'] = 'Single Room';
+            $found = true;
+        } elseif (str_contains($lower, 'maisonette')) {
+            $filters['house_type'] = 'Maisonette';
+            $found = true;
+        }
+
+        // Longest name first so "Kahawa Sukari" wins over a shorter partial
+        // match like "Kahawa" - geo_id (what House::inAreaOrCity matches on)
+        // mirrors Area.name exactly, so the real cased value is used as-is.
+        $names = \App\Models\Area::pluck('name')
+            ->merge(\App\Models\City::pluck('name'))
+            ->filter()
+            ->unique()
+            ->sortByDesc(fn ($name) => mb_strlen($name));
+
+        foreach ($names as $name) {
+            if (mb_stripos($text, $name) !== false) {
+                $filters['area'] = $name;
+                $found = true;
+                break;
+            }
+        }
+
+        if (preg_match('/(\d[\d,]*)\s*k\b/i', $text, $m)) {
+            $filters['max_rent'] = (int) str_replace(',', '', $m[1]) * 1000;
+            $found = true;
+        } elseif (preg_match('/\b(\d{4,6})\b/', str_replace(',', '', $text), $m)) {
+            $filters['max_rent'] = (int) $m[1];
+            $found = true;
+        }
+
+        return $found ? $filters : null;
     }
 
     protected function parseJson(string $raw): ?array

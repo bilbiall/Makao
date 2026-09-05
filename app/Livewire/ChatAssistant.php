@@ -127,10 +127,22 @@ class ChatAssistant extends Component
 
         RateLimiter::hit($rateLimitKey, 600);
 
+        $lastUserText = end($this->messages)['text'];
+
         $extracted = $ai->extractFilters($this->historyForApi(), $this->filters);
 
         if ($extracted) {
             $this->filters = $extracted;
+        } else {
+            // The LLM-based extraction failed (no key, provider error, or - as
+            // observed with the configured free model - unparseable JSON-mode
+            // output). Fall back to a literal keyword/regex match so a plain
+            // query like "2 bedroom in Kahawa Sukari" still searches for real.
+            $regexExtracted = $ai->extractFiltersFallback($lastUserText, $this->filters);
+
+            if ($regexExtracted) {
+                $this->filters = $regexExtracted;
+            }
         }
 
         $hasEnoughToSearch = filled($this->filters['house_type'] ?? null) || filled($this->filters['area'] ?? null);
@@ -139,7 +151,16 @@ class ChatAssistant extends Component
             ? $matcher->search($this->filters)
             : ['results' => collect(), 'branch' => 'clarify', 'facts' => ['branch' => 'clarify', 'filters' => $this->filters]];
 
-        $reply = $ai->composeReply($this->historyForApi(), $result['facts']);
+        // Only let the LLM narrate when there's a real, checkable listing behind
+        // it (branches 'results'/'narrow'/'alternatives_shown'). Every other
+        // branch has no backend data to ground a sentence in, and a weak/free
+        // model has been observed fabricating entire fake listings (wrong
+        // currency, non-Kenyan areas, invented prices) rather than asking a
+        // clarifying question when given nothing concrete - so those branches
+        // always get the deterministic, hallucination-proof copy instead.
+        $reply = $result['results']->isNotEmpty()
+            ? $ai->composeReply([['role' => 'user', 'content' => $lastUserText]], $result['facts'])
+            : $ai->fallbackReply($result['facts']);
 
         $this->messages[] = [
             'role' => 'assistant',
