@@ -64,7 +64,7 @@ class ViewingRequest extends Model
                     $recipient->notify(new \App\Notifications\DatabaseNotification(
                         'New Viewing Request',
                         ($requester->name ?? 'A user') . " requested a viewing for {$house?->house_name}.",
-                        null
+                        route('app.admin.viewing-requests')
                     ));
                 }
 

@@ -21,14 +21,45 @@ class Payments extends Component
     public string $payment_method = 'cash';
     public string $payment_date = '';
 
+    public string $search = '';
+
+    // Which payment's detail popup is open, if any.
+    public ?int $selectedPaymentId = null;
+
     public function mount(): void
     {
         $this->payment_date = now()->format('Y-m-d');
     }
 
+    public function updatingSearch(): void
+    {
+        $this->resetPage();
+    }
+
     public function updatedTenantId(): void
     {
         $this->invoice_id = '';
+    }
+
+    public function viewPayment(int $paymentId): void
+    {
+        $this->selectedPaymentId = $paymentId;
+    }
+
+    public function closePaymentModal(): void
+    {
+        $this->selectedPaymentId = null;
+    }
+
+    public function getSelectedPaymentProperty(): ?Payment
+    {
+        if (!$this->selectedPaymentId) {
+            return null;
+        }
+
+        return StaffScope::onTenantChild(Payment::query())
+            ->with(['tenant', 'invoice'])
+            ->find($this->selectedPaymentId);
     }
 
     protected function rules(): array
@@ -67,12 +98,24 @@ class Payments extends Component
         session()->flash('payment-recorded', 'Payment recorded successfully.');
     }
 
+    protected function filteredQuery()
+    {
+        $query = StaffScope::onTenantChild(Payment::query())->with(['tenant', 'invoice'])->latest();
+
+        if ($this->search) {
+            $term = '%' . $this->search . '%';
+            $query->where(function ($q) use ($term) {
+                $q->where('payment_reference', 'like', $term)
+                    ->orWhereHas('tenant', fn ($t) => $t->where('tenant_name', 'like', $term)->orWhere('phone_number', 'like', $term));
+            });
+        }
+
+        return $query;
+    }
+
     public function render()
     {
-        $payments = StaffScope::onTenantChild(Payment::query())
-            ->with(['tenant', 'invoice'])
-            ->latest()
-            ->paginate(10);
+        $payments = $this->filteredQuery()->paginate(10);
 
         $tenants = StaffScope::onTenant(Tenant::query())->orderBy('tenant_name')->get();
 
@@ -84,10 +127,35 @@ class Payments extends Component
                 ->get();
         }
 
+        // Stats reflect the full scoped payment set, not just the current search/page.
+        $statsQuery = StaffScope::onTenantChild(Payment::query());
+        $collectedThisMonth = (float) (clone $statsQuery)
+            ->whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
+            ->sum('amount_paid');
+        $paymentCount = (clone $statsQuery)->count();
+        $averagePayment = $paymentCount > 0 ? (clone $statsQuery)->avg('amount_paid') : 0;
+
+        $trendLabels = [];
+        $trendValues = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $month = now()->subMonths($i);
+            $trendLabels[] = $month->format('M');
+            $trendValues[] = (float) (clone $statsQuery)
+                ->whereMonth('created_at', $month->month)
+                ->whereYear('created_at', $month->year)
+                ->sum('amount_paid');
+        }
+
         return view('livewire.admin-app.payments', [
             'payments' => $payments,
             'tenants' => $tenants,
             'invoiceOptions' => $invoiceOptions,
+            'collectedThisMonth' => $collectedThisMonth,
+            'paymentCount' => $paymentCount,
+            'averagePayment' => (float) $averagePayment,
+            'trendLabels' => $trendLabels,
+            'trendValues' => $trendValues,
         ])->layout('components.layouts.app', ['title' => 'Payments']);
     }
 }

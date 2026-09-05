@@ -59,6 +59,8 @@
                     <span class="flex-1">{{ $item['label'] }}</span>
                     @if ($item['label'] === 'Chat')
                         <livewire:chat-unread-badge :key="'chat-badge-sidebar'" />
+                    @elseif ($item['label'] === 'Viewing Requests')
+                        <livewire:viewing-requests-badge :key="'viewing-requests-badge-sidebar'" />
                     @endif
                 </a>
             @endforeach
@@ -177,6 +179,8 @@
                             @svg($item['icon'], 'w-6 h-6 text-emerald-600 dark:text-emerald-400')
                             @if ($item['label'] === 'Chat')
                                 <span class="absolute -top-1 -right-1.5"><livewire:chat-unread-badge :key="'chat-badge-more'" /></span>
+                            @elseif ($item['label'] === 'Viewing Requests')
+                                <span class="absolute -top-1 -right-1.5"><livewire:viewing-requests-badge :key="'viewing-requests-badge-more'" /></span>
                             @endif
                         </span>
                         <span class="text-center">{{ $item['label'] }}</span>

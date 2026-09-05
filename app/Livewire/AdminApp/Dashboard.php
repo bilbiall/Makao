@@ -8,6 +8,7 @@ use App\Models\House;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Tenant;
+use App\Models\ViewingRequest;
 use App\Support\StaffScope;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
@@ -29,6 +30,7 @@ class Dashboard extends Component
 
     public $upcomingBookingsCount;
     public $pendingBookingsCount;
+    public $pendingViewingRequestsCount;
 
     public $invoiceStatusLabels = [];
     public $invoiceStatusValues = [];
@@ -121,6 +123,10 @@ class Dashboard extends Component
             ->where('check_in', '>=', now()->toDateString())
             ->count();
         $this->pendingBookingsCount = (clone $bookings)->where('status', 'pending')->count();
+
+        $this->pendingViewingRequestsCount = StaffScope::onTenant(ViewingRequest::query())
+            ->where('status', 'pending')
+            ->count();
     }
 
     public function render()

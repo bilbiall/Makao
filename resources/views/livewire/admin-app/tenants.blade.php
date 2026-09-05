@@ -5,6 +5,30 @@
         </div>
     @endif
 
+    <div class="grid grid-cols-2 gap-3">
+        <div class="rounded-2xl bg-white border border-slate-200 shadow-sm p-4 flex items-center gap-4 dark:bg-slate-900 dark:border-slate-800">
+            <div class="relative h-16 w-16 rounded-full flex-shrink-0" style="background: conic-gradient(#10b981 {{ $occupancyRate * 3.6 }}deg, #e2e8f0 0deg);">
+                <div class="absolute inset-1.5 rounded-full bg-white dark:bg-slate-900 flex items-center justify-center">
+                    <span class="text-xs font-bold text-slate-900 dark:text-slate-100">{{ $occupancyRate }}%</span>
+                </div>
+            </div>
+            <div>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Occupancy</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400">{{ $occupiedUnits }} occupied &middot; {{ $vacantUnits }} vacant</p>
+            </div>
+        </div>
+        <div class="grid grid-rows-2 gap-3">
+            <div class="rounded-2xl bg-slate-100 border border-slate-200 p-3 dark:bg-slate-800 dark:border-slate-700">
+                <p class="text-[11px] text-slate-600 dark:text-slate-400">Tenants</p>
+                <p class="text-sm font-bold text-slate-800 dark:text-slate-200">{{ $totalTenants }} &middot; {{ $admittedThisMonth }} new this month</p>
+            </div>
+            <div class="rounded-2xl bg-rose-50 border border-rose-100 p-3 dark:bg-rose-500/10 dark:border-rose-500/20">
+                <p class="text-[11px] text-rose-700 dark:text-rose-400">Outstanding</p>
+                <p class="text-sm font-bold text-rose-800 dark:text-rose-300">KES {{ number_format($totalOutstanding) }}</p>
+            </div>
+        </div>
+    </div>
+
     <button wire:click="$set('showForm', true)" class="w-full rounded-xl bg-emerald-600 text-white text-sm font-semibold py-3 hover:bg-emerald-700 transition">
         + Admit a tenant
     </button>
@@ -47,6 +71,15 @@
             </div>
         </div>
     @endif
+
+    <div class="flex gap-2">
+        <input type="text" wire:model.live.debounce.400ms="search" placeholder="Search name, phone, or house"
+            class="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 placeholder:text-slate-400">
+        <a href="{{ route('app.admin.tenants.print', ['search' => $search]) }}" target="_blank"
+            class="flex items-center justify-center rounded-lg border border-slate-300 dark:border-slate-700 px-3 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800" title="Print">
+            @svg('heroicon-o-printer', 'w-5 h-5')
+        </a>
+    </div>
 
     <div class="space-y-3">
         @forelse ($tenants as $tenant)

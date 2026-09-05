@@ -166,10 +166,14 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureTenantRole::class])->prefi
 Route::middleware(['auth', \App\Http\Middleware\EnsureAdminRole::class])->prefix('app/admin')->group(function () {
     Route::get('/dashboard', \App\Livewire\AdminApp\Dashboard::class)->name('app.admin.dashboard');
     Route::get('/tenants', \App\Livewire\AdminApp\Tenants::class)->name('app.admin.tenants');
+    Route::get('/viewing-requests', \App\Livewire\AdminApp\ViewingRequests::class)->name('app.admin.viewing-requests');
     Route::get('/properties', \App\Livewire\AdminApp\Properties::class)->name('app.admin.properties');
     Route::get('/units', \App\Livewire\AdminApp\Units::class)->name('app.admin.units');
     Route::get('/invoices', \App\Livewire\AdminApp\Invoices::class)->name('app.admin.invoices');
+    Route::get('/invoices/print', [\App\Http\Controllers\AdminPrintController::class, 'invoices'])->name('app.admin.invoices.print');
     Route::get('/payments', \App\Livewire\AdminApp\Payments::class)->name('app.admin.payments');
+    Route::get('/payments/print', [\App\Http\Controllers\AdminPrintController::class, 'payments'])->name('app.admin.payments.print');
+    Route::get('/tenants/print', [\App\Http\Controllers\AdminPrintController::class, 'tenants'])->name('app.admin.tenants.print');
     Route::get('/bills', \App\Livewire\AdminApp\Bills::class)->name('app.admin.bills');
     Route::get('/issues', \App\Livewire\AdminApp\Issues::class)->name('app.admin.issues');
     Route::get('/notices', \App\Livewire\AdminApp\Notices::class)->name('app.admin.notices');

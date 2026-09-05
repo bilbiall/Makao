@@ -34,6 +34,18 @@
         </div>
     </div>
 
+    @if ($pendingViewingRequestsCount > 0)
+        <a href="{{ route('app.admin.viewing-requests') }}" class="block rounded-2xl bg-teal-50 border border-teal-100 p-4 dark:bg-teal-500/10 dark:border-teal-500/20">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-teal-700 dark:text-teal-400">Pending viewing requests</p>
+                    <p class="mt-1 text-xl font-bold text-teal-800 dark:text-teal-300">{{ $pendingViewingRequestsCount }}</p>
+                </div>
+                @svg('heroicon-o-calendar-days', 'w-6 h-6 text-teal-600 dark:text-teal-400')
+            </div>
+        </a>
+    @endif
+
     @if ($upcomingBookingsCount > 0 || $pendingBookingsCount > 0)
         <div class="grid grid-cols-2 gap-3">
             <a href="{{ route('app.admin.bookings') }}" class="rounded-2xl bg-indigo-50 border border-indigo-100 p-4 dark:bg-indigo-500/10 dark:border-indigo-500/20">

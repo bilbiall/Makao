@@ -127,7 +127,7 @@ class ViewingRequestResource extends Resource
                         $record->user->notify(new \App\Notifications\DatabaseNotification(
                             'Viewing Request Update',
                             "Your viewing request for {$record->house->house_name} was not successful." . (!empty($data['admin_notes']) ? " {$data['admin_notes']}" : ''),
-                            null
+                            route('app.user.applications')
                         ));
                     })
                     ->visible(fn (ViewingRequest $record) => $record->status === 'pending'),
