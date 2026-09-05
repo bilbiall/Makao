@@ -5,11 +5,14 @@ namespace App\Support;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * Regenerates public/favicon-32.png, public/apple-touch-icon.png, and
- * public/favicon.ico from whatever image the superadmin uploads as the site
- * logo. Always contain-fits the whole source image into a transparent square
- * canvas rather than cropping - a crop would need to guess where the "icon
- * part" of an arbitrary future logo ends, which isn't reliably detectable.
+ * Regenerates public/favicon-32.png, public/apple-touch-icon.png,
+ * public/favicon.ico, and the PWA manifest icons (public/icon-192.png,
+ * public/icon-512.png) from whatever image the superadmin uploads as the site
+ * logo - so the installable PWA's icon always matches the browser-tab favicon,
+ * not a separately-maintained image. Always contain-fits the whole source
+ * image into a transparent square canvas rather than cropping - a crop would
+ * need to guess where the "icon part" of an arbitrary future logo ends, which
+ * isn't reliably detectable.
  */
 class FaviconGenerator
 {
@@ -33,9 +36,17 @@ class FaviconGenerator
 
         self::writeIco(public_path('favicon-32.png'), public_path('favicon.ico'));
 
+        $pwaIcon192 = self::containFit($source, 192);
+        imagepng($pwaIcon192, public_path('icon-192.png'));
+
+        $pwaIcon512 = self::containFit($source, 512);
+        imagepng($pwaIcon512, public_path('icon-512.png'));
+
         imagedestroy($source);
         imagedestroy($favicon);
         imagedestroy($touchIcon);
+        imagedestroy($pwaIcon192);
+        imagedestroy($pwaIcon512);
     }
 
     protected static function containFit(\GdImage $source, int $target): \GdImage

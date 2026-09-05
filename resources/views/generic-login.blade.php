@@ -5,6 +5,8 @@
     @include('partials.theme-init-script')
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     @include('partials.favicon')
+    <link rel="manifest" href="{{ asset('manifest.json') }}">
+    <meta name="theme-color" content="#047857">
     <title>Log in - Renty</title>
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700" rel="stylesheet" />
@@ -72,5 +74,12 @@
         </div>
     </div>
 
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('{{ asset('sw.js') }}').catch(() => {});
+            });
+        }
+    </script>
 </body>
 </html>

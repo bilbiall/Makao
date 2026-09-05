@@ -6,6 +6,8 @@
     @include('partials.theme-init-script')
     <meta name="viewport" content="width=device-width, initial-scale=1">
     @include('partials.favicon')
+    <link rel="manifest" href="{{ asset('manifest.json') }}">
+    <meta name="theme-color" content="#047857">
     <title>{{ $title ?? config('app.name', 'Renty') }} - Renty</title>
     <meta name="description" content="{{ $description ?? 'Renty is an all-in-one rental management platform for Kenyan landlords and property managers - M-Pesa rent collection, tenant portal, maintenance tracking, and more.' }}">
 
@@ -40,5 +42,13 @@
     <x-marketing.bottom-tabs />
 
     <livewire:chat-assistant />
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('{{ asset('sw.js') }}').catch(() => {});
+            });
+        }
+    </script>
 </body>
 </html>
