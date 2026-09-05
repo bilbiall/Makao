@@ -92,6 +92,25 @@ class HouseSearchAiService
                 return null;
             }
 
+            // Some models (reasoning-tuned free tiers especially) dump their raw
+            // chain-of-thought into the same content field instead of a separate
+            // reasoning field - "Here's a thinking process: 1. **Analyze User
+            // Input:**..." - rather than the short final answer they were asked
+            // for. Treat that as a failed call too instead of showing scratchpad
+            // text to a visitor.
+            $looksLikeReasoningTrace = preg_match(
+                '/here.?s (a|my) (thinking|reasoning)|let me think|step[- ]by[- ]step|^step\s*\d+[:.]|analyze user input|chain.of.thought/i',
+                $content
+            ) || mb_strlen($content) > 600;
+
+            if ($looksLikeReasoningTrace) {
+                Log::warning('OpenRouter chat request returned a reasoning trace instead of a final answer', [
+                    'content' => mb_substr($content, 0, 500),
+                ]);
+
+                return null;
+            }
+
             return $content;
         } catch (\Throwable $e) {
             Log::warning('OpenRouter chat request threw', ['message' => $e->getMessage()]);
@@ -180,6 +199,7 @@ class HouseSearchAiService
             - Never state a price, area name, or listing detail that does not literally appear in facts.sample or facts.filters. If you are unsure of a number, omit it rather than guess.
             - All prices are Kenyan Shillings - always write "KES", never "$" or any other currency.
             - Always finish your sentences - never cut off mid-thought.
+            - Output ONLY the final 2-4 sentence answer, nothing else. Never show your reasoning, thinking process, or step-by-step analysis, and never use headers like "Step 1" or "Here's my thinking process" - the user must never see how you arrived at the answer, only the answer itself.
 
             Always mention the unit type and area from facts.filters when they're set (e.g. "2 Bedroom places in Westlands") so it's obvious what these results are for - this lets the user immediately spot it if you misunderstood them.
 
