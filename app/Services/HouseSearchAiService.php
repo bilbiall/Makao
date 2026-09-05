@@ -274,39 +274,38 @@ class HouseSearchAiService
     }
 
     /**
-     * Lightweight keyword/regex extraction, used only when the LLM-based
-     * extractFilters() call fails (no API key, provider error, or - as observed
-     * with the configured free model - a JSON-mode call that silently returns
-     * unparseable output). Matches unit types against House::UNIT_TYPES and
-     * areas/cities against the real Area/City tables so a plain, literal query
-     * like "2 bedroom in Kahawa Sukari" still triggers a real search even when
-     * the AI provider is unreliable. Returns null (keep previous filters
-     * unchanged) if nothing recognizable was found.
+     * Lightweight keyword/regex extraction against the CURRENT message only -
+     * a pure "what does this text literally say" detector, not a merge with
+     * prior turns (the caller owns merging - see ChatAssistant::reply()).
+     * Matches unit types against House::UNIT_TYPES and areas/cities against
+     * the real Area/City tables so a plain, literal query like "2 bedroom in
+     * Kahawa Sukari" still triggers a real search even when the LLM-based
+     * extractFilters() call fails outright (no API key, provider error) or
+     * "succeeds" but silently misses something explicit in the text (observed
+     * with the configured free model). Returns only the fields actually found
+     * in $text, or null if nothing recognizable was found - the caller
+     * applies each found field as an override, since a literal match in the
+     * user's own current message is a stronger signal than whatever's already
+     * carried forward from earlier turns.
      */
-    public function extractFiltersFallback(string $text, array $currentFilters): ?array
+    public function extractFiltersFallback(string $text): ?array
     {
-        $filters = $currentFilters;
-        $found = false;
+        $filters = [];
         $lower = mb_strtolower($text);
 
         if (preg_match('/(\d+)\s*-?\s*bed/i', $text, $m)) {
             $type = $m[1] . ' Bedroom';
             if (in_array($type, House::UNIT_TYPES, true)) {
                 $filters['house_type'] = $type;
-                $found = true;
             }
         } elseif (str_contains($lower, 'bedsitter')) {
             $filters['house_type'] = 'Bedsitter';
-            $found = true;
         } elseif (str_contains($lower, 'studio')) {
             $filters['house_type'] = 'Studio';
-            $found = true;
         } elseif (str_contains($lower, 'single room')) {
             $filters['house_type'] = 'Single Room';
-            $found = true;
         } elseif (str_contains($lower, 'maisonette')) {
             $filters['house_type'] = 'Maisonette';
-            $found = true;
         }
 
         // Longest name first so "Kahawa Sukari" wins over a shorter partial
@@ -321,20 +320,17 @@ class HouseSearchAiService
         foreach ($names as $name) {
             if (mb_stripos($text, $name) !== false) {
                 $filters['area'] = $name;
-                $found = true;
                 break;
             }
         }
 
         if (preg_match('/(\d[\d,]*)\s*k\b/i', $text, $m)) {
             $filters['max_rent'] = (int) str_replace(',', '', $m[1]) * 1000;
-            $found = true;
         } elseif (preg_match('/\b(\d{4,6})\b/', str_replace(',', '', $text), $m)) {
             $filters['max_rent'] = (int) $m[1];
-            $found = true;
         }
 
-        return $found ? $filters : null;
+        return $filters ?: null;
     }
 
     protected function parseJson(string $raw): ?array

@@ -45,6 +45,12 @@ class ChatAssistant extends Component
 
     public array $filters = [];
 
+    // Which branch the previous turn's search landed on - lets this turn
+    // deterministically interpret a short reply to the assistant's own last
+    // question (e.g. "check other areas" answering "want me to check other
+    // areas?") without depending on the LLM extraction noticing the same thing.
+    public ?string $lastBranch = null;
+
     public bool $configured = true;
 
     public ?string $avatarUrl = null;
@@ -59,6 +65,7 @@ class ChatAssistant extends Component
         $stored = session(self::SESSION_KEY, []);
         $this->messages = $stored['messages'] ?? [];
         $this->filters = $stored['filters'] ?? [];
+        $this->lastBranch = $stored['lastBranch'] ?? null;
     }
 
     public function toggle(): void
@@ -130,19 +137,30 @@ class ChatAssistant extends Component
         $lastUserText = end($this->messages)['text'];
 
         $extracted = $ai->extractFilters($this->historyForApi(), $this->filters);
+        $this->filters = $extracted ?? $this->filters;
 
-        if ($extracted) {
-            $this->filters = $extracted;
-        } else {
-            // The LLM-based extraction failed (no key, provider error, or - as
-            // observed with the configured free model - unparseable JSON-mode
-            // output). Fall back to a literal keyword/regex match so a plain
-            // query like "2 bedroom in Kahawa Sukari" still searches for real.
-            $regexExtracted = $ai->extractFiltersFallback($lastUserText, $this->filters);
+        // The regex/keyword net runs every turn, not only when extractFilters()
+        // fails outright - a call can "succeed" (valid JSON, no error) while
+        // still failing to notice something explicit in the text (e.g. it parsed
+        // fine but left area/house_type null even though the user plainly typed
+        // "in Nairobi"). Whatever it finds in THIS message always overrides -
+        // a literal match in the user's current words beats a stale value
+        // carried forward from an earlier turn (e.g. "actually, a bedsitter in
+        // South B instead" must be able to replace an old "2 Bedroom in Kahawa
+        // Sukari", not be silently ignored because that field was already set).
+        $regexExtracted = $ai->extractFiltersFallback($lastUserText);
 
-            if ($regexExtracted) {
-                $this->filters = $regexExtracted;
-            }
+        foreach ($regexExtracted ?? [] as $field => $value) {
+            $this->filters[$field] = $value;
+        }
+
+        // Deterministic handling of a short reply to the assistant's own last
+        // question - "want me to check other areas?" -> "check other areas" (or
+        // any other affirmative) must actually broaden the search, not repeat
+        // the same question forever if the LLM/regex extraction misses that a
+        // bare "yes"-shaped reply was answering it rather than a new query.
+        if ($this->lastBranch === 'zero_results' && $this->looksAffirmative($lastUserText)) {
+            $this->filters['area_flexible'] = true;
         }
 
         $hasEnoughToSearch = filled($this->filters['house_type'] ?? null) || filled($this->filters['area'] ?? null);
@@ -150,6 +168,8 @@ class ChatAssistant extends Component
         $result = $hasEnoughToSearch
             ? $matcher->search($this->filters)
             : ['results' => collect(), 'branch' => 'clarify', 'facts' => ['branch' => 'clarify', 'filters' => $this->filters]];
+
+        $this->lastBranch = $result['branch'];
 
         // Only let the LLM narrate when there's a real, checkable listing behind
         // it (branches 'results'/'narrow'/'alternatives_shown'). Every other
@@ -171,6 +191,21 @@ class ChatAssistant extends Component
         $this->persist();
     }
 
+    /** A short, plainly affirmative reply - "yes", "check other areas", "sure why not" - as opposed to a new, unrelated query. */
+    protected function looksAffirmative(string $text): bool
+    {
+        $normalized = trim(mb_strtolower($text), " \t\n\r\0\x0B.!?");
+
+        if (mb_strlen($normalized) > 40) {
+            return false;
+        }
+
+        return (bool) preg_match(
+            '/^(yes|yeah|yep|yup|sure|ok|okay|please|go ahead|check other areas?|other areas?|check elsewhere|anywhere else|elsewhere|show (me )?other(s)?|widen|broaden)\b/i',
+            $normalized
+        );
+    }
+
     /** OpenRouter's chat format only knows role+content - drop our extra 'cards' key. */
     protected function historyForApi(): array
     {
@@ -184,6 +219,7 @@ class ChatAssistant extends Component
         session()->put(self::SESSION_KEY, [
             'messages' => array_slice($this->messages, -self::MAX_STORED_MESSAGES),
             'filters' => $this->filters,
+            'lastBranch' => $this->lastBranch,
         ]);
     }
 
