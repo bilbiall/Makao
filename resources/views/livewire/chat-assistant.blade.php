@@ -4,10 +4,13 @@
         type="button"
         wire:click="toggle"
         aria-label="{{ $open ? 'Close chat' : 'Find a home with chat' }}"
-        class="grid h-14 w-14 place-items-center rounded-full bg-emerald-600 text-white shadow-lg shadow-emerald-600/30 transition-transform hover:scale-105 hover:bg-emerald-700"
+        class="relative grid h-14 w-14 place-items-center overflow-hidden rounded-full bg-emerald-600 text-white shadow-lg shadow-emerald-600/30 transition-transform hover:scale-105 hover:bg-emerald-700"
     >
         @if ($open)
             @svg('heroicon-o-x-mark', 'w-6 h-6')
+        @elseif ($avatarUrl)
+            <img src="{{ $avatarUrl }}" alt="" class="h-full w-full object-cover">
+            <span class="absolute bottom-0.5 right-0.5 h-3.5 w-3.5 rounded-full bg-emerald-400 ring-2 ring-white dark:ring-slate-900"></span>
         @else
             @svg('heroicon-o-chat-bubble-left-right', 'w-6 h-6')
         @endif
@@ -23,13 +26,19 @@
         class="absolute bottom-[4.5rem] right-0 flex h-[70vh] max-h-[560px] w-[92vw] max-w-sm flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900"
         style="display: none;"
     >
-        <div class="flex items-center gap-2 border-b border-slate-200 bg-emerald-600 px-4 py-3 text-white dark:border-slate-800">
-            @if ($avatarUrl)
-                <img src="{{ $avatarUrl }}" alt="" class="h-5 w-5 rounded-full object-cover">
-            @else
-                @svg('heroicon-o-sparkles', 'w-5 h-5')
-            @endif
-            <p class="text-sm font-semibold">Find a place</p>
+        <div class="flex items-center gap-3 border-b border-slate-200 bg-emerald-600 px-4 py-3 text-white dark:border-slate-800">
+            <div class="relative grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-white/20">
+                @if ($avatarUrl)
+                    <img src="{{ $avatarUrl }}" alt="" class="h-full w-full object-cover">
+                @else
+                    @svg('heroicon-o-sparkles', 'w-5 h-5')
+                @endif
+                <span class="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-300 ring-2 ring-emerald-600"></span>
+            </div>
+            <div class="min-w-0">
+                <p class="text-sm font-semibold leading-tight">Find a place</p>
+                <p class="truncate text-xs text-white/80 leading-tight">Here to help you find your next home or stay</p>
+            </div>
         </div>
 
         <div

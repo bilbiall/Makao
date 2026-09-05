@@ -69,7 +69,7 @@ class ChatAssistant extends Component
             $this->messages[] = [
                 'role' => 'assistant',
                 'text' => $this->configured
-                    ? 'Hi! Tell me what kind of place you\'re looking for - e.g. "1 bedroom in Kasarani under 20k".'
+                    ? 'Hi! I\'m your Renty assistant, here to help you find your next home or short stay in Kenya. Tell me what you\'re looking for - e.g. "1 bedroom in Kasarani under 20k".'
                     : "Hi! The chat assistant isn't set up yet, but you can browse listings directly using search.",
                 'cards' => [],
             ];
