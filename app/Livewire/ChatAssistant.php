@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\Setting;
 use App\Services\HouseMatchService;
 use App\Services\HouseSearchAiService;
+use App\Services\PlatformFaqService;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
@@ -135,6 +136,21 @@ class ChatAssistant extends Component
         RateLimiter::hit($rateLimitKey, 600);
 
         $lastUserText = end($this->messages)['text'];
+
+        // A question about the platform itself ("how do you help property
+        // managers", "what's the admission process") isn't a house search at
+        // all - answer it directly from fixed, accurate copy instead of
+        // forcing it through the search pipeline, where it would either fail
+        // to extract anything and get a generic "tell me what you're looking
+        // for", or - worse - get treated as a real query. Search state
+        // (filters/lastBranch) is left untouched so a detour question doesn't
+        // derail an in-progress search conversation.
+        if ($faqAnswer = app(PlatformFaqService::class)->answer($lastUserText)) {
+            $this->messages[] = ['role' => 'assistant', 'text' => $faqAnswer, 'cards' => []];
+            $this->persist();
+
+            return;
+        }
 
         $extracted = $ai->extractFilters($this->historyForApi(), $this->filters);
         $this->filters = $extracted ?? $this->filters;
