@@ -123,16 +123,11 @@ class PendingPaymentResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery();
-        $user = auth()->user();
 
-        // Manager/Caretaker are narrowed to their assigned properties (staff_assignments pivot).
-        if (\App\Support\StaffScope::isScopedStaff()) {
-            $locationIds = \App\Support\StaffScope::locationIds();
-            $query->whereHas('tenant.house', function ($q) use ($locationIds) {
-                $q->whereIn('location_id', $locationIds);
-            });
-        }
-
-        return $query;
+        // Manager/Caretaker are narrowed to their assigned properties, Agent is denied
+        // entirely - see StaffScope::onTenantChild() (this used to duplicate that logic
+        // inline without the Agent deny-path, silently exposing every tenant's pending
+        // payments to any Agent account with Filament access).
+        return \App\Support\StaffScope::onTenantChild($query);
     }
 }

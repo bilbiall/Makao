@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use App\Models\Booking;
 use App\Models\BookingPayment;
+use App\Models\MpesaChannel;
 
 /**
  * M-Pesa STK push for BnB booking payments. Deliberately independent of MpesaService
@@ -24,10 +25,26 @@ class BnbMpesaService
     protected $sandbox = true;
     protected $callbackUrl;
 
-    protected function loadConfigForLandlord(?int $landlordId): void
+    /** See MpesaService::loadConfigForLocation() - identical resolution order
+     *  (property-specific channel -> landlord's default channel -> legacy
+     *  landlord-wide Setting payload), duplicated here rather than shared since
+     *  this service is deliberately independent of MpesaService (see class docblock). */
+    protected function loadConfigForLocation(?int $locationId, ?int $landlordId): void
     {
-        $settings = \App\Models\Setting::forLandlord($landlordId);
-        $this->config = $settings->payload['mpesa'] ?? [];
+        $channel = MpesaChannel::resolveFor($locationId, $landlordId);
+
+        if ($channel) {
+            $this->config = [
+                'consumer_key' => $channel->consumer_key,
+                'consumer_secret' => $channel->consumer_secret,
+                'business_shortcode' => $channel->business_shortcode,
+                'passkey' => $channel->passkey,
+                'sandbox' => $channel->sandbox,
+            ];
+        } else {
+            $settings = \App\Models\Setting::forLandlord($landlordId);
+            $this->config = $settings->payload['mpesa'] ?? [];
+        }
 
         $this->consumerKey = $this->config['consumer_key'] ?? null;
         $this->consumerSecret = $this->config['consumer_secret'] ?? null;
@@ -82,7 +99,7 @@ class BnbMpesaService
      */
     public function initiateStkPush(Booking $booking, string $phoneNumber, float $amount): array
     {
-        $this->loadConfigForLandlord($booking->landlord_id);
+        $this->loadConfigForLocation($booking->house?->location_id, $booking->landlord_id);
 
         if (!$this->enabled()) {
             return ['success' => false, 'error' => 'M-Pesa not configured'];
@@ -130,7 +147,10 @@ class BnbMpesaService
                 ->post($base . '/mpesa/stkpush/v1/processrequest', $payload);
 
             $body = $response->json() ?? [];
-            $payment->meta = array_merge($payment->meta ?? [], ['stk_request' => $payload, 'stk_response' => $body]);
+            $payment->meta = array_merge($payment->meta ?? [], [
+                'stk_request' => array_merge($payload, ['Password' => '[redacted]']),
+                'stk_response' => $body,
+            ]);
 
             if ($response->ok() && isset($body['CheckoutRequestID'])) {
                 $payment->checkout_request_id = $body['CheckoutRequestID'];
@@ -154,32 +174,106 @@ class BnbMpesaService
         }
     }
 
+    /**
+     * SECURITY: same reasoning as MpesaService::handleCallback() - this endpoint is
+     * public and unauthenticated with no Daraja-side signature to verify, so the
+     * callback body's ResultCode is never trusted directly. It's only used to decide
+     * whether to bother checking; the actual outcome always comes from an independent
+     * queryTransactionStatus() call to Safaricom, crediting only the amount that was
+     * originally requested when the STK push was initiated.
+     */
     public function handleCallback(array $data): bool
     {
         try {
             $checkoutRequestId = $data['Body']['stkCallback']['CheckoutRequestID'] ?? null;
-            $resultCode = $data['Body']['stkCallback']['ResultCode'] ?? null;
 
             if (!$checkoutRequestId) {
                 return false;
             }
 
             $payment = BookingPayment::where('checkout_request_id', $checkoutRequestId)->first();
-            if (!$payment || $payment->status === 'completed') {
-                return (bool) $payment;
+            if (!$payment) {
+                return false;
             }
 
-            if ((int) $resultCode === 0) {
-                $payment->markCompleted();
-
+            if ($payment->status === 'completed') {
                 return true;
             }
 
-            $payment->update(['status' => 'failed']);
-            return false;
+            $result = $this->queryTransactionStatus($payment);
+
+            return ($result['success'] ?? false) && ($result['status'] ?? null) === 'completed';
         } catch (\Throwable $e) {
             \Log::error('BnB M-Pesa callback exception: ' . $e->getMessage());
             return false;
+        }
+    }
+
+    /**
+     * Independently ask Safaricom what really happened to this STK push, rather than
+     * trusting a client-supplied result. Mirrors MpesaService::queryTransactionStatus().
+     */
+    public function queryTransactionStatus(BookingPayment $payment): array
+    {
+        if ($payment->status === 'completed') {
+            return ['success' => true, 'status' => 'completed'];
+        }
+
+        $this->loadConfigForLocation($payment->booking?->house?->location_id, $payment->landlord_id);
+
+        if (!$this->enabled()) {
+            return ['success' => false, 'error' => 'M-Pesa not configured'];
+        }
+
+        if (!$payment->checkout_request_id) {
+            return ['success' => false, 'error' => 'No checkout request ID'];
+        }
+
+        $accessToken = $this->getAccessToken();
+        if (!$accessToken) {
+            return ['success' => false, 'error' => 'Failed to obtain access token'];
+        }
+
+        $timestamp = now()->format('YmdHis');
+        $password = base64_encode($this->businessShortCode . ($this->passkey ?? '') . $timestamp);
+
+        $queryPayload = [
+            'BusinessShortCode' => $this->businessShortCode,
+            'Password' => $password,
+            'Timestamp' => $timestamp,
+            'CheckoutRequestID' => $payment->checkout_request_id,
+        ];
+
+        try {
+            $base = $this->sandbox ? 'https://sandbox.safaricom.co.ke' : 'https://api.safaricom.co.ke';
+
+            $response = Http::withToken($accessToken)->asJson()->timeout(10)
+                ->post($base . '/mpesa/stkpushquery/v1/query', $queryPayload);
+
+            $body = $response->json() ?? [];
+
+            if ($response->ok()) {
+                $resultCodeInt = (int) ($body['ResultCode'] ?? null);
+
+                if ($resultCodeInt === 0) {
+                    $payment->markCompleted();
+
+                    return ['success' => true, 'status' => 'completed'];
+                }
+
+                if ($resultCodeInt === 1032) {
+                    return ['success' => true, 'status' => 'pending'];
+                }
+
+                $payment->update(['status' => 'failed']);
+
+                return ['success' => false, 'status' => 'failed', 'reason' => $body['ResultDesc'] ?? null];
+            }
+
+            return ['success' => false, 'error' => $body['errorMessage'] ?? 'Query failed'];
+        } catch (\Throwable $e) {
+            \Log::error('BnB M-Pesa query exception: ' . $e->getMessage());
+            return ['success' => false, 'error' => $e->getMessage()];
         }
     }
 }

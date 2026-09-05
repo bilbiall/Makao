@@ -156,6 +156,11 @@ class TenantResource extends Resource
                 TextInput::make('tenant_name')->required(),
                 TextInput::make('email')->email()->required(),
                 TextInput::make('phone_number')->required(),
+                TextInput::make('payment_account_code')
+                    ->label('M-Pesa Account Number')
+                    ->helperText('What this tenant should type as the Paybill Account Number when paying rent directly via M-Pesa. Defaults to their unit name - change it if you\'d rather they use something else.')
+                    ->unique(ignoreRecord: true, modifyRuleUsing: fn ($rule) => $rule->where('landlord_id', auth()->user()->landlord_id))
+                    ->maxLength(50),
                 /*Select::make('user_id')
                     ->label('User')
                     ->relationship('user', 'name') // or 'email' if you want email shown

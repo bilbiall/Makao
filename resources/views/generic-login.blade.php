@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     @include('partials.theme-init-script')
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    @include('partials.favicon')
     <title>Log in - Renty</title>
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700" rel="stylesheet" />
@@ -15,8 +16,7 @@
     <div class="flex items-center justify-center min-h-screen px-4 py-12">
         <div class="w-full max-w-md">
             <div class="mb-8 flex items-center justify-center gap-2">
-                <span class="grid h-9 w-9 place-items-center rounded-lg bg-emerald-600 text-sm font-bold text-white">M</span>
-                <span class="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">Renty</span>
+                <x-brand-logo imgClass="h-9" textClass="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100" />
                 <x-theme-toggle class="ml-2 h-9 w-9 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800" />
             </div>
 

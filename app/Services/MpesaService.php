@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use App\Models\MpesaChannel;
 use App\Models\MpesaTransaction;
 use App\Models\Invoice;
 use App\Models\Payment;
@@ -19,24 +20,42 @@ class MpesaService
     protected $callbackUrl;
 
     protected ?int $landlordId = null;
+    protected ?MpesaChannel $channel = null;
 
     /**
-     * M-Pesa credentials are per-landlord business configuration (each landlord has
-     * their own till/shortcode), not a platform-wide singleton - config is loaded fresh
-     * for whichever landlord owns the record a given call is acting on, rather than
-     * once at construction (this service is resolved once per request/webhook via the
-     * container, and a webhook doesn't know which landlord it belongs to until the
-     * transaction is looked up inside handleCallback()).
+     * M-Pesa credentials are per-landlord business configuration by default, but a
+     * landlord with multiple properties can give any of them their own channel
+     * (MpesaChannel::resolveFor()) - the most specific one (matching this exact
+     * property) wins, then the landlord's own default (location_id null) channel,
+     * and only if neither exists does this fall back to the legacy landlord-wide
+     * Setting payload, unchanged from before this feature existed. Config is loaded
+     * fresh per call (not once at construction) since this service is resolved once
+     * per request/webhook via the container, and a webhook doesn't know which
+     * property/landlord it belongs to until the transaction is looked up inside
+     * handleCallback().
      */
-    protected function loadConfigForLandlord(?int $landlordId): void
+    protected function loadConfigForLocation(?int $locationId, ?int $landlordId): void
     {
         $this->landlordId = $landlordId;
-        $settings = \App\Models\Setting::forLandlord($landlordId);
-        $this->config = $settings->payload['mpesa'] ?? [];
+        $this->channel = MpesaChannel::resolveFor($locationId, $landlordId);
+
+        if ($this->channel) {
+            $this->config = [
+                'consumer_key' => $this->channel->consumer_key,
+                'consumer_secret' => $this->channel->consumer_secret,
+                'business_shortcode' => $this->channel->business_shortcode,
+                'passkey' => $this->channel->passkey,
+                'sandbox' => $this->channel->sandbox,
+            ];
+        } else {
+            $settings = \App\Models\Setting::forLandlord($landlordId);
+            $this->config = $settings->payload['mpesa'] ?? [];
+        }
 
         \Log::debug('MpesaService config loaded', [
             'landlord_id' => $landlordId,
-            'mpesa_config_keys' => array_keys($this->config),
+            'location_id' => $locationId,
+            'channel_id' => $this->channel?->id,
             'consumer_key_set' => !empty($this->config['consumer_key']),
             'consumer_secret_set' => !empty($this->config['consumer_secret']),
             'business_shortcode_set' => !empty($this->config['business_shortcode']),
@@ -68,6 +87,59 @@ class MpesaService
         }
         
         return $isEnabled;
+    }
+
+    /**
+     * Register this channel's Confirmation/Validation URLs with Safaricom
+     * (POST /mpesa/c2b/v1/registerurl) so C2B (direct Paybill) payments start
+     * reaching MpesaC2bController. Called from MpesaChannelResource's "Register
+     * C2B" action - loads credentials straight from the given channel rather than
+     * via loadConfigForLocation(), since the caller already has the exact channel.
+     */
+    public function registerC2bUrls(MpesaChannel $channel): array
+    {
+        $this->consumerKey = $channel->consumer_key;
+        $this->consumerSecret = $channel->consumer_secret;
+        $this->businessShortCode = $channel->business_shortcode;
+        $this->sandbox = (bool) $channel->sandbox;
+
+        $accessToken = $this->getAccessToken();
+        if (!$accessToken) {
+            return ['success' => false, 'error' => 'Failed to obtain access token - check the consumer key/secret'];
+        }
+
+        $base = $this->sandbox ? 'https://sandbox.safaricom.co.ke' : 'https://api.safaricom.co.ke';
+
+        try {
+            $response = Http::withToken($accessToken)
+                ->asJson()
+                ->timeout(15)
+                ->post($base . '/mpesa/c2b/v1/registerurl', [
+                    'ShortCode' => $channel->business_shortcode,
+                    'ResponseType' => 'Completed',
+                    'ConfirmationURL' => rtrim(config('app.url'), '/') . '/api/mpesa/c2b/confirmation',
+                    'ValidationURL' => rtrim(config('app.url'), '/') . '/api/mpesa/c2b/validation',
+                ]);
+
+            $body = $response->json() ?? [];
+            $responseCode = $body['ResponseCode'] ?? null;
+
+            if ($response->ok() && ((string) $responseCode === '0')) {
+                return ['success' => true, 'response' => $body];
+            }
+
+            \Log::warning('M-Pesa C2B URL registration failed', ['channel_id' => $channel->id, 'response' => $body]);
+
+            return [
+                'success' => false,
+                'error' => $body['errorMessage'] ?? $body['ResponseDescription'] ?? 'Registration failed',
+                'response' => $body,
+            ];
+        } catch (\Throwable $e) {
+            \Log::error('M-Pesa C2B URL registration exception: ' . $e->getMessage(), ['channel_id' => $channel->id]);
+
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
     }
 
     /**
@@ -106,7 +178,8 @@ class MpesaService
      */
     public function initiateStkPush(Invoice $invoice, string $phoneNumber, float $amount): array
     {
-        $this->loadConfigForLandlord($invoice->landlord_id);
+        $locationId = $invoice->tenant?->house?->location_id;
+        $this->loadConfigForLocation($locationId, $invoice->landlord_id);
 
         if (!$this->enabled()) {
             return ['success' => false, 'error' => 'M-Pesa not configured'];
@@ -197,7 +270,10 @@ class MpesaService
             ]);
 
             $transaction->meta = array_merge($transaction->meta ?? [], [
-                'stk_request' => $payload,
+                // Password is derivable back to the raw passkey via base64_decode, and this
+                // meta blob is rendered as-is in the Filament transaction viewer - redact it
+                // rather than fanning the passkey out into every transaction record.
+                'stk_request' => array_merge($payload, ['Password' => '[redacted]']),
                 'stk_response' => $body,
                 'stk_raw_response' => $rawBody,
                 'stk_status' => $response->status(),
@@ -293,7 +369,8 @@ class MpesaService
             return ['success' => true, 'status' => 'completed'];
         }
 
-        $this->loadConfigForLandlord($transaction->landlord_id);
+        $locationId = $transaction->house?->location_id;
+        $this->loadConfigForLocation($locationId, $transaction->landlord_id);
 
         if (!$this->enabled()) {
             return ['success' => false, 'error' => 'M-Pesa not configured'];
@@ -405,15 +482,22 @@ class MpesaService
     }
 
     /**
-     * Handle callback from Safaricom
+     * Handle callback from Safaricom.
+     *
+     * SECURITY: this endpoint is public and unauthenticated - Daraja has no equivalent
+     * of Pesapal's HMAC-signed webhooks, so nothing here can prove a given POST actually
+     * came from Safaricom. Anyone who learns/guesses a CheckoutRequestID could otherwise
+     * forge a "payment successful" body with an arbitrary Amount and receipt number and
+     * have it silently credited. So the callback body's ResultCode/Amount/receipt are
+     * used only to decide WHETHER to check, never to decide the outcome - the actual
+     * result is always re-confirmed independently via queryTransactionStatus(), which
+     * calls Safaricom's own STK query API and credits strictly the amount that was
+     * originally requested in initiateStkPush(), never an attacker-supplied one.
      */
     public function handleCallback(array $data): bool
     {
         try {
             $checkoutRequestId = $data['Body']['stkCallback']['CheckoutRequestID'] ?? null;
-            $resultCode = $data['Body']['stkCallback']['ResultCode'] ?? null;
-            $resultDesc = $data['Body']['stkCallback']['ResultDesc'] ?? null;
-            $callbackMetadata = $data['Body']['stkCallback']['CallbackMetadata']['Item'] ?? [];
 
             if (!$checkoutRequestId) {
                 \Log::warning('M-Pesa callback missing CheckoutRequestID');
@@ -436,82 +520,13 @@ class MpesaService
                 return true;
             }
 
-            $transaction->result_code = $resultCode;
-            $transaction->result_desc = $resultDesc;
-
-            \Log::info('M-Pesa callback received', [
+            \Log::info('M-Pesa callback received - verifying independently with Safaricom before crediting', [
                 'transaction_id' => $transaction->id,
-                'result_code' => $resultCode,
-                'result_desc' => $resultDesc,
             ]);
 
-            if ($resultCode === 0) {
-                // Payment successful
-                $transaction->status = 'completed';
-                
-                // Extract metadata
-                foreach ($callbackMetadata as $item) {
-                    if ($item['Name'] === 'Amount') {
-                        $transaction->meta = array_merge($transaction->meta ?? [], ['paid_amount' => $item['Value']]);
-                    } elseif ($item['Name'] === 'MpesaReceiptNumber') {
-                        $transaction->receipt_number = $item['Value'];
-                    } elseif ($item['Name'] === 'PhoneNumber') {
-                        $transaction->meta = array_merge($transaction->meta ?? [], ['paid_phone' => $item['Value']]);
-                    }
-                }
+            $result = $this->queryTransactionStatus($transaction);
 
-                $transaction->save();
-
-                // Determine paid amount (prefer callback metadata if present)
-                $paidAmount = $transaction->meta['paid_amount'] ?? $transaction->amount;
-
-                // Ensure transaction amount reflects actual paid amount
-                if ((float) $transaction->amount !== (float) $paidAmount) {
-                    $transaction->amount = $paidAmount;
-                    $transaction->save();
-                }
-
-                // Create Payment record (use Payment model's created hook to update invoice)
-                $payment = $this->createPaymentIfMissing($transaction, $paidAmount);
-                if (!$payment) {
-                    return false;
-                }
-
-                // Note: no separate SMS send here - Payment::create() above already
-                // triggers the model's `created` hook, which sends the payment
-                // confirmation SMS via SmsHelper. Sending again here would double-SMS
-                // the tenant and (previously) called a method that didn't exist,
-                // which aborted this method before the activity log below ever ran.
-                $tenant = $transaction->tenant;
-
-                // Log M-Pesa payment
-                try {
-                    $invoice = $transaction->invoice;
-                    \App\Helpers\ActivityLogger::log('mpesa_payment', null, "M-Pesa payment of KES {$paidAmount} received for Invoice {$invoice->invoice_number} (Tenant: {$tenant->tenant_name}, Receipt: {$transaction->receipt_number})");
-                } catch (\Throwable $e) {
-                    // ignore
-                }
-
-                \Log::info('M-Pesa payment completed', [
-                    'transaction_id' => $transaction->id,
-                    'amount' => $transaction->amount,
-                    'receipt' => $transaction->receipt_number,
-                ]);
-
-                return true;
-            } else {
-                // Payment failed
-                $transaction->status = 'failed';
-                $transaction->save();
-
-                \Log::warning('M-Pesa payment failed', [
-                    'transaction_id' => $transaction->id,
-                    'result_code' => $resultCode,
-                    'description' => $resultDesc,
-                ]);
-
-                return false;
-            }
+            return ($result['success'] ?? false) && ($result['status'] ?? null) === 'completed';
         } catch (\Throwable $e) {
             \Log::error('M-Pesa callback exception: ' . $e->getMessage());
             return false;

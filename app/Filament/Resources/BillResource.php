@@ -186,19 +186,11 @@ class BillResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery();
-        $user = auth()->user();
 
-        // Manager/Caretaker are narrowed to their assigned properties (staff_assignments pivot).
-        // Note: Bill has no direct house() relation, only tenant() - the previous version of
-        // this check called whereHas('house', ...) which doesn't exist on Bill and would have
-        // thrown for any caretaker/manager viewing this resource. Fixed to go via tenant.house.
-        if (\App\Support\StaffScope::isScopedStaff()) {
-            $locationIds = \App\Support\StaffScope::locationIds();
-            $query->whereHas('tenant.house', function ($q) use ($locationIds) {
-                $q->whereIn('location_id', $locationIds);
-            });
-        }
-
-        return $query;
+        // Manager/Caretaker are narrowed to their assigned properties, Agent is denied
+        // entirely - see StaffScope::onTenantChild() (this used to duplicate that logic
+        // inline without the Agent deny-path, silently exposing every tenant's bills to
+        // any Agent account with Filament access).
+        return \App\Support\StaffScope::onTenantChild($query);
     }
 }

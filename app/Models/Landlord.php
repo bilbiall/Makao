@@ -17,13 +17,20 @@ class Landlord extends Model
         'phone_number',
         'status',
         'onboarded_at',
+        'c2b_enabled',
     ];
 
     protected function casts(): array
     {
         return [
             'onboarded_at' => 'datetime',
+            'c2b_enabled' => 'boolean',
         ];
+    }
+
+    public function mpesaChannels(): HasMany
+    {
+        return $this->hasMany(MpesaChannel::class);
     }
 
     public function locations(): HasMany

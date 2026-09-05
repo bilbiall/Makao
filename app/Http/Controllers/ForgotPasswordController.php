@@ -46,14 +46,18 @@ class ForgotPasswordController extends Controller
             }
         }
 
+        // Same message whether or not an account exists - a different message here is an
+        // account-enumeration oracle (confirms which emails/phone numbers are registered).
+        $status = 'If an account exists for that email or phone number, we\'ve sent password reset instructions.';
+
         if (! $user) {
-            return back()->withErrors(['identifier' => 'We could not find an account with that email or phone number.']);
+            return back()->with('status', $status);
         }
 
         // Generate token and send via user notifier (overridden to email + optional SMS)
         $token = Password::broker()->createToken($user);
         $user->sendPasswordResetNotification($token);
 
-        return back()->with('status', 'We have sent password reset instructions. Check your email or SMS.');
+        return back()->with('status', $status);
     }
 }

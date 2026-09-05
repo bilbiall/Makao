@@ -38,9 +38,12 @@ class TenantPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
-        return $panel
+        $logoPath = \App\Models\Setting::forLandlord(null)->payload['logo_path'] ?? null;
+
+        $panel = $panel
             ->id('tenant')
             ->path('tenant')
+            ->favicon(asset('favicon-32.png'))
             ->plugins([
                 FilamentEditProfilePlugin::make(),
             ])
@@ -86,5 +89,11 @@ class TenantPanelProvider extends PanelProvider
                 NavigationGroup::make()
                     ->label('My Records'),
             ]);
+
+        if ($logoPath) {
+            $panel->brandLogo(\Illuminate\Support\Facades\Storage::disk('public')->url($logoPath));
+        }
+
+        return $panel;
     }
 }

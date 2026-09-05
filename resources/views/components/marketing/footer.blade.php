@@ -1,8 +1,7 @@
 <footer class="border-t border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
     <div class="mx-auto max-w-6xl px-4 py-10 sm:px-6">
         <div class="flex items-center gap-2">
-            <span class="grid h-8 w-8 place-items-center rounded-lg bg-emerald-600 text-sm font-bold text-white">R</span>
-            <span class="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">Renty</span>
+            <x-brand-logo imgClass="h-8" />
         </div>
         <p class="mt-3 max-w-sm text-sm text-slate-500 dark:text-slate-400">
             Verified houses to rent and furnished stays across Kenya.

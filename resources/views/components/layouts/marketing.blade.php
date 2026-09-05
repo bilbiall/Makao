@@ -5,6 +5,7 @@
     <meta charset="utf-8">
     @include('partials.theme-init-script')
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    @include('partials.favicon')
     <title>{{ $title ?? config('app.name', 'Renty') }} - Renty</title>
     <meta name="description" content="{{ $description ?? 'Renty is an all-in-one rental management platform for Kenyan landlords and property managers - M-Pesa rent collection, tenant portal, maintenance tracking, and more.' }}">
 
@@ -28,7 +29,7 @@
         </script>
     @endif
 </head>
-<body class="bg-stone-50 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100">
+<body data-has-livewire="true" class="bg-stone-50 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100">
     <x-marketing.nav />
 
     <main class="pb-16 md:pb-0">
@@ -37,5 +38,7 @@
 
     <x-marketing.footer />
     <x-marketing.bottom-tabs />
+
+    <livewire:chat-assistant />
 </body>
 </html>

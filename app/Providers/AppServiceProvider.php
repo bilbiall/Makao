@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Validation\Rules\Password;
 use App\Helpers\ActivityLogger;
 use App\Models\Bill;
 use App\Models\Invoice;
@@ -31,6 +32,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Applies to every signup/password-reset (landlord accounts hold M-Pesa/Pesapal
+        // credentials, so the bare 8-char default isn't enough). uncompromised() checks
+        // against the Have I Been Pwned breach corpus via k-anonymity (no full password
+        // ever leaves the server) and fails open (doesn't block signup) if that lookup
+        // itself is unreachable, so this can't turn a network hiccup into a signup outage.
+        Password::defaults(fn () => Password::min(8)->uncompromised());
+
         // Register Tenant observer
         Tenant::observe(TenantObserver::class);
 

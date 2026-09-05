@@ -42,6 +42,10 @@ class LandlordResource extends Resource
                     ->default('active')
                     ->required()
                     ->helperText('Suspending a landlord blocks all their staff/tenant logins immediately.'),
+
+                Forms\Components\Toggle::make('c2b_enabled')
+                    ->label('C2B (Paybill) reconciliation enabled')
+                    ->helperText('Lets this landlord register their M-Pesa Channels for C2B - i.e. automatically reconcile tenants who pay Paybill directly instead of using "Pay Now" on the site. Off by default: misrouted/unreconciled real cash is a higher-stakes failure mode than a rejected STK push, so review before switching this on.'),
             ]);
     }
 
@@ -69,6 +73,10 @@ class LandlordResource extends Resource
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
                     ->color(fn (string $state) => $state === 'active' ? 'success' : 'danger'),
+                Tables\Columns\IconColumn::make('c2b_enabled')
+                    ->label('C2B')
+                    ->boolean()
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('created_at')->label('Joined')->date()->sortable(),
             ])
             ->filters([
@@ -82,6 +90,14 @@ class LandlordResource extends Resource
                     ->icon('heroicon-o-cog')
                     ->color('gray')
                     ->url(fn (Landlord $record) => Pages\ManageLandlordSettings::getUrl(['record' => $record])),
+                Tables\Actions\Action::make('mpesa_channels')
+                    ->label('M-Pesa Channels')
+                    ->icon('heroicon-o-credit-card')
+                    ->color('gray')
+                    ->url(fn (Landlord $record) => \App\Filament\Superadmin\Resources\MpesaChannelResource::getUrl('index', [
+                        'tableFilters' => ['landlord' => ['value' => $record->id]],
+                        'landlord_id' => $record->id,
+                    ])),
             ])
             ->defaultSort('created_at', 'desc');
     }

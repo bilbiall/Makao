@@ -8,6 +8,7 @@ use App\Models\HousePricePackage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\URL;
 
 class BookingController extends Controller
 {
@@ -81,7 +82,7 @@ class BookingController extends Controller
             return back()->withErrors(['booking' => 'Those dates were just booked by someone else. Please pick different dates.']);
         }
 
-        return redirect()->route('bookings.show', $booking)
+        return redirect(URL::signedRoute('bookings.show', ['booking' => $booking->id]))
             ->with('status', 'Booking held for 20 minutes - complete payment to confirm.');
     }
 
@@ -89,6 +90,8 @@ class BookingController extends Controller
     {
         $booking->load('house.location', 'payments');
 
-        return view('bookings.show', compact('booking'));
+        $mpesaInitiateUrl = URL::signedRoute('bookings.mpesa.initiate', ['booking' => $booking->id]);
+
+        return view('bookings.show', compact('booking', 'mpesaInitiateUrl'));
     }
 }

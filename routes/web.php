@@ -15,6 +15,7 @@ Route::get('/terms', [MarketingController::class, 'terms'])->name('terms');
 // routes/web.php
 Route::get('/login', fn () => view('generic-login'))->name('generic.login');
 Route::post('/login', \App\Http\Controllers\GenericLoginController::class)
+     ->middleware('throttle:5,1')
      ->name('generic.login.attempt');
 
 // Homepage "try the demo" buttons - {role} is one of owner/admin/manager/
@@ -62,18 +63,29 @@ Route::middleware(['auth'])->group(function () {
 Route::get('/stays', [\App\Http\Controllers\StayListingController::class, 'index'])->name('stays.index');
 Route::get('/stays/{house}', [\App\Http\Controllers\StayListingController::class, 'show'])->name('stays.show');
 Route::post('/stays/{house}/book', [\App\Http\Controllers\BookingController::class, 'store'])->name('bookings.store');
-Route::get('/bookings/{booking}', [\App\Http\Controllers\BookingController::class, 'show'])->name('bookings.show');
+
+// Signed, not auth-gated - most guests book without an account, so there's no session
+// to check ownership against. A booking's id is sequential and its details (guest name/
+// phone/dates/amount) are sensitive, so the link handed back at booking creation (and
+// only that link) is what proves the visitor is allowed to see/pay it - see
+// BookingController::store()'s redirect and bookings/show.blade.php's payment form.
+Route::get('/bookings/{booking}', [\App\Http\Controllers\BookingController::class, 'show'])
+    ->middleware('signed')
+    ->name('bookings.show');
 Route::post('/bookings/{booking}/mpesa/initiate', [\App\Http\Controllers\BookingPaymentController::class, 'initiate'])
+    ->middleware(['signed', 'throttle:10,1'])
     ->name('bookings.mpesa.initiate');
 
 // password reset (email or phone)
 Route::get('/forgot-password', [\App\Http\Controllers\ForgotPasswordController::class, 'showForgotForm'])
     ->name('password.request');
 Route::post('/forgot-password', [\App\Http\Controllers\ForgotPasswordController::class, 'sendReset'])
+    ->middleware('throttle:6,1')
     ->name('password.email');
 Route::get('/reset-password/{token}', [\App\Http\Controllers\ResetPasswordController::class, 'showResetForm'])
     ->name('password.reset');
 Route::post('/reset-password', [\App\Http\Controllers\ResetPasswordController::class, 'reset'])
+    ->middleware('throttle:6,1')
     ->name('password.update');
 
 // Email verification - a soft gate (every role still lands in their own dashboard

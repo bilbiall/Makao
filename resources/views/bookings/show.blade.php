@@ -47,7 +47,7 @@
             </div>
 
             @if ($booking->status === 'pending')
-                <form method="POST" action="{{ route('bookings.mpesa.initiate', $booking) }}" class="mt-6 space-y-3 border-t border-slate-100 pt-6">
+                <form method="POST" action="{{ $mpesaInitiateUrl }}" class="mt-6 space-y-3 border-t border-slate-100 pt-6">
                     @csrf
                     <p class="text-sm font-semibold text-slate-900">Pay with M-Pesa</p>
                     <div class="grid grid-cols-2 gap-3">

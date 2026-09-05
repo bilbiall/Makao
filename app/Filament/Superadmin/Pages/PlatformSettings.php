@@ -10,6 +10,7 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Support\Facades\Http;
 
 /**
  * Platform-wide configuration - not tied to any landlord (stored in the null-landlord
@@ -54,6 +55,24 @@ class PlatformSettings extends Page implements HasForms
                     ->tabs([
                         Forms\Components\Tabs\Tab::make('Appearance')
                             ->schema([
+                                Forms\Components\FileUpload::make('logo_path')
+                                    ->label('Site logo')
+                                    ->helperText('Replaces the "R Renty" text logo everywhere (marketing site, app header, Filament panels). Also used as the browser tab favicon, unless you set a dedicated one below. Leave blank to keep the text logo.')
+                                    ->image()
+                                    ->disk('public')
+                                    ->visibility('public')
+                                    ->directory('branding')
+                                    ->maxSize(2048),
+
+                                Forms\Components\FileUpload::make('favicon_path')
+                                    ->label('Favicon (browser tab icon)')
+                                    ->helperText("Optional - any image works here (it doesn't need a transparent background, and can be totally different from the logo above). If left blank, the site logo is used instead.")
+                                    ->image()
+                                    ->disk('public')
+                                    ->visibility('public')
+                                    ->directory('branding')
+                                    ->maxSize(2048),
+
                                 Forms\Components\Radio::make('brand_palette')
                                     ->label('Brand color')
                                     ->helperText('Re-skins the whole site - marketing pages, the mobile app-shell for every role, and every Filament panel (this one included). Takes effect on next page load.')
@@ -198,6 +217,93 @@ class PlatformSettings extends Page implements HasForms
                             ])
                             ->columns(2),
 
+                        Forms\Components\Tabs\Tab::make('AI Search')
+                            ->schema([
+                                Forms\Components\Placeholder::make('openrouter_note')
+                                    ->label('')
+                                    ->content('Powers natural-language search (e.g. "1 bedroom around Kasarani under 20k"). Get a free API key at openrouter.ai/keys - pick a model ending in ":free" (e.g. the default below) to use this at zero cost.'),
+
+                                Forms\Components\TextInput::make('openrouter_api_key')
+                                    ->label('OpenRouter API Key')
+                                    ->password()
+                                    ->revealable()
+                                    ->maxLength(255),
+
+                                Forms\Components\TextInput::make('openrouter_model')
+                                    ->label('Model')
+                                    ->helperText('Must match a model slug from openrouter.ai/models exactly. Free models end in ":free".')
+                                    ->default('meta-llama/llama-3.1-8b-instruct:free')
+                                    ->maxLength(255),
+
+                                Forms\Components\Toggle::make('ai_search_enabled')
+                                    ->label('AI chat assistant enabled')
+                                    ->helperText('Turns the chat bubble and natural-language search off site-wide without deleting the API key - handy for pausing it temporarily (e.g. to control OpenRouter usage) without losing your configuration.')
+                                    ->default(true),
+
+                                Forms\Components\FileUpload::make('ai_avatar_path')
+                                    ->label('Assistant avatar image')
+                                    ->helperText("Shown next to the assistant's replies in the chat bubble. Leave blank to use the default sparkle icon.")
+                                    ->image()
+                                    ->avatar()
+                                    ->disk('public')
+                                    ->visibility('public')
+                                    ->directory('branding')
+                                    ->maxSize(2048),
+
+                                Forms\Components\Section::make('Test connection')
+                                    ->description('Sends a tiny request using whatever is currently typed above (not the last saved values) to confirm the key and model both work.')
+                                    ->schema([
+                                        Forms\Components\Actions::make([
+                                            Forms\Components\Actions\Action::make('test_openrouter')
+                                                ->label('Test Connection')
+                                                ->color('gray')
+                                                ->action(function ($livewire) {
+                                                    $apiKey = trim((string) ($livewire->data['openrouter_api_key'] ?? ''));
+                                                    $model = trim((string) ($livewire->data['openrouter_model'] ?? '')) ?: 'meta-llama/llama-3.1-8b-instruct:free';
+
+                                                    if ($apiKey === '') {
+                                                        Notification::make()->danger()->title('Enter an API key first')->send();
+                                                        return;
+                                                    }
+
+                                                    try {
+                                                        $response = Http::withToken($apiKey)
+                                                            ->withHeaders([
+                                                                'HTTP-Referer' => config('app.url'),
+                                                                'X-Title' => config('app.name'),
+                                                            ])
+                                                            ->timeout(20)
+                                                            ->post('https://openrouter.ai/api/v1/chat/completions', [
+                                                                'model' => $model,
+                                                                'messages' => [
+                                                                    ['role' => 'user', 'content' => 'Reply with exactly one word: OK'],
+                                                                ],
+                                                                'max_tokens' => 5,
+                                                            ]);
+
+                                                        if ($response->successful()) {
+                                                            $reply = trim((string) ($response->json('choices.0.message.content') ?? ''));
+                                                            Notification::make()
+                                                                ->success()
+                                                                ->title('Connection works')
+                                                                ->body("Model \"{$model}\" replied: \"{$reply}\"")
+                                                                ->send();
+                                                        } else {
+                                                            $error = $response->json('error.message') ?? $response->body();
+                                                            Notification::make()
+                                                                ->danger()
+                                                                ->title('Connection failed (HTTP ' . $response->status() . ')')
+                                                                ->body($error)
+                                                                ->send();
+                                                        }
+                                                    } catch (\Throwable $e) {
+                                                        Notification::make()->danger()->title('Failed to reach OpenRouter')->body($e->getMessage())->send();
+                                                    }
+                                                }),
+                                        ]),
+                                    ]),
+                            ]),
+
                         Forms\Components\Tabs\Tab::make('Subscription Billing')
                             ->schema([
                                 Forms\Components\Placeholder::make('subscription_billing_note')
@@ -282,9 +388,28 @@ class PlatformSettings extends Page implements HasForms
 
     public function save(): void
     {
+        $state = $this->form->getState();
+
         $settings = Setting::forLandlord(null);
-        $settings->payload = $this->form->getState();
+        $previousLogoPath = $settings->payload['logo_path'] ?? null;
+        $previousFaviconPath = $settings->payload['favicon_path'] ?? null;
+        $settings->payload = $state;
         $settings->save();
+
+        if (! empty($previousLogoPath) && $state['logo_path'] !== $previousLogoPath) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($previousLogoPath);
+        }
+
+        if (! empty($previousFaviconPath) && $state['favicon_path'] !== $previousFaviconPath) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($previousFaviconPath);
+        }
+
+        // A dedicated favicon always wins; otherwise fall back to the logo.
+        $faviconSource = $state['favicon_path'] ?? $state['logo_path'] ?? null;
+
+        if ($faviconSource) {
+            \App\Support\FaviconGenerator::generate($faviconSource);
+        }
 
         Notification::make()
             ->title('Platform settings saved')

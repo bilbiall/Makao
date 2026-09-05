@@ -28,6 +28,7 @@ class Tenant extends Model
         'balance',
         'landlord_id',
         'user_id',
+        'payment_account_code',
     ];
 
     //relationship for with the house model
@@ -91,6 +92,17 @@ class Tenant extends Model
         static::creating(function ($tenant) {
             if (!$tenant->landlord_id && $tenant->house_id) {
                 $tenant->landlord_id = \App\Models\House::withoutGlobalScopes()->find($tenant->house_id)?->landlord_id;
+            }
+        });
+
+        static::creating(function ($tenant) {
+            // Default to the tenant's own unit identifier - something they already
+            // know without being told anything new - rather than an arbitrary
+            // generated code nobody remembers to type as their M-Pesa Account Number.
+            // Editable afterward by the landlord/admin.
+            if (!$tenant->payment_account_code && $tenant->house_id) {
+                $house = \App\Models\House::withoutGlobalScopes()->find($tenant->house_id);
+                $tenant->payment_account_code = $house?->publicName();
             }
         });
 

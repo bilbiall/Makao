@@ -1,5 +1,5 @@
 @php
-    $tabs = ['appearance' => 'Appearance', 'general' => 'General', 'sms' => 'SMS', 'email' => 'Email', 'billing' => 'Subscription Billing'];
+    $tabs = ['appearance' => 'Appearance', 'general' => 'General', 'ai' => 'AI Search', 'sms' => 'SMS', 'email' => 'Email', 'billing' => 'Subscription Billing'];
     $inputClass = 'mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100';
     $labelClass = 'text-xs font-medium text-slate-600 dark:text-slate-400';
     $paletteSwatches = [
@@ -35,6 +35,42 @@
     <div class="rounded-2xl bg-white border border-slate-200 shadow-sm p-4 space-y-4 dark:bg-slate-900 dark:border-slate-800">
         @if ($activeTab === 'appearance')
             <p class="text-xs text-slate-500 dark:text-slate-400">Re-skins the whole site - marketing pages, the mobile app-shell for every role, and every Filament panel. Takes effect on next page load.</p>
+
+            <div class="pb-2 border-b border-slate-100 dark:border-slate-800">
+                <label class="{{ $labelClass }}">Site logo</label>
+                <div class="flex items-center gap-3">
+                    @if ($logoUpload)
+                        <img src="{{ $logoUpload->temporaryUrl() }}" alt="" class="h-10 w-auto max-w-[8rem] object-contain">
+                    @elseif (! empty($data['logo_path']))
+                        <img src="{{ Illuminate\Support\Facades\Storage::disk('public')->url($data['logo_path']) }}" alt="" class="h-10 w-auto max-w-[8rem] object-contain">
+                    @endif
+                    <input type="file" accept="image/*" wire:model="logoUpload" class="{{ $inputClass }}">
+                    @if (! empty($data['logo_path']))
+                        <button type="button" wire:click="removeLogo" wire:confirm="Remove the site logo and go back to the text logo?" class="text-xs text-rose-600 dark:text-rose-400 whitespace-nowrap">Remove</button>
+                    @endif
+                </div>
+                <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Replaces the "R Renty" text logo everywhere (marketing site, app header, Filament panels). Also used as the browser tab favicon, unless you set a dedicated one below. Leave blank to keep the text logo.</p>
+                <p wire:loading wire:target="logoUpload" class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Uploading...</p>
+                @error('logoUpload') <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p> @enderror
+            </div>
+
+            <div class="pb-2 border-b border-slate-100 dark:border-slate-800">
+                <label class="{{ $labelClass }}">Favicon (browser tab icon)</label>
+                <div class="flex items-center gap-3">
+                    @if ($faviconUpload)
+                        <img src="{{ $faviconUpload->temporaryUrl() }}" alt="" class="h-10 w-10 object-contain border border-slate-200 dark:border-slate-700 rounded">
+                    @elseif (! empty($data['favicon_path']))
+                        <img src="{{ Illuminate\Support\Facades\Storage::disk('public')->url($data['favicon_path']) }}" alt="" class="h-10 w-10 object-contain border border-slate-200 dark:border-slate-700 rounded">
+                    @endif
+                    <input type="file" accept="image/*" wire:model="faviconUpload" class="{{ $inputClass }}">
+                    @if (! empty($data['favicon_path']))
+                        <button type="button" wire:click="removeFavicon" wire:confirm="Remove the dedicated favicon? The logo above will be used instead, if set." class="text-xs text-rose-600 dark:text-rose-400 whitespace-nowrap">Remove</button>
+                    @endif
+                </div>
+                <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Optional - any image works here (it doesn't need a transparent background, and can be totally different from the logo above). If left blank, the site logo is used instead.</p>
+                <p wire:loading wire:target="faviconUpload" class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Uploading...</p>
+                @error('faviconUpload') <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p> @enderror
+            </div>
 
             <div class="space-y-2">
                 @foreach ($paletteSwatches as $key => $swatch)
@@ -74,6 +110,51 @@
                 <label class="{{ $labelClass }}">Platform support email</label>
                 <input type="email" wire:model="data.platform_support_email" class="{{ $inputClass }}">
                 @error('data.platform_support_email') <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p> @enderror
+            </div>
+        @elseif ($activeTab === 'ai')
+            <p class="text-xs text-slate-500 dark:text-slate-400">Powers natural-language search and the site-wide chat assistant. Get a free API key at openrouter.ai/keys - pick a model ending in ":free" (e.g. the default below) to use this at zero cost.</p>
+
+            <div>
+                <label class="{{ $labelClass }}">OpenRouter API Key</label>
+                <input type="password" wire:model="data.openrouter_api_key" class="{{ $inputClass }}">
+            </div>
+            <div>
+                <label class="{{ $labelClass }}">Model</label>
+                <input type="text" wire:model="data.openrouter_model" placeholder="meta-llama/llama-3.1-8b-instruct:free" class="{{ $inputClass }}">
+                <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Must match a model slug from openrouter.ai/models exactly. Free models end in ":free".</p>
+            </div>
+
+            <label class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 pt-1">
+                <input type="checkbox" wire:model="data.ai_search_enabled" class="rounded border-slate-300 dark:border-slate-600">
+                AI chat assistant enabled
+            </label>
+            <p class="text-[11px] text-slate-400 dark:text-slate-500 -mt-1">Turns the chat bubble and natural-language search off site-wide without deleting the API key above.</p>
+
+            <div class="pt-2">
+                <label class="{{ $labelClass }}">Assistant avatar image</label>
+                <div class="flex items-center gap-3">
+                    @if ($aiAvatarUpload)
+                        <img src="{{ $aiAvatarUpload->temporaryUrl() }}" alt="" class="h-9 w-9 rounded-full object-cover border border-slate-200 dark:border-slate-700">
+                    @elseif (! empty($data['ai_avatar_path']))
+                        <img src="{{ Illuminate\Support\Facades\Storage::disk('public')->url($data['ai_avatar_path']) }}" alt="" class="h-9 w-9 rounded-full object-cover border border-slate-200 dark:border-slate-700">
+                    @endif
+                    <input type="file" accept="image/*" wire:model="aiAvatarUpload" class="{{ $inputClass }}">
+                    @if (! empty($data['ai_avatar_path']))
+                        <button type="button" wire:click="removeAiAvatar" wire:confirm="Remove the assistant avatar?" class="text-xs text-rose-600 dark:text-rose-400 whitespace-nowrap">Remove</button>
+                    @endif
+                </div>
+                <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Shown next to the assistant's replies in the chat bubble. Leave blank to use the default sparkle icon.</p>
+                <p wire:loading wire:target="aiAvatarUpload" class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Uploading...</p>
+                @error('aiAvatarUpload') <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p> @enderror
+            </div>
+
+            <div class="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">Test connection</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Sends a tiny request using whatever is currently typed above, not the last saved values.</p>
+                <button type="button" wire:click="testOpenRouter" wire:loading.attr="disabled" wire:target="testOpenRouter" class="w-full rounded-lg border border-slate-300 dark:border-slate-700 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60">
+                    <span wire:loading.remove wire:target="testOpenRouter">Test Connection</span>
+                    <span wire:loading wire:target="testOpenRouter">Testing...</span>
+                </button>
             </div>
         @elseif ($activeTab === 'sms')
             <p class="text-xs text-slate-500 dark:text-slate-400">Used by any landlord who hasn't set their own SMS gateway in their Settings.</p>

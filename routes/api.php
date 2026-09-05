@@ -52,3 +52,18 @@ Route::post('/mpesa/callback', [MpesaController::class, 'callback'])
 Route::post('/bookings/mpesa/callback', [\App\Http\Controllers\BookingPaymentController::class, 'callback'])
     ->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class)
     ->name('api.bookings.mpesa.callback');
+
+/**
+ * M-Pesa C2B (Customer-to-Business) - called by Safaricom whenever anyone pays a
+ * registered Paybill directly from their M-Pesa app, without ever using this
+ * site's STK push flow. Registered per-channel via MpesaChannelResource's
+ * "Register C2B" action (Daraja's POST /mpesa/c2b/v1/registerurl). No
+ * authentication or CSRF verification - same as the STK callback above.
+ */
+Route::post('/mpesa/c2b/validation', [\App\Http\Controllers\MpesaC2bController::class, 'validation'])
+    ->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class)
+    ->name('api.mpesa.c2b.validation');
+
+Route::post('/mpesa/c2b/confirmation', [\App\Http\Controllers\MpesaC2bController::class, 'confirmation'])
+    ->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class)
+    ->name('api.mpesa.c2b.confirmation');

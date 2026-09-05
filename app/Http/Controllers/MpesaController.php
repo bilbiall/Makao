@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Invoice;
 use App\Models\MpesaTransaction;
 use App\Services\MpesaService;
+use Illuminate\Support\Facades\Auth;
 
 class MpesaController extends Controller
 {
@@ -16,11 +17,29 @@ class MpesaController extends Controller
         $this->mpesaService = $mpesaService;
     }
 
+    /** True for account types that are allowed to act on any tenant's invoice/transaction
+     *  within the landlord's own portfolio (already narrowed further by LandlordScope
+     *  and, for Manager/Caretaker, by StaffScope elsewhere) - as opposed to a tenant, who
+     *  may only ever act on their own. */
+    protected function isStaff(?\App\Models\User $user): bool
+    {
+        return $user && ($user->isAdmin() || $user->isLandlord() || $user->isCaretaker() || $user->isManager() || $user->isSuperadmin());
+    }
+
     /**
      * Initiate M-Pesa STK push payment
      */
     public function initiate(Request $request, Invoice $invoice)
     {
+        $user = Auth::user();
+
+        // A tenant may only pay their own invoice - mirrors PesapalController::initiate's
+        // check, which this was previously missing, letting any authenticated tenant pass
+        // another tenant's invoice ID and initiate a payment against it.
+        if (!$this->isStaff($user) && (!$user?->tenant || $invoice->tenant_id !== $user->tenant->id)) {
+            abort(403);
+        }
+
         // Accept phone formats: 0712345678, +254712345678, 254712345678
         $validated = $request->validate([
             'amount' => 'required|numeric|min:1|max:' . $invoice->balance,
@@ -73,8 +92,17 @@ class MpesaController extends Controller
         }
 
         // Authorize: tenants must match their own tenant record; admins/staff can access
+        // any transaction. Previously this only checked the mismatch case, which meant
+        // an account with no tenant record at all (e.g. a "looking for a house" user
+        // account, or a tenant record that failed to link) fell through unauthenticated
+        // - fail closed instead: no tenant record and not staff means no access.
         $user = auth()->user();
         $tenant = $user?->tenant;
+
+        if (!$tenant && !$this->isStaff($user)) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
         if ($tenant && $transaction->tenant_id !== $tenant->id) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
@@ -143,7 +171,17 @@ class MpesaController extends Controller
         $transaction = null;
 
         if ($transactionId) {
-            $transaction = MpesaTransaction::find($transactionId);
+            $candidate = MpesaTransaction::find($transactionId);
+
+            if ($candidate) {
+                $user = auth()->user();
+                $tenant = $user?->tenant;
+                $owns = $tenant ? $candidate->tenant_id === $tenant->id : $this->isStaff($user);
+
+                if ($owns) {
+                    $transaction = $candidate;
+                }
+            }
         }
 
         // Check final status

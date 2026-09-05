@@ -26,9 +26,12 @@ class SuperadminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
-        return $panel
+        $logoPath = \App\Models\Setting::forLandlord(null)->payload['logo_path'] ?? null;
+
+        $panel = $panel
             ->id('superadmin')
             ->path('superadmin')
+            ->favicon(asset('favicon-32.png'))
             ->plugins([
                 FilamentEditProfilePlugin::make(),
             ])
@@ -67,5 +70,11 @@ class SuperadminPanelProvider extends PanelProvider
                 Authenticate::class,
                 \App\Http\Middleware\EnsureSuperadminRole::class,
             ]);
+
+        if ($logoPath) {
+            $panel->brandLogo(\Illuminate\Support\Facades\Storage::disk('public')->url($logoPath));
+        }
+
+        return $panel;
     }
 }
