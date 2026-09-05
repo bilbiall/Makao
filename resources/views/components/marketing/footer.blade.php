@@ -1,7 +1,7 @@
 <footer class="border-t border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
     <div class="mx-auto max-w-6xl px-4 py-10 sm:px-6">
         <div class="flex items-center gap-2">
-            <x-brand-logo imgClass="h-8" />
+            <x-brand-logo imgClass="h-9" />
         </div>
         <p class="mt-3 max-w-sm text-sm text-slate-500 dark:text-slate-400">
             Verified houses to rent and furnished stays across Kenya.

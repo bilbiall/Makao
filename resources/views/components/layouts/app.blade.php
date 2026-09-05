@@ -43,7 +43,7 @@
     {{-- Desktop sidebar --}}
     <aside class="hidden lg:flex lg:fixed lg:inset-y-0 lg:left-0 lg:w-64 lg:flex-col lg:border-r lg:border-slate-200 lg:bg-white dark:lg:border-slate-800 dark:lg:bg-slate-900">
         <div class="flex items-center justify-between gap-2 px-6 py-5 border-b border-slate-100 dark:border-slate-800">
-            <x-brand-logo imgClass="h-7" textClass="text-xl font-bold text-emerald-700 dark:text-emerald-400" />
+            <x-brand-logo imgClass="h-9" textClass="text-xl font-bold text-emerald-700 dark:text-emerald-400" />
             <x-theme-toggle class="h-8 w-8 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-300" />
         </div>
         <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-1">
@@ -94,7 +94,7 @@
     <header class="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-slate-200 dark:bg-slate-900/90 dark:border-slate-800 lg:ml-64">
         <div class="flex items-center justify-between px-4 py-3 lg:px-8">
             <div class="flex items-center gap-2 lg:hidden">
-                <x-brand-logo imgClass="h-6" textClass="text-lg font-bold text-emerald-700 dark:text-emerald-400" />
+                <x-brand-logo imgClass="h-8" textClass="text-lg font-bold text-emerald-700 dark:text-emerald-400" />
             </div>
             @if ($title && !$hideHeading)
                 <h1 class="hidden lg:block text-lg font-semibold text-slate-900 dark:text-slate-100">{{ $title }}</h1>

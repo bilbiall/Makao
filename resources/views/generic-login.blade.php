@@ -16,7 +16,7 @@
     <div class="flex items-center justify-center min-h-screen px-4 py-12">
         <div class="w-full max-w-md">
             <div class="mb-8 flex items-center justify-center gap-2">
-                <x-brand-logo imgClass="h-9" textClass="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100" />
+                <x-brand-logo imgClass="h-11" textClass="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100" />
                 <x-theme-toggle class="ml-2 h-9 w-9 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800" />
             </div>
 
