@@ -16,6 +16,16 @@
                 </div>
 
                 <div>
+                    <label class="block text-sm text-gray-500 dark:text-gray-300">User</label>
+                    <select name="log_user" class="mt-1 block w-full border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded px-2 py-1">
+                        <option value="">Anyone</option>
+                        @foreach($usersList as $id => $name)
+                            <option value="{{ $id }}" @if(request()->query('log_user') == $id) selected @endif>{{ $name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div>
                     <label class="block text-sm text-gray-500 dark:text-gray-300">Date From</label>
                     <input type="date" name="log_from" value="{{ request()->query('log_from') }}" class="mt-1 block w-full border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded px-2 py-1" />
                 </div>

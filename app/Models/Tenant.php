@@ -123,42 +123,46 @@ class Tenant extends Model
 
         static::created(function ($tenant) {
             $tenant->house->update(['house_status' => 'Occupied']);
-            
-            // Get template from settings
-            $settings = \App\Models\Setting::forLandlord($tenant->landlord_id);
-            $template = $settings->payload['template_tenant_welcome'] ?? 'Hello {tenant_name}, welcome to {app_name}. You were admitted to {house_name} with a monthly rent of KES {rent_amount}';
 
-            // Replace variables
-            $message = str_replace(
-                ['{tenant_name}', '{app_name}', '{house_name}', '{rent_amount}', '{property_name}'],
-                [$tenant->tenant_name, \App\Helpers\AppHelper::getAppName($tenant->landlord_id), $tenant->house->house_name, $tenant->house->rent_amount, $tenant->house->location?->location_name ?? ''],
-                $template
-            );
+            // Welcome SMS/notifications are only for a real new admission - skipped
+            // during a bulk data import of pre-existing tenants, see ImportContext
+            if (!\App\Support\ImportContext::active()) {
+                // Get template from settings
+                $settings = \App\Models\Setting::forLandlord($tenant->landlord_id);
+                $template = $settings->payload['template_tenant_welcome'] ?? 'Hello {tenant_name}, welcome to {app_name}. You were admitted to {house_name} with a monthly rent of KES {rent_amount}';
 
-            // Send SMS using your helper
-            try {
-                SmsHelper::sendSms($tenant->phone_number, $message, $tenant->landlord_id);
-            } catch (\Throwable $e) {
-                // ignore SMS failures (e.g. gateway not configured)
-            }
+                // Replace variables
+                $message = str_replace(
+                    ['{tenant_name}', '{app_name}', '{house_name}', '{rent_amount}', '{property_name}'],
+                    [$tenant->tenant_name, \App\Helpers\AppHelper::getAppName($tenant->landlord_id), $tenant->house->house_name, $tenant->house->rent_amount, $tenant->house->location?->location_name ?? ''],
+                    $template
+                );
 
-            // Notify this landlord's own admins via database about new tenant admission
-            $admins = \App\Models\User::where('role', 'admin')->where('landlord_id', $tenant->landlord_id)->get();
-            foreach ($admins as $admin) {
-                $admin->notify(new \App\Notifications\DatabaseNotification(
-                    'New Tenant Admitted',
-                    "{$tenant->tenant_name} was admitted to {$tenant->house->house_name}",
-                    null
-                ));
-            }
+                // Send SMS using your helper
+                try {
+                    SmsHelper::sendSms($tenant->phone_number, $message, $tenant->landlord_id);
+                } catch (\Throwable $e) {
+                    // ignore SMS failures (e.g. gateway not configured)
+                }
 
-            // Send welcome notification to tenant user (if linked)
-            if ($tenantUser = $tenant->user ?? null) {
-                $tenantUser->notify(new \App\Notifications\DatabaseNotification(
-                    'Welcome!',
-                    "Welcome to " . config('app.name') . "! You've been admitted to {$tenant->house->house_name} with a monthly rent of KES " . number_format($tenant->house->rent_amount, 2),
-                    null
-                ));
+                // Notify this landlord's own admins via database about new tenant admission
+                $admins = \App\Models\User::where('role', 'admin')->where('landlord_id', $tenant->landlord_id)->get();
+                foreach ($admins as $admin) {
+                    $admin->notify(new \App\Notifications\DatabaseNotification(
+                        'New Tenant Admitted',
+                        "{$tenant->tenant_name} was admitted to {$tenant->house->house_name}",
+                        null
+                    ));
+                }
+
+                // Send welcome notification to tenant user (if linked)
+                if ($tenantUser = $tenant->user ?? null) {
+                    $tenantUser->notify(new \App\Notifications\DatabaseNotification(
+                        'Welcome!',
+                        "Welcome to " . config('app.name') . "! You've been admitted to {$tenant->house->house_name} with a monthly rent of KES " . number_format($tenant->house->rent_amount, 2),
+                        null
+                    ));
+                }
             }
 
             // Log tenant creation

@@ -27,6 +27,7 @@ class House extends Model
         'Maisonette',
         'Townhouse',
         'Own Compound',
+        'Shop',
     ];
 
     // A fixed, curated list - not free text - so every listing's amenities stay
@@ -297,14 +298,17 @@ class House extends Model
                 $details = "House created: {$house->house_name} (Rent: {$house->rent_amount})";
                 ActivityLogger::log('create_house', $actor, $details);
 
-                // Notify this landlord's own admins about the new house
-                $admins = \App\Models\User::where('role', 'admin')->where('landlord_id', $house->landlord_id)->get();
-                foreach ($admins as $admin) {
-                    $admin->notify(new \App\Notifications\DatabaseNotification(
-                        'House Created',
-                        $details,
-                        null
-                    ));
+                // Notify this landlord's own admins about the new house (skipped
+                // during a bulk data import - see ImportContext)
+                if (!\App\Support\ImportContext::active()) {
+                    $admins = \App\Models\User::where('role', 'admin')->where('landlord_id', $house->landlord_id)->get();
+                    foreach ($admins as $admin) {
+                        $admin->notify(new \App\Notifications\DatabaseNotification(
+                            'House Created',
+                            $details,
+                            null
+                        ));
+                    }
                 }
             } catch (\Throwable $e) {
                 // ignore logging errors

@@ -94,14 +94,17 @@ class Location extends Model
                 $details = "Location created: {$location->location_name} (geo_id: {$location->geo_id})";
                 ActivityLogger::log('create_location', $actor, $details);
 
-                // Notify this landlord's own admins about the new location (not every landlord's)
-                $admins = \App\Models\User::where('role', 'admin')->where('landlord_id', $location->landlord_id)->get();
-                foreach ($admins as $admin) {
-                    $admin->notify(new \App\Notifications\DatabaseNotification(
-                        'Location Created',
-                        $details,
-                        null
-                    ));
+                // Notify this landlord's own admins about the new location (not every
+                // landlord's) - skipped during a bulk data import, see ImportContext
+                if (!\App\Support\ImportContext::active()) {
+                    $admins = \App\Models\User::where('role', 'admin')->where('landlord_id', $location->landlord_id)->get();
+                    foreach ($admins as $admin) {
+                        $admin->notify(new \App\Notifications\DatabaseNotification(
+                            'Location Created',
+                            $details,
+                            null
+                        ));
+                    }
                 }
             } catch (\Throwable $e) {
                 // ignore logging errors

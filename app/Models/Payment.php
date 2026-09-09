@@ -80,58 +80,62 @@ class Payment extends Model
         $tenant->balance = $invoiceBalance;
         $tenant->save();
 
-        // 🔸 Send SMS confirmation (supports {balance})
-        $settings = \App\Models\Setting::forLandlord($payment->landlord_id);
-        $template = $settings->payload['template_payment'] ?? 'Hi {tenant_name}, we\'ve received your payment of KES {amount_paid} for Invoice #{invoice_number}. Your remaining balance is KES {balance}. Thank you. - {app_name}';
+        // Confirmation SMS/notifications are only for a real new payment - skipped
+        // during a bulk data import of historical payment history, see ImportContext
+        if (!\App\Support\ImportContext::active()) {
+            // 🔸 Send SMS confirmation (supports {balance})
+            $settings = \App\Models\Setting::forLandlord($payment->landlord_id);
+            $template = $settings->payload['template_payment'] ?? 'Hi {tenant_name}, we\'ve received your payment of KES {amount_paid} for Invoice #{invoice_number}. Your remaining balance is KES {balance}. Thank you. - {app_name}';
 
-        // Support multiple placeholder variants in stored templates (e.g. {amount}, {amount_paid})
-        $placeholders = [
-            '{tenant_name}',
-            '{tenant}',
-            '{amount_paid}',
-            '{amount}',
-            '{invoice_number}',
-            '{invoice_no}',
-            '{balance}',
-            '{app_name}',
-            '{property_name}',
-        ];
+            // Support multiple placeholder variants in stored templates (e.g. {amount}, {amount_paid})
+            $placeholders = [
+                '{tenant_name}',
+                '{tenant}',
+                '{amount_paid}',
+                '{amount}',
+                '{invoice_number}',
+                '{invoice_no}',
+                '{balance}',
+                '{app_name}',
+                '{property_name}',
+            ];
 
-        $replacements = [
-            $tenant->tenant_name,
-            $tenant->tenant_name,
-            number_format($payment->amount_paid),
-            number_format($payment->amount_paid),
-            $invoice->invoice_number,
-            $invoice->invoice_number,
-            number_format($invoiceBalance),
-            \App\Helpers\AppHelper::getAppName($payment->landlord_id),
-            $tenant->house?->location?->location_name ?? '',
-        ];
+            $replacements = [
+                $tenant->tenant_name,
+                $tenant->tenant_name,
+                number_format($payment->amount_paid),
+                number_format($payment->amount_paid),
+                $invoice->invoice_number,
+                $invoice->invoice_number,
+                number_format($invoiceBalance),
+                \App\Helpers\AppHelper::getAppName($payment->landlord_id),
+                $tenant->house?->location?->location_name ?? '',
+            ];
 
-        $message = str_replace($placeholders, $replacements, $template);
-        try {
-            \App\Helpers\SmsHelper::sendSms($tenant->phone_number, $message, $payment->landlord_id);
-        } catch (\Throwable $e) {
-            // ignore SMS failures (e.g. gateway not configured)
-        }
-        // Also create database notification for admins and tenant user
-        $admins = \App\Models\User::where('role', 'admin')->where('landlord_id', $payment->landlord_id)->get();
-        foreach ($admins as $admin) {
-            $admin->notify(new \App\Notifications\DatabaseNotification(
-                'Payment Received',
-                "Payment of KES {$payment->amount_paid} received for Invoice {$invoice->invoice_number}",
-                null
-            ));
-        }
+            $message = str_replace($placeholders, $replacements, $template);
+            try {
+                \App\Helpers\SmsHelper::sendSms($tenant->phone_number, $message, $payment->landlord_id);
+            } catch (\Throwable $e) {
+                // ignore SMS failures (e.g. gateway not configured)
+            }
+            // Also create database notification for admins and tenant user
+            $admins = \App\Models\User::where('role', 'admin')->where('landlord_id', $payment->landlord_id)->get();
+            foreach ($admins as $admin) {
+                $admin->notify(new \App\Notifications\DatabaseNotification(
+                    'Payment Received',
+                    "Payment of KES {$payment->amount_paid} received for Invoice {$invoice->invoice_number}",
+                    null
+                ));
+            }
 
-        // Notify tenant user (if a linked user exists)
-        if ($tenantUser = $tenant->user ?? null) {
-            $tenantUser->notify(new \App\Notifications\DatabaseNotification(
-                'Payment Confirmation',
-                "We received your payment of KES {$payment->amount_paid}. Remaining balance: KES {$invoiceBalance}",
-                null
-            ));
+            // Notify tenant user (if a linked user exists)
+            if ($tenantUser = $tenant->user ?? null) {
+                $tenantUser->notify(new \App\Notifications\DatabaseNotification(
+                    'Payment Confirmation',
+                    "We received your payment of KES {$payment->amount_paid}. Remaining balance: KES {$invoiceBalance}",
+                    null
+                ));
+            }
         }
 
         // Record activity log for payment

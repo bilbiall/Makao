@@ -18,11 +18,13 @@ class Logs extends Page
     // the Blade view, so these (and $actionsList, which was never computed at all) were
     // previously invisible to the template, causing "Undefined variable" errors on render.
     public $log_action;
+    public $log_user;
     public $log_search;
     public $log_from;
     public $log_to;
     public $logs;
     public $actionsList = [];
+    public $usersList = [];
 
     /**
      * Role-based access: Caretaker cannot access Logs.
@@ -41,6 +43,7 @@ class Logs extends Page
         }
 
         $this->log_action = request()->query('log_action');
+        $this->log_user = request()->query('log_user');
         $this->log_search = request()->query('log_search');
         $this->log_from = request()->query('log_from');
         $this->log_to = request()->query('log_to');
@@ -52,6 +55,20 @@ class Logs extends Page
             ->mapWithKeys(fn ($action) => [$action => ucfirst(str_replace('_', ' ', $action))])
             ->all();
 
+        // Scoped the same way ActivityLog itself is (this landlord's own logs
+        // only, everyone for superadmin - see ActivityLog's BelongsToLandlord
+        // scope), so the dropdown never offers a choice from another landlord.
+        $this->usersList = ActivityLog::query()
+            ->whereNotNull('user_id')
+            ->with('user:id,name')
+            ->get()
+            ->pluck('user')
+            ->filter()
+            ->unique('id')
+            ->sortBy('name')
+            ->pluck('name', 'id')
+            ->all();
+
         $this->buildLogs();
     }
 
@@ -61,6 +78,10 @@ class Logs extends Page
 
         if ($this->log_action) {
             $query->where('action', $this->log_action);
+        }
+
+        if ($this->log_user) {
+            $query->where('user_id', $this->log_user);
         }
 
         if ($this->log_search) {
@@ -86,6 +107,11 @@ class Logs extends Page
     }
 
     public function updatedLogAction(): void
+    {
+        $this->buildLogs();
+    }
+
+    public function updatedLogUser(): void
     {
         $this->buildLogs();
     }

@@ -66,23 +66,28 @@ class Invoice extends Model
                 $invoice->landlord_id = $tenant?->landlord_id;
             }
 
-            $rent = $tenant->house->rent_amount ?? 0;
+            // A bulk data import supplies its own historical amount (there are no Bill
+            // rows to reconstruct it from), so this recalculation only applies to a
+            // real, freshly-generated invoice - see ImportContext.
+            if (!\App\Support\ImportContext::active()) {
+                $rent = $tenant->house->rent_amount ?? 0;
 
-            // Use the invoice's own date (not "today") so a backdated/historical invoice
-            // pulls in bills for the month it actually covers, not whatever month it
-            // happens to be created in.
-            $periodDate = $invoice->invoice_date ? \Carbon\Carbon::parse($invoice->invoice_date) : now();
-            $bills = $tenant->bills()
-                ->whereMonth('bill_month', $periodDate->month)
-                ->whereYear('bill_month', $periodDate->year)
-                ->get();
+                // Use the invoice's own date (not "today") so a backdated/historical invoice
+                // pulls in bills for the month it actually covers, not whatever month it
+                // happens to be created in.
+                $periodDate = $invoice->invoice_date ? \Carbon\Carbon::parse($invoice->invoice_date) : now();
+                $bills = $tenant->bills()
+                    ->whereMonth('bill_month', $periodDate->month)
+                    ->whereYear('bill_month', $periodDate->year)
+                    ->get();
 
-            $billTotal = $bills->sum(function ($bill) {
-                return $bill->water + $bill->electricity + $bill->trash + $bill->internet;
-            });
+                $billTotal = $bills->sum(function ($bill) {
+                    return $bill->water + $bill->electricity + $bill->trash + $bill->internet;
+                });
 
-            $invoice->amount = $rent + $billTotal; // <<== Important
-            
+                $invoice->amount = $rent + $billTotal; // <<== Important
+            }
+
             // Initialize balance to full amount (no payments yet)
             if (!isset($invoice->balance)) {
                 $invoice->balance = $invoice->amount;
@@ -97,37 +102,40 @@ class Invoice extends Model
         static::created(function ($invoice) {
             $tenant = $invoice->tenant;
 
-            $message = SmsTemplateHelper::render('template_invoice', [
-                'tenant_name' => $tenant->tenant_name,
-                'invoice_number' => $invoice->invoice_number,
-                'amount' => number_format($invoice->amount),
-                'due_date' => \Carbon\Carbon::parse($invoice->due_date)->format('d/m/Y'),
-                'property_name' => $tenant->house?->location?->location_name ?? '',
-            ], $invoice->landlord_id);
+            // Skipped during a bulk data import - see ImportContext
+            if (!\App\Support\ImportContext::active()) {
+                $message = SmsTemplateHelper::render('template_invoice', [
+                    'tenant_name' => $tenant->tenant_name,
+                    'invoice_number' => $invoice->invoice_number,
+                    'amount' => number_format($invoice->amount),
+                    'due_date' => \Carbon\Carbon::parse($invoice->due_date)->format('d/m/Y'),
+                    'property_name' => $tenant->house?->location?->location_name ?? '',
+                ], $invoice->landlord_id);
 
-            try {
-                SmsHelper::sendSms($tenant->phone_number, $message, $invoice->landlord_id);
-            } catch (\Throwable $e) {
-                // ignore SMS failures (e.g. gateway not configured)
-            }
+                try {
+                    SmsHelper::sendSms($tenant->phone_number, $message, $invoice->landlord_id);
+                } catch (\Throwable $e) {
+                    // ignore SMS failures (e.g. gateway not configured)
+                }
 
-            // Send database notification to admins
-            $admins = \App\Models\User::where('role', 'admin')->where('landlord_id', $invoice->landlord_id)->get();
-            foreach ($admins as $admin) {
-                $admin->notify(new \App\Notifications\DatabaseNotification(
-                    'New Invoice Created',
-                    "Invoice {$invoice->invoice_number} created for {$tenant->tenant_name}",
-                    null
-                ));
-            }
+                // Send database notification to admins
+                $admins = \App\Models\User::where('role', 'admin')->where('landlord_id', $invoice->landlord_id)->get();
+                foreach ($admins as $admin) {
+                    $admin->notify(new \App\Notifications\DatabaseNotification(
+                        'New Invoice Created',
+                        "Invoice {$invoice->invoice_number} created for {$tenant->tenant_name}",
+                        null
+                    ));
+                }
 
-            // Send database notification to tenant user (if linked)
-            if ($tenantUser = $tenant->user ?? null) {
-                $tenantUser->notify(new \App\Notifications\DatabaseNotification(
-                    'New Invoice',
-                    "New invoice {$invoice->invoice_number} of KES " . number_format($invoice->amount, 2) . " is due by " . \Carbon\Carbon::parse($invoice->due_date)->format('d M Y'),
-                    null
-                ));
+                // Send database notification to tenant user (if linked)
+                if ($tenantUser = $tenant->user ?? null) {
+                    $tenantUser->notify(new \App\Notifications\DatabaseNotification(
+                        'New Invoice',
+                        "New invoice {$invoice->invoice_number} of KES " . number_format($invoice->amount, 2) . " is due by " . \Carbon\Carbon::parse($invoice->due_date)->format('d M Y'),
+                        null
+                    ));
+                }
             }
 
             // Record activity log (who performed the action if available)
