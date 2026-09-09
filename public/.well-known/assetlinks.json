@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "top.renty.twa",
+        "sha256_cert_fingerprints": ["94:0B:BA:A6:90:23:57:C5:58:36:7C:3F:02:D0:1B:B7:E8:11:52:B4:42:88:02:69:45:A4:01:F5:E3:A6:61:54"]
+      }
+    }]
