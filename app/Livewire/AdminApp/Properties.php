@@ -16,6 +16,8 @@ class Properties extends Component
     public bool $showPropertyForm = false;
     public string $location_name = '';
     public string $geo_id = '';
+    public ?float $latitude = null;
+    public ?float $longitude = null;
 
     public ?int $addingHouseTo = null;
     public string $house_name = '';
@@ -77,9 +79,11 @@ class Properties extends Component
             'location_name' => $this->location_name,
             'geo_id' => $this->geo_id ?: null,
             'area_id' => $area?->id,
+            'latitude' => $this->latitude,
+            'longitude' => $this->longitude,
         ]);
 
-        $this->reset(['location_name', 'geo_id', 'showPropertyForm']);
+        $this->reset(['location_name', 'geo_id', 'latitude', 'longitude', 'showPropertyForm']);
         session()->flash('properties-status', 'Property added.');
     }
 

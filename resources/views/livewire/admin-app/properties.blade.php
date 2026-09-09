@@ -30,6 +30,22 @@
                     <x-area-search-input :cities="$cities" wire-model="geo_id" placeholder="e.g. Kilimani, Westlands" :input-class="$fieldClass" />
                     <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">Start typing a city (e.g. "Nairobi") to see its areas, or type the area/estate name directly.</p>
                 </div>
+                <div x-data="{ pinning: false }">
+                    <button type="button" x-show="!pinning" x-on:click="pinning = true" class="text-xs font-medium text-emerald-700 hover:underline dark:text-emerald-400">
+                        + Pin exact location on map (optional)
+                    </button>
+                    <div x-show="pinning" x-cloak
+                         x-data="locationPinPicker(null, null)"
+                         x-init="$watch('pinning', (value) => value && $nextTick(() => init()))">
+                        <label class="text-xs font-medium text-slate-600 dark:text-slate-400">
+                            Click the map (or drag the marker) to place a pin - it's optional, the area above is enough on its own.
+                        </label>
+                        <div x-ref="map" class="mt-1 h-56 w-full rounded-lg border border-slate-300 dark:border-slate-700"></div>
+                        <button type="button" x-show="lat !== null" x-on:click="clearPin()" class="mt-1 text-xs text-slate-500 hover:underline dark:text-slate-400">
+                            Remove pin
+                        </button>
+                    </div>
+                </div>
                 <div class="flex gap-3">
                     <button wire:click="$set('showPropertyForm', false)" class="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300">Cancel</button>
                     <button wire:click="createProperty" class="flex-1 rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">Save</button>

@@ -19,7 +19,32 @@ class Location extends Model
         'geo_id',
         'area_id',
         'landlord_id',
+        'latitude',
+        'longitude',
     ];
+
+    protected $casts = [
+        'latitude' => 'float',
+        'longitude' => 'float',
+    ];
+
+    /**
+     * The point to show this location's houses at on a map - its own precise pin
+     * if one was dropped, otherwise its Area's centroid, otherwise null (no pin
+     * shown - never guessed).
+     */
+    public function mapPoint(): ?array
+    {
+        if ($this->latitude !== null && $this->longitude !== null) {
+            return ['lat' => $this->latitude, 'lng' => $this->longitude];
+        }
+
+        if ($this->area && $this->area->latitude !== null && $this->area->longitude !== null) {
+            return ['lat' => $this->area->latitude, 'lng' => $this->area->longitude];
+        }
+
+        return null;
+    }
 
     public function houses()
     {

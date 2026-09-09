@@ -14,23 +14,53 @@
             </div>
         </div>
 
-        <div class="mx-auto max-w-6xl px-4 py-6 sm:px-6">
-            <h1 class="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">Furnished stays</h1>
-            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                {{ $houses->total() }} {{ Str::plural('stay', $houses->total()) }}
-                {{ request('area') ? "in " . request('area') : 'across Kenya' }}
-                @if (request('check_in') && request('check_out'))
-                    &middot; {{ request('check_in') }} &rarr; {{ request('check_out') }}
+        <div class="mx-auto max-w-6xl px-4 py-6 sm:px-6" x-data="resultsMap(@js($pins))">
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <h1 class="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">Furnished stays</h1>
+                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                        {{ $houses->total() }} {{ Str::plural('stay', $houses->total()) }}
+                        {{ request('area') ? "in " . request('area') : 'across Kenya' }}
+                        @if (request('check_in') && request('check_out'))
+                            &middot; {{ request('check_in') }} &rarr; {{ request('check_out') }}
+                        @endif
+                    </p>
+                </div>
+                @if ($houses->isNotEmpty())
+                    <button type="button" x-on:click="toggle()" class="mt-1 inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+                        <span x-show="!showMap" x-cloak>@svg('heroicon-o-map', 'w-4 h-4') Map view</span>
+                        <span x-show="showMap" x-cloak>@svg('heroicon-o-squares-2x2', 'w-4 h-4') List view</span>
+                    </button>
                 @endif
-            </p>
+            </div>
+
+            @if (isset($nearbyAreas) && $nearbyAreas->isNotEmpty())
+                <p class="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-slate-500 dark:text-slate-400">
+                    <span>Also nearby:</span>
+                    @foreach ($nearbyAreas as $nearbyArea)
+                        <a href="{{ route('stays.index', array_merge(request()->except('area', 'page'), ['area' => $nearbyArea->name])) }}"
+                           class="rounded-full border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:border-emerald-600 hover:text-emerald-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-emerald-500 dark:hover:text-emerald-400">
+                            {{ $nearbyArea->name }} ({{ $counts[$nearbyArea->name] }})
+                        </a>
+                    @endforeach
+                </p>
+            @endif
 
             @if ($houses->isNotEmpty())
-                <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    @foreach ($houses as $house)
-                        <x-listings.card :house="$house" />
-                    @endforeach
+                <div x-show="!showMap">
+                    <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        @foreach ($houses as $house)
+                            <x-listings.card :house="$house" />
+                        @endforeach
+                    </div>
+                    <div class="mt-8">{{ $houses->links() }}</div>
                 </div>
-                <div class="mt-8">{{ $houses->links() }}</div>
+                <div x-show="showMap" x-cloak class="mt-6">
+                    <div x-ref="map" class="h-[32rem] w-full rounded-2xl border border-slate-200 dark:border-slate-800"></div>
+                    <p class="mt-2 text-xs text-slate-400 dark:text-slate-500">
+                        Only this page's results are shown - a listing appears at its exact pin if the host set one, otherwise at its area's approximate centre.
+                    </p>
+                </div>
             @else
                 <div class="mt-6 rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
                     <div class="mx-auto grid h-12 w-12 place-items-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">

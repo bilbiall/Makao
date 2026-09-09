@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Area;
 use App\Models\Booking;
 use App\Models\City;
 use App\Models\House;
@@ -16,7 +17,7 @@ class StayListingController extends Controller
 {
     public function index(Request $request)
     {
-        $query = House::bnbVisible()->with(['location', 'photos', 'pricePackages']);
+        $query = House::bnbVisible()->with(['location.area', 'photos', 'pricePackages']);
 
         // Same area-or-city filter dimension as PropertyListingController - see
         // House::scopeInAreaOrCity().
@@ -38,7 +39,18 @@ class StayListingController extends Controller
         $cities = City::breakdown();
         $counts = House::availabilityCountsByArea('short_term');
 
-        return view('stays.index', compact('houses', 'cities', 'counts'));
+        // See PropertyListingController::index() - same additive nearby-areas suggestion.
+        $nearbyAreas = collect();
+        if ($request->filled('area')) {
+            $searchedArea = Area::where('name', $request->string('area')->toString())->first();
+            if ($searchedArea) {
+                $nearbyAreas = $searchedArea->nearby()->filter(fn (Area $a) => ($counts[$a->name] ?? 0) > 0);
+            }
+        }
+
+        $pins = House::mapPins($houses->getCollection());
+
+        return view('stays.index', compact('houses', 'cities', 'counts', 'nearbyAreas', 'pins'));
     }
 
     public function show(House $house)

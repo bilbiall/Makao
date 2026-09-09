@@ -107,6 +107,31 @@ class House extends Model
     }
 
     /**
+     * Marker data for the search-results map toggle - same price logic as
+     * <x-listings.card>. lat/lng are null (filtered out client-side, never
+     * guessed) whenever neither the listing nor its Area has been geocoded yet.
+     */
+    public static function mapPins(\Illuminate\Support\Collection $houses): array
+    {
+        return $houses->map(function (House $house) {
+            $point = $house->location?->mapPoint();
+            $cheapestPackage = $house->isShortTerm() ? $house->pricePackages->sortBy('price')->first() : null;
+
+            $price = $cheapestPackage
+                ? 'KES '.number_format($cheapestPackage->price).'/'.$cheapestPackage->billing_unit
+                : 'KES '.number_format($house->rent_amount).'/mo';
+
+            return [
+                'lat' => $point['lat'] ?? null,
+                'lng' => $point['lng'] ?? null,
+                'title' => e($house->publicName()),
+                'price' => e($price),
+                'url' => $house->isShortTerm() ? route('stays.show', $house) : route('listings.show', $house),
+            ];
+        })->values()->all();
+    }
+
+    /**
      * Only the categories the owner actually filled in (minutes away, on
      * foot/by matatu - whichever's the natural way to describe it), in
      * House::NEARBY_CATEGORIES' own order - e.g.

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Area;
 use App\Models\City;
 use App\Models\House;
 use App\Models\ViewingRequest;
@@ -18,7 +19,7 @@ class PropertyListingController extends Controller
 {
     public function index(Request $request)
     {
-        $query = House::publiclyVisible()->with(['location', 'photos']);
+        $query = House::publiclyVisible()->with(['location.area', 'photos']);
 
         // Filtered by area/neighbourhood (Location.geo_id, e.g. "Kilimani") or by an
         // entire city (e.g. "Mombasa", matching every area within it) - see
@@ -41,11 +42,25 @@ class PropertyListingController extends Controller
         $cities = City::breakdown();
         $counts = House::availabilityCountsByArea('long_term');
 
+        // Geocoded areas near the one searched, that also have availability - an
+        // addition on top of the exact-name match above, never a replacement for
+        // it. Empty whenever no area was searched, the searched area isn't a known
+        // Area (e.g. a city name or free-typed geo_id), or it hasn't been geocoded.
+        $nearbyAreas = collect();
+        if ($request->filled('area')) {
+            $searchedArea = Area::where('name', $request->string('area')->toString())->first();
+            if ($searchedArea) {
+                $nearbyAreas = $searchedArea->nearby()->filter(fn (Area $a) => ($counts[$a->name] ?? 0) > 0);
+            }
+        }
+
         $watchlistedIds = Auth::check() && Auth::user()->isUser()
             ? Auth::user()->watchlist()->pluck('houses.id')->all()
             : [];
 
-        return view('listings.index', compact('houses', 'cities', 'counts', 'watchlistedIds'));
+        $pins = House::mapPins($houses->getCollection());
+
+        return view('listings.index', compact('houses', 'cities', 'counts', 'nearbyAreas', 'watchlistedIds', 'pins'));
     }
 
     public function show(House $house)
