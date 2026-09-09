@@ -37,7 +37,18 @@ class LocationResource extends Resource
 
                 Select::make('city_id')
                     ->label('City / town')
-                    ->options(City::orderBy('name')->pluck('name', 'id'))
+                    ->options(function ($record) {
+                        // Open cities, plus - when editing - whatever city this
+                        // location already had, even if it's since been closed
+                        // (Superadmin > Locations); otherwise editing an existing
+                        // location in a now-closed city would show an empty field.
+                        $currentCityId = $record?->area?->city_id;
+
+                        return City::query()
+                            ->where(fn ($q) => $q->where('is_open', true)->when($currentCityId, fn ($q) => $q->orWhere('id', $currentCityId)))
+                            ->orderBy('name')
+                            ->pluck('name', 'id');
+                    })
                     ->searchable()
                     ->live()
                     // Not a real Location column - purely narrows the area_id

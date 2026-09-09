@@ -23,5 +23,6 @@ class DatabaseSeeder extends Seeder
         // Reference data (cities/areas for the location picker) - not demo data,
         // always safe/idempotent to run.
         $this->call(KenyaLocationsSeeder::class);
+        $this->call(KenyaCountyTownsSeeder::class);
     }
 }
