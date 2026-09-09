@@ -24,5 +24,6 @@ class DatabaseSeeder extends Seeder
         // always safe/idempotent to run.
         $this->call(KenyaLocationsSeeder::class);
         $this->call(KenyaCountyTownsSeeder::class);
+        $this->call(KenyaSecondaryTownAreasSeeder::class);
     }
 }

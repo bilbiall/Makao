@@ -48,11 +48,20 @@ class CityResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')->searchable()->sortable(),
-                Tables\Columns\TextColumn::make('areas_count')->counts('areas')->label('Areas'),
+                Tables\Columns\TextColumn::make('areas_count')
+                    ->counts('areas')
+                    ->label('Neighbourhoods')
+                    ->badge()
+                    ->color(fn (int $state) => $state > 0 ? 'success' : 'gray')
+                    ->formatStateUsing(fn (int $state) => $state > 0 ? "{$state} set up" : 'Not set up yet'),
                 Tables\Columns\ToggleColumn::make('is_open')->label('Open'),
             ])
             ->filters([
                 Tables\Filters\TernaryFilter::make('is_open')->label('Open'),
+                Tables\Filters\Filter::make('needs_areas')
+                    ->label('Needs neighbourhoods added')
+                    ->query(fn ($query) => $query->whereDoesntHave('areas'))
+                    ->toggle(),
             ])
             ->defaultSort('name')
             ->actions([
