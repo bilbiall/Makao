@@ -86,6 +86,37 @@ class ChatAssistant extends Component
         }
     }
 
+    /**
+     * Visitor tapped "use my location" and the browser handed back real
+     * coordinates - these go straight into filters as a ready-made distance
+     * point (see HouseMatchService::resolveDistancePoint()), no geocoding or
+     * LLM extraction involved. A GPS point supersedes any previously
+     * mentioned landmark, since it's a more precise version of the same
+     * "rank by distance from a point" request.
+     */
+    public function useMyLocation(float $lat, float $lng): void
+    {
+        $this->filters['near_lat'] = $lat;
+        $this->filters['near_lng'] = $lng;
+        unset($this->filters['landmark']);
+
+        $this->messages[] = ['role' => 'user', 'text' => 'Using my current location', 'cards' => []];
+        $this->persist();
+
+        $this->dispatch('chat-assistant-message-sent');
+    }
+
+    /** Browser denied/failed the geolocation prompt - say so instead of silently doing nothing. */
+    public function locationDenied(): void
+    {
+        $this->messages[] = [
+            'role' => 'assistant',
+            'text' => "I couldn't get your location - you can still tell me an area or a landmark instead.",
+            'cards' => [],
+        ];
+        $this->persist();
+    }
+
     /** Fast turn: just show what the user typed, then hand off to reply(). */
     public function send(): void
     {
@@ -152,8 +183,33 @@ class ChatAssistant extends Component
             return;
         }
 
-        $extracted = $ai->extractFilters($this->historyForApi(), $this->filters);
+        // A GPS point from useMyLocation() isn't part of extractFilters()'s own
+        // JSON schema, so the LLM call below has no way to carry it forward -
+        // it has to be preserved by hand, same idea as the regex overrides
+        // just below. Except when the user just named a different place by
+        // hand (a fresh landmark from this very extraction) - that's a more
+        // specific request than an old location click and should win.
+        $nearLat = $this->filters['near_lat'] ?? null;
+        $nearLng = $this->filters['near_lng'] ?? null;
+        $previousLandmark = $this->filters['landmark'] ?? null;
+
+        // The exact GPS point has no business reaching a third-party LLM API
+        // at all, even just as "previously known filters" context - strip it
+        // before this call, not only from what the model is asked to return.
+        $filtersForExtraction = array_diff_key($this->filters, array_flip(['near_lat', 'near_lng']));
+
+        $extracted = $ai->extractFilters($this->historyForApi(), $filtersForExtraction);
         $this->filters = $extracted ?? $this->filters;
+
+        $newLandmark = $this->filters['landmark'] ?? null;
+        if ($nearLat !== null && $newLandmark && $newLandmark !== $previousLandmark) {
+            $nearLat = $nearLng = null;
+        }
+
+        if ($nearLat !== null && $nearLng !== null) {
+            $this->filters['near_lat'] = $nearLat;
+            $this->filters['near_lng'] = $nearLng;
+        }
 
         // The regex/keyword net runs every turn, not only when extractFilters()
         // fails outright - a call can "succeed" (valid JSON, no error) while
@@ -179,7 +235,10 @@ class ChatAssistant extends Component
             $this->filters['area_flexible'] = true;
         }
 
-        $hasEnoughToSearch = filled($this->filters['house_type'] ?? null) || filled($this->filters['area'] ?? null);
+        $hasEnoughToSearch = filled($this->filters['house_type'] ?? null)
+            || filled($this->filters['area'] ?? null)
+            || filled($this->filters['landmark'] ?? null)
+            || (filled($this->filters['near_lat'] ?? null) && filled($this->filters['near_lng'] ?? null));
 
         $result = $hasEnoughToSearch
             ? $matcher->search($this->filters)

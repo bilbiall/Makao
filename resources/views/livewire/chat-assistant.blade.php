@@ -109,6 +109,24 @@
         </div>
 
         <form wire:submit.prevent="send" class="flex items-center gap-2 border-t border-slate-200 p-3 dark:border-slate-800">
+            <button
+                type="button"
+                x-on:click="
+                    navigator.geolocation
+                        ? navigator.geolocation.getCurrentPosition(
+                            (pos) => $wire.useMyLocation(pos.coords.latitude, pos.coords.longitude),
+                            () => $wire.locationDenied()
+                          )
+                        : $wire.locationDenied()
+                "
+                wire:loading.attr="disabled"
+                wire:target="send,reply,useMyLocation"
+                aria-label="Search near my current location"
+                title="Search near my current location"
+                class="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-slate-300 text-slate-500 transition-colors hover:border-emerald-500 hover:text-emerald-600 disabled:opacity-60 dark:border-slate-700 dark:text-slate-400 dark:hover:border-emerald-500 dark:hover:text-emerald-400"
+            >
+                @svg('heroicon-o-map-pin', 'w-4 h-4')
+            </button>
             <input
                 type="text"
                 wire:model="input"

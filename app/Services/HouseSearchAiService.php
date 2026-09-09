@@ -136,6 +136,7 @@ class HouseSearchAiService
             {
               "area": string or null,
               "area_flexible": true, false, or null,
+              "landmark": string or null,
               "listing_mode": "long_term" or "short_term",
               "house_type": one of [{$unitTypes}] or null,
               "max_rent": integer or null,
@@ -147,6 +148,7 @@ class HouseSearchAiService
             Field meanings:
             - area: a Kenyan city/area/neighbourhood name exactly as the user said it (e.g. "Westlands", "Kasarani", "Mombasa"). null if never mentioned.
             - area_flexible: true once the user agrees to see other areas, false once they insist on only the named area, otherwise null.
+            - landmark: a specific named place used as a proximity reference (e.g. "Yaya Centre", "JKIA", "Two Rivers Mall", "Nairobi CBD", a school or hospital name) - NOT a neighbourhood/area name, which always goes in "area" instead. Only set this when the user is describing closeness to a specific place ("near", "close to", "walking distance from"), not just naming where they want to live. null if not mentioned.
             - listing_mode: "short_term" only for BnB/nightly/short-stay/airbnb-style requests, otherwise "long_term". Default "long_term" when unclear.
             - house_type: must be an exact string from the allowed list above (e.g. "1 Bedroom", "Bedsitter") - map phrasing like "one bedroom" or "1br" to "1 Bedroom". null if not mentioned.
             - max_rent: convert phrasing like "20k", "under 20,000", "less than 20k" to a plain integer (KES per month). null if not mentioned.
@@ -201,7 +203,7 @@ class HouseSearchAiService
             - Always finish your sentences - never cut off mid-thought.
             - Output ONLY the final 2-4 sentence answer, nothing else. Never show your reasoning, thinking process, or step-by-step analysis, and never use headers like "Step 1" or "Here's my thinking process" - the user must never see how you arrived at the answer, only the answer itself.
 
-            Always mention the unit type and area from facts.filters when they're set (e.g. "2 Bedroom places in Westlands") so it's obvious what these results are for - this lets the user immediately spot it if you misunderstood them.
+            Always mention the unit type and area (or landmark, or "near you" if facts.filters.near_me is true) from facts.filters when they're set (e.g. "2 Bedroom places in Westlands", "places near Yaya Centre", "places near you") so it's obvious what these results are for - this lets the user immediately spot it if you misunderstood them. When facts.filters.landmark or facts.filters.near_me is set, results are sorted by real distance from that point - a sample entry with a distance_km field is genuinely that many km from it (round to one decimal, e.g. "1.2km"); never state a distance for an entry that has no distance_km. Never guess or imply an actual place name for a near_me search - you were not told where the visitor is, only that results are sorted by distance from it.
 
             Guidance per facts.branch:
             - "clarify": not enough info yet - ask what type of place (e.g. bedsitter, 1 bedroom) and which area they want.
@@ -264,11 +266,24 @@ class HouseSearchAiService
     {
         $type = $filters['house_type'] ?? null;
         $area = $filters['area'] ?? null;
+        $landmark = $filters['landmark'] ?? null;
+        $nearMe = $filters['near_me'] ?? false;
+
+        // area wins over landmark/near_me when more than one is set (rare -
+        // the LLM only sets landmark for a proximity phrase, not a
+        // named-area request), same priority HouseMatchService gives area
+        // everywhere else.
+        $place = match (true) {
+            (bool) $area => "in {$area}",
+            (bool) $landmark => "near {$landmark}",
+            (bool) $nearMe => 'near you',
+            default => null,
+        };
 
         return match (true) {
-            $type && $area => " for a {$type} in {$area}",
+            $type && $place => " for a {$type} {$place}",
             (bool) $type => " for a {$type}",
-            (bool) $area => " in {$area}",
+            (bool) $place => " {$place}",
             default => '',
         };
     }

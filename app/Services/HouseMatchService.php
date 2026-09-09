@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\House;
+use App\Support\Geo;
 use Illuminate\Support\Collection;
 
 /**
@@ -13,6 +14,10 @@ use Illuminate\Support\Collection;
  */
 class HouseMatchService
 {
+    public function __construct(protected LandmarkGeocoder $landmarkGeocoder)
+    {
+    }
+
     // Show all matches as cards up to this many; beyond it, ask a narrowing
     // question instead of dumping the full list.
     protected const NARROW_THRESHOLD = 6;
@@ -32,6 +37,17 @@ class HouseMatchService
         $unconfirmed = $filters['unconfirmed_preferences'] ?? [];
 
         $matches = $this->baseQuery($filters)->get();
+
+        // A "near <landmark>" or "use my location" request re-orders whatever
+        // the exact-filter query already found (never removes anything, never
+        // widens the query) - a listing with no resolvable point just keeps
+        // its original position at the end, rather than being dropped for
+        // lack of a pin.
+        $distancePoint = $this->resolveDistancePoint($filters);
+        if ($distancePoint) {
+            $matches = $this->sortByDistanceFrom($matches, $distancePoint);
+        }
+
         $count = $matches->count();
 
         if ($count === 0 && filled($filters['area'] ?? null)) {
@@ -180,6 +196,40 @@ class HouseMatchService
         return $facts;
     }
 
+    /**
+     * A real GPS point from "use my location" is preferred whenever both are
+     * present - it's the more precise version of the same "rank by distance
+     * from a point" request a landmark mention makes.
+     */
+    protected function resolveDistancePoint(array $filters): ?array
+    {
+        if (filled($filters['near_lat'] ?? null) && filled($filters['near_lng'] ?? null)) {
+            return ['lat' => (float) $filters['near_lat'], 'lng' => (float) $filters['near_lng']];
+        }
+
+        $landmark = trim($filters['landmark'] ?? '');
+
+        return $landmark !== '' ? $this->landmarkGeocoder->geocode($landmark) : null;
+    }
+
+    /** Closest-first, by real distance to $point - houses with no resolvable map point (see Location::mapPoint()) are appended, unranked, in their original order rather than dropped. */
+    protected function sortByDistanceFrom(Collection $houses, array $point): Collection
+    {
+        $withDistance = $houses->map(function (House $house) use ($point) {
+            $housePoint = $house->location?->mapPoint();
+
+            $house->distance_km = $housePoint
+                ? Geo::distanceKm($point['lat'], $point['lng'], $housePoint['lat'], $housePoint['lng'])
+                : null;
+
+            return $house;
+        });
+
+        [$ranked, $unranked] = $withDistance->partition(fn (House $h) => $h->distance_km !== null);
+
+        return $ranked->sortBy('distance_km')->values()->concat($unranked);
+    }
+
     protected function baseQuery(array $filters)
     {
         $mode = $filters['listing_mode'] ?? 'long_term';
@@ -222,11 +272,23 @@ class HouseMatchService
 
     protected function summarize(Collection $houses): array
     {
-        return $houses->map(fn (House $h) => [
-            'type' => $h->house_type,
-            'area' => $h->location?->geo_id,
-            'price' => $this->priceFor($h),
-        ])->all();
+        return $houses->map(function (House $h) {
+            $summary = [
+                'type' => $h->house_type,
+                'area' => $h->location?->geo_id,
+                'price' => $this->priceFor($h),
+            ];
+
+            // Only present when sortByDistanceFrom() actually ranked this house
+            // (a landmark search matched and this listing had a resolvable
+            // point) - lets the composer cite a real "X km away" instead of
+            // guessing whether the top result is actually close.
+            if (isset($h->distance_km)) {
+                $summary['distance_km'] = round($h->distance_km, 1);
+            }
+
+            return $summary;
+        })->all();
     }
 
     protected function priceFor(House $house): ?int
@@ -242,9 +304,18 @@ class HouseMatchService
 
     protected function publicFilters(array $filters): array
     {
-        return array_intersect_key($filters, array_flip([
-            'area', 'listing_mode', 'house_type', 'max_rent', 'amenities', 'nearby',
+        $public = array_intersect_key($filters, array_flip([
+            'area', 'listing_mode', 'house_type', 'max_rent', 'amenities', 'nearby', 'landmark',
         ]));
+
+        // A flag, never the raw coordinates - the visitor's exact GPS position
+        // has no business leaving this server, let alone going to a
+        // third-party LLM API just to phrase a reply.
+        if (filled($filters['near_lat'] ?? null) && filled($filters['near_lng'] ?? null)) {
+            $public['near_me'] = true;
+        }
+
+        return $public;
     }
 
     /**
