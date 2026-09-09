@@ -3,6 +3,7 @@
 namespace App\Filament\Imports\Concerns;
 
 use App\Support\ImportContext;
+use Filament\Actions\Imports\Exceptions\RowImportFailedException;
 use Filament\Actions\Imports\Models\Import;
 
 /**
@@ -25,6 +26,25 @@ trait ImportsLandlordData
     public function getJobConnection(): ?string
     {
         return 'sync';
+    }
+
+    /**
+     * Some models (House, Tenant, Location) silently cancel their own save() -
+     * returning false, no exception - when a landlord's plan limit blocks adding
+     * one more (see PackageLimitService). Importer::saveRecord() ignores that
+     * return value, which would otherwise count a row that was never actually
+     * written as a "successful" import. Surface it as a real per-row failure
+     * instead, in both UIs.
+     */
+    public function saveRecord(): void
+    {
+        $this->record->save();
+
+        if (! $this->record->exists) {
+            throw new RowImportFailedException(
+                'Could not be saved - check this landlord\'s plan limits (properties/units/tenants) haven\'t been reached.'
+            );
+        }
     }
 
     public static function getCompletedNotificationBody(Import $import): string
