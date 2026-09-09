@@ -202,6 +202,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureAdminRole::class])->group(
 Route::middleware(['auth', \App\Http\Middleware\EnsureSuperadminRole::class])->prefix('app/superadmin')->group(function () {
     Route::get('/dashboard', \App\Livewire\SuperadminApp\Dashboard::class)->name('app.superadmin.dashboard');
     Route::get('/landlords', \App\Livewire\SuperadminApp\Landlords::class)->name('app.superadmin.landlords');
+    Route::get('/locations', \App\Livewire\SuperadminApp\Locations::class)->name('app.superadmin.locations');
     Route::get('/packages', \App\Livewire\SuperadminApp\Packages::class)->name('app.superadmin.packages');
     Route::get('/subscriptions', \App\Livewire\SuperadminApp\Subscriptions::class)->name('app.superadmin.subscriptions');
     Route::get('/settings', \App\Livewire\SuperadminApp\PlatformSettings::class)->name('app.superadmin.settings');

@@ -80,6 +80,7 @@ class AppNavigation
             'superadmin' => [
                 ['label' => 'Dashboard', 'icon' => 'heroicon-o-home', 'route' => 'app.superadmin.dashboard', 'tab' => true],
                 ['label' => 'Landlords', 'icon' => 'heroicon-o-building-office-2', 'route' => 'app.superadmin.landlords', 'tab' => true],
+                ['label' => 'Locations', 'icon' => 'heroicon-o-map-pin', 'route' => 'app.superadmin.locations', 'tab' => false],
                 ['label' => 'Packages', 'icon' => 'heroicon-o-cube', 'route' => 'app.superadmin.packages', 'tab' => false],
                 ['label' => 'Subscriptions', 'icon' => 'heroicon-o-arrow-path', 'route' => 'app.superadmin.subscriptions', 'tab' => true],
                 ['label' => 'Platform Settings', 'icon' => 'heroicon-o-cog-6-tooth', 'route' => 'app.superadmin.settings', 'tab' => true],
