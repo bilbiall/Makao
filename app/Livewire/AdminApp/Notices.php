@@ -4,7 +4,9 @@ namespace App\Livewire\AdminApp;
 
 use App\Livewire\Concerns\ExportsCsv;
 use App\Models\NoticeToVacate;
+use App\Support\StaffPermissions;
 use App\Support\StaffScope;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -32,6 +34,8 @@ class Notices extends Component
 
     public function startDeciding(int $id, string $action): void
     {
+        abort_unless(Auth::user()->hasPermission(StaffPermissions::DECIDE_NOTICES), 403);
+
         $this->decidingNoticeId = $id;
         $this->decidingAction = $action;
         $this->adminNotes = '';
@@ -46,6 +50,8 @@ class Notices extends Component
 
     public function confirmDecision(): void
     {
+        abort_unless(Auth::user()->hasPermission(StaffPermissions::DECIDE_NOTICES), 403);
+
         $notice = StaffScope::onTenantChild(NoticeToVacate::query())->findOrFail($this->decidingNoticeId);
 
         if ($this->decidingAction === 'approve') {
@@ -97,7 +103,9 @@ class Notices extends Component
     {
         $notices = $this->filteredQuery()->paginate(15);
 
-        return view('livewire.admin-app.notices', ['notices' => $notices])
-            ->layout('components.layouts.app', ['title' => 'Notices']);
+        return view('livewire.admin-app.notices', [
+            'notices' => $notices,
+            'canDecideNotices' => Auth::user()->hasPermission(StaffPermissions::DECIDE_NOTICES),
+        ])->layout('components.layouts.app', ['title' => 'Notices']);
     }
 }

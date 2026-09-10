@@ -6,6 +6,7 @@ use App\Livewire\Concerns\ExportsCsv;
 use App\Models\Tenant;
 use App\Models\ViewingRequest;
 use App\Notifications\DatabaseNotification;
+use App\Support\StaffPermissions;
 use App\Support\StaffScope;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
@@ -49,6 +50,8 @@ class ViewingRequests extends Component
 
     public function startAdmit(int $id): void
     {
+        abort_unless(Auth::user()->hasPermission(StaffPermissions::ADMIT_VIEWING_REQUESTS), 403);
+
         $request = $this->scopedRequest($id);
 
         $this->activeActionId = $id;
@@ -58,6 +61,8 @@ class ViewingRequests extends Component
 
     public function startRevoke(int $id): void
     {
+        abort_unless(Auth::user()->hasPermission(StaffPermissions::ADMIT_VIEWING_REQUESTS), 403);
+
         $this->activeActionId = $id;
         $this->activeAction = 'revoke';
         $this->revokeNotes = '';
@@ -70,6 +75,8 @@ class ViewingRequests extends Component
 
     public function confirmAdmit(): void
     {
+        abort_unless(Auth::user()->hasPermission(StaffPermissions::ADMIT_VIEWING_REQUESTS), 403);
+
         $this->validate([
             'admitPhone' => 'required|string|max:20',
         ]);
@@ -114,6 +121,8 @@ class ViewingRequests extends Component
 
     public function confirmRevoke(): void
     {
+        abort_unless(Auth::user()->hasPermission(StaffPermissions::ADMIT_VIEWING_REQUESTS), 403);
+
         $request = $this->scopedRequest($this->activeActionId);
 
         $request->update([
@@ -187,6 +196,7 @@ class ViewingRequests extends Component
         return view('livewire.admin-app.viewing-requests', [
             'requests' => $this->filteredQuery()->paginate(10),
             'pendingCount' => $pendingCount,
+            'canAdmitViewingRequests' => Auth::user()->hasPermission(StaffPermissions::ADMIT_VIEWING_REQUESTS),
         ])->layout('components.layouts.app', ['title' => 'Viewing Requests']);
     }
 }

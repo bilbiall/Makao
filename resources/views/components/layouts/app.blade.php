@@ -72,7 +72,7 @@
                 </div>
                 <div class="min-w-0 flex-1">
                     <p class="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">{{ $user->name }}</p>
-                    <p class="text-xs text-slate-500 dark:text-slate-400">{{ \App\Support\AppNavigation::roleLabel($role) }}</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">{{ $user->staffRole?->name ?? \App\Support\AppNavigation::roleLabel($role) }}</p>
                 </div>
             </a>
             @if ($filamentRoute)

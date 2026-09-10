@@ -67,12 +67,14 @@ class ExpenseResource extends Resource
             ]);
     }
 
-    /** Same visibility as LocationResource - operational/financial data, not for Manager/Caretaker/Agent. */
+    /** Same visibility as LocationResource - operational/financial data, not for
+     *  Manager/Caretaker/Agent, unless a custom staff role explicitly grants it. */
     public static function canAccess(): bool
     {
         $user = auth()->user();
 
-        return $user && in_array($user->role, ['admin', 'landlord']);
+        return $user && (in_array($user->role, ['admin', 'landlord'])
+            || $user->hasPermission(\App\Support\StaffPermissions::MANAGE_EXPENSES));
     }
 
     public static function getPages(): array

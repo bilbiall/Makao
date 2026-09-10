@@ -22,13 +22,27 @@ class StaffScope
     public static function isScopedStaff(): bool
     {
         $user = static::user();
-        return $user && in_array($user->role, ['caretaker', 'manager']);
+        if (!$user) {
+            return false;
+        }
+        if (in_array($user->role, ['caretaker', 'manager'])) {
+            return true;
+        }
+        // A custom staff role location-scoped the same way (see App\Models\StaffRole) -
+        // the role name itself is always 'staff', the scope_type decides which shape.
+        return $user->role === 'staff' && $user->staffRole?->scope_type === 'location';
     }
 
     public static function isAgent(): bool
     {
         $user = static::user();
-        return $user && $user->role === 'agent';
+        if (!$user) {
+            return false;
+        }
+        if ($user->role === 'agent') {
+            return true;
+        }
+        return $user->role === 'staff' && $user->staffRole?->scope_type === 'house';
     }
 
     public static function locationIds(): array

@@ -118,7 +118,8 @@ class LocationResource extends Resource
     public static function canAccess(): bool
     {
         $user = auth()->user();
-        return $user && in_array($user->role, ['admin', 'landlord']);
+        return $user && (in_array($user->role, ['admin', 'landlord'])
+            || $user->hasPermission(\App\Support\StaffPermissions::MANAGE_PROPERTIES));
     }
 
     public static function canCreate(): bool
@@ -126,6 +127,10 @@ class LocationResource extends Resource
         $user = auth()->user();
         if (!$user || !$user->landlord_id) {
             return true;
+        }
+
+        if (!in_array($user->role, ['admin', 'landlord']) && !$user->hasPermission(\App\Support\StaffPermissions::MANAGE_PROPERTIES)) {
+            return false;
         }
 
         return app(\App\Services\PackageLimitService::class)

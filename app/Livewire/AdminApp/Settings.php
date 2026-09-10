@@ -51,6 +51,7 @@ class Settings extends Component
             'template_payment' => "Hi {tenant_name}, we've received your payment of KES {amount_paid} for Invoice #{invoice_number}. Your remaining balance is KES {balance}. Thank you. - {app_name}",
             'template_mass_reminder' => 'Hi {tenant_name}, this is a reminder for Invoice {invoice_number}: KES {amount} due by {due_date}. Thank you, {app_name}.',
             'template_tenant_welcome' => 'Hello {tenant_name}, welcome to {app_name}. You were admitted to {house_name} with a monthly rent of KES {rent_amount}',
+            'template_tenant_invite' => 'Hi {tenant_name}, {property_name} has added you as a tenant. Visit {join_url} to create an account (or log in), then enter your code {code} to see your invoices and bills. - {app_name}',
             'template_notice_approved' => 'Hi {tenant_name}, your vacate notice has been approved. Balance: KES {balance}. Approval date: {approval_date}. Vacate date: {vacate_date}.',
             'template_notice_denied' => 'Hi {tenant_name}, your vacate notice has been denied. Balance: KES {balance}. Date requested: {vacate_date}.',
             'template_password_reset_sms' => 'Hi {tenant_name}, use this code to reset your password: {reset_code}. - {app_name}',

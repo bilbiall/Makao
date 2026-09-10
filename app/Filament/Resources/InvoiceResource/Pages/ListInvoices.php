@@ -23,7 +23,8 @@ class ListInvoices extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            Actions\CreateAction::make()
+                ->visible(fn () => auth()->user()->hasPermission(\App\Support\StaffPermissions::CREATE_INVOICES)),
 
             //mass invoice
             Action::make('Send Mass Invoices')
@@ -31,6 +32,7 @@ class ListInvoices extends ListRecords
                 ->icon('heroicon-o-paper-airplane')
                 ->requiresConfirmation()
                 ->label('Send Mass Invoices')
+                ->visible(fn () => auth()->user()->hasPermission(\App\Support\StaffPermissions::SEND_MASS_INVOICES))
                 ->action(function () {
                     $tenants = Tenant::all();
                     $today = now();
@@ -96,6 +98,7 @@ class ListInvoices extends ListRecords
                 ->icon('heroicon-o-bell-alert')
                 ->requiresConfirmation()
                 ->label('Mass Reminder')
+                ->visible(fn () => auth()->user()->hasPermission(\App\Support\StaffPermissions::SEND_MASS_REMINDERS))
                 ->action(function () {
                     $invoices = Invoice::where('balance', '>', 0)->get();
                     $count = 0;

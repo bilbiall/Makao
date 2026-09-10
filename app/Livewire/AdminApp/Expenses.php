@@ -4,6 +4,7 @@ namespace App\Livewire\AdminApp;
 
 use App\Livewire\Concerns\ExportsCsv;
 use App\Models\Expense;
+use App\Support\StaffPermissions;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -26,8 +27,10 @@ class Expenses extends Component
 
     public function canManageExpenses(): bool
     {
-        // Same visibility as ExpenseResource - operational/financial data, not for Manager/Caretaker/Agent.
-        return in_array(Auth::user()->role, ['admin', 'landlord']);
+        // Same visibility as ExpenseResource - operational/financial data, not for
+        // Manager/Caretaker/Agent, unless a custom staff role explicitly grants it.
+        return in_array(Auth::user()->role, ['admin', 'landlord'])
+            || Auth::user()->hasPermission(StaffPermissions::MANAGE_EXPENSES);
     }
 
     protected function rules(): array

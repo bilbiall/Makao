@@ -199,6 +199,12 @@ trait HasLandlordSettingsSchema
                         ->default('Hello {tenant_name}, welcome to {app_name}. You were admitted to {house_name} with a monthly rent of KES {rent_amount}')
                         ->rows(4),
 
+                    Forms\Components\Textarea::make('template_tenant_invite')
+                        ->label('Tenant Invite Template')
+                        ->helperText('Sent instead of the Welcome template above when a tenant is admitted without an account yet - they self-register and enter this code to connect. Variables: {tenant_name}, {property_name}, {code}, {join_url}, {app_name}')
+                        ->default('Hi {tenant_name}, {property_name} has added you as a tenant. Visit {join_url} to create an account (or log in), then enter your code {code} to see your invoices and bills. - {app_name}')
+                        ->rows(4),
+
                     Forms\Components\Textarea::make('template_notice_approved')
                         ->label('Notice Approved Template')
                         ->helperText('Variables: {tenant_name}, {balance}, {approval_date}, {vacate_date}, {property_name}')

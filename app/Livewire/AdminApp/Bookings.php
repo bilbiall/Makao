@@ -5,7 +5,9 @@ namespace App\Livewire\AdminApp;
 use App\Livewire\Concerns\ExportsCsv;
 use App\Models\Booking;
 use App\Models\House;
+use App\Support\StaffPermissions;
 use App\Support\StaffScope;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -30,24 +32,32 @@ class Bookings extends Component
 
     public function confirm(int $id): void
     {
+        abort_unless(Auth::user()->hasPermission(StaffPermissions::MANAGE_BOOKINGS), 403);
+
         $booking = StaffScope::onHouseOrAssignedHouse(Booking::query())->findOrFail($id);
         $booking->update(['status' => 'confirmed', 'expires_at' => null]);
     }
 
     public function check_in(int $id): void
     {
+        abort_unless(Auth::user()->hasPermission(StaffPermissions::MANAGE_BOOKINGS), 403);
+
         $booking = StaffScope::onHouseOrAssignedHouse(Booking::query())->findOrFail($id);
         $booking->update(['status' => 'checked_in']);
     }
 
     public function check_out(int $id): void
     {
+        abort_unless(Auth::user()->hasPermission(StaffPermissions::MANAGE_BOOKINGS), 403);
+
         $booking = StaffScope::onHouseOrAssignedHouse(Booking::query())->findOrFail($id);
         $booking->update(['status' => 'checked_out']);
     }
 
     public function cancel(int $id): void
     {
+        abort_unless(Auth::user()->hasPermission(StaffPermissions::MANAGE_BOOKINGS), 403);
+
         $booking = StaffScope::onHouseOrAssignedHouse(Booking::query())->findOrFail($id);
         $booking->update(['status' => 'cancelled', 'expires_at' => null]);
     }
@@ -106,7 +116,10 @@ class Bookings extends Component
         }
         $houses = $housesQuery->orderBy('house_name')->get();
 
-        return view('livewire.admin-app.bookings', ['bookings' => $bookings, 'houses' => $houses])
-            ->layout('components.layouts.app', ['title' => 'Bookings']);
+        return view('livewire.admin-app.bookings', [
+            'bookings' => $bookings,
+            'houses' => $houses,
+            'canManageBookings' => Auth::user()->hasPermission(StaffPermissions::MANAGE_BOOKINGS),
+        ])->layout('components.layouts.app', ['title' => 'Bookings']);
     }
 }

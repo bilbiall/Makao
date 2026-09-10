@@ -5,7 +5,9 @@ namespace App\Livewire\AdminApp;
 use App\Livewire\Concerns\ExportsCsv;
 use App\Models\Issue;
 use App\Models\Location;
+use App\Support\StaffPermissions;
 use App\Support\StaffScope;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -32,6 +34,8 @@ class Issues extends Component
 
     public function updateStatus($issueId, $status): void
     {
+        abort_unless(Auth::user()->hasPermission(StaffPermissions::RESOLVE_ISSUES), 403);
+
         $issue = StaffScope::onTenantChild(Issue::query())->findOrFail($issueId);
         $issue->status = $status;
         $issue->save();
@@ -39,6 +43,8 @@ class Issues extends Component
 
     public function delete(int $issueId): void
     {
+        abort_unless(Auth::user()->hasPermission(StaffPermissions::DELETE_ISSUES), 403);
+
         StaffScope::onTenantChild(Issue::query())->findOrFail($issueId)->delete();
         $this->selected = array_diff($this->selected, [$issueId]);
         session()->flash('issue-deleted', 'Issue deleted.');
@@ -46,6 +52,8 @@ class Issues extends Component
 
     public function deleteSelected(): void
     {
+        abort_unless(Auth::user()->hasPermission(StaffPermissions::DELETE_ISSUES), 403);
+
         if (empty($this->selected)) {
             return;
         }
@@ -104,6 +112,8 @@ class Issues extends Component
         return view('livewire.admin-app.issues', [
             'issues' => $issues,
             'locationOptions' => $this->locationsForFilter(),
+            'canResolveIssues' => Auth::user()->hasPermission(StaffPermissions::RESOLVE_ISSUES),
+            'canDeleteIssues' => Auth::user()->hasPermission(StaffPermissions::DELETE_ISSUES),
         ])->layout('components.layouts.app', ['title' => 'Issues']);
     }
 }

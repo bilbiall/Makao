@@ -12,19 +12,27 @@
     </div>
 
     <div class="grid grid-cols-2 gap-2">
-        <button type="button" wire:click="startCreate" class="rounded-xl bg-emerald-600 text-white text-sm font-semibold py-2.5 hover:bg-emerald-700 transition">
-            + New invoice
-        </button>
-        <div class="grid grid-cols-2 gap-2">
-            <button type="button" wire:click="sendMassInvoices" wire:confirm="Generate this month's invoices for every tenant who doesn't have one yet?"
-                class="rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800">
-                Mass invoices
+        @if (auth()->user()->hasPermission(\App\Support\StaffPermissions::CREATE_INVOICES))
+            <button type="button" wire:click="startCreate" class="rounded-xl bg-emerald-600 text-white text-sm font-semibold py-2.5 hover:bg-emerald-700 transition">
+                + New invoice
             </button>
-            <button type="button" wire:click="sendMassReminders" wire:confirm="Send an SMS reminder to every tenant with an outstanding balance?"
-                class="rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800">
-                Mass reminders
-            </button>
-        </div>
+        @endif
+        @if (auth()->user()->hasPermission(\App\Support\StaffPermissions::SEND_MASS_INVOICES) || auth()->user()->hasPermission(\App\Support\StaffPermissions::SEND_MASS_REMINDERS))
+            <div class="grid grid-cols-2 gap-2">
+                @if (auth()->user()->hasPermission(\App\Support\StaffPermissions::SEND_MASS_INVOICES))
+                    <button type="button" wire:click="sendMassInvoices" wire:confirm="Generate this month's invoices for every tenant who doesn't have one yet?"
+                        class="rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800">
+                        Mass invoices
+                    </button>
+                @endif
+                @if (auth()->user()->hasPermission(\App\Support\StaffPermissions::SEND_MASS_REMINDERS))
+                    <button type="button" wire:click="sendMassReminders" wire:confirm="Send an SMS reminder to every tenant with an outstanding balance?"
+                        class="rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800">
+                        Mass reminders
+                    </button>
+                @endif
+            </div>
+        @endif
     </div>
 
     @if ($showForm)
@@ -176,14 +184,20 @@
                     </div>
                 </div>
             </button>
-            <div class="mt-3 flex gap-2">
-                <button type="button" wire:click="startEdit({{ $invoice->id }})" class="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 py-2 text-xs font-medium text-slate-700 dark:text-slate-300">
-                    Edit
-                </button>
-                <button type="button" wire:click="delete({{ $invoice->id }})" wire:confirm="Delete this invoice? This can't be undone." class="flex-1 rounded-lg border border-rose-200 dark:border-rose-500/30 py-2 text-xs font-medium text-rose-600 dark:text-rose-400">
-                    Delete
-                </button>
-            </div>
+            @if (auth()->user()->hasPermission(\App\Support\StaffPermissions::EDIT_INVOICES) || auth()->user()->hasPermission(\App\Support\StaffPermissions::DELETE_INVOICES))
+                <div class="mt-3 flex gap-2">
+                    @if (auth()->user()->hasPermission(\App\Support\StaffPermissions::EDIT_INVOICES))
+                        <button type="button" wire:click="startEdit({{ $invoice->id }})" class="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 py-2 text-xs font-medium text-slate-700 dark:text-slate-300">
+                            Edit
+                        </button>
+                    @endif
+                    @if (auth()->user()->hasPermission(\App\Support\StaffPermissions::DELETE_INVOICES))
+                        <button type="button" wire:click="delete({{ $invoice->id }})" wire:confirm="Delete this invoice? This can't be undone." class="flex-1 rounded-lg border border-rose-200 dark:border-rose-500/30 py-2 text-xs font-medium text-rose-600 dark:text-rose-400">
+                            Delete
+                        </button>
+                    @endif
+                </div>
+            @endif
         </div>
     @empty
         <div class="rounded-2xl bg-white border border-slate-200 p-8 text-center text-sm text-slate-500 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400">

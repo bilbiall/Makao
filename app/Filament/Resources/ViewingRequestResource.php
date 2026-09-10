@@ -107,7 +107,8 @@ class ViewingRequestResource extends Resource
                             'handled_by' => auth()->id(),
                         ]);
                     })
-                    ->visible(fn (ViewingRequest $record) => $record->status === 'pending'),
+                    ->visible(fn (ViewingRequest $record) => $record->status === 'pending'
+                        && auth()->user()->hasPermission(\App\Support\StaffPermissions::ADMIT_VIEWING_REQUESTS)),
 
                 Tables\Actions\Action::make('revoke')
                     ->label('Revoke')
@@ -130,7 +131,8 @@ class ViewingRequestResource extends Resource
                             route('app.user.applications')
                         ));
                     })
-                    ->visible(fn (ViewingRequest $record) => $record->status === 'pending'),
+                    ->visible(fn (ViewingRequest $record) => $record->status === 'pending'
+                        && auth()->user()->hasPermission(\App\Support\StaffPermissions::ADMIT_VIEWING_REQUESTS)),
             ]);
     }
 

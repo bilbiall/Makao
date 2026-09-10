@@ -8,6 +8,14 @@
         Find a house →
     </a>
 
+    <a href="{{ route('app.user.connect') }}" class="flex items-center justify-between rounded-2xl bg-white border border-slate-200 p-4 shadow-sm hover:border-emerald-300 dark:bg-slate-900 dark:border-slate-800 dark:hover:border-emerald-500/40 transition">
+        <div>
+            <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">Already have a unit?</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Got an invite code from your property manager? Connect your account here.</p>
+        </div>
+        <span class="text-emerald-600 dark:text-emerald-400">→</span>
+    </a>
+
     <div class="grid grid-cols-2 gap-3">
         <a href="{{ route('app.user.watchlist') }}" class="rounded-2xl bg-rose-50 border border-rose-100 p-4">
             <p class="text-xs text-rose-700">Watchlist</p>

@@ -8,7 +8,9 @@ use App\Models\Payment;
 use App\Models\PendingPayment;
 use App\Models\Tenant;
 use App\Services\MpesaC2bMatchService;
+use App\Support\StaffPermissions;
 use App\Support\StaffScope;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -53,6 +55,8 @@ class MpesaReview extends Component
 
     public function startAssign(int $transactionId): void
     {
+        abort_unless(Auth::user()->hasPermission(StaffPermissions::RESOLVE_MPESA_REVIEW), 403);
+
         $this->assigningTransactionId = $transactionId;
         $this->assigningTenantId = '';
     }
@@ -74,6 +78,8 @@ class MpesaReview extends Component
 
     public function assignToTenant(int $transactionId, int $tenantId): void
     {
+        abort_unless(Auth::user()->hasPermission(StaffPermissions::RESOLVE_MPESA_REVIEW), 403);
+
         $transaction = $this->c2bBaseQuery()->findOrFail($transactionId);
         $tenant = Tenant::withoutGlobalScopes()->find($tenantId);
 
@@ -92,6 +98,8 @@ class MpesaReview extends Component
 
     public function markCompleted(int $id): void
     {
+        abort_unless(Auth::user()->hasPermission(StaffPermissions::RESOLVE_MPESA_REVIEW), 403);
+
         $pending = StaffScope::onTenantChild(PendingPayment::query())->findOrFail($id);
 
         if ($pending->invoice_id) {
@@ -113,6 +121,8 @@ class MpesaReview extends Component
 
     public function markFailed(int $id): void
     {
+        abort_unless(Auth::user()->hasPermission(StaffPermissions::RESOLVE_MPESA_REVIEW), 403);
+
         $pending = StaffScope::onTenantChild(PendingPayment::query())->findOrFail($id);
         $pending->status = 'failed';
         $pending->save();
@@ -203,6 +213,7 @@ class MpesaReview extends Component
             'assigningCandidates' => $this->assigningTransactionId
                 ? $this->candidateTenants($this->c2bBaseQuery()->find($this->assigningTransactionId))
                 : collect(),
+            'canResolveMpesaReview' => Auth::user()->hasPermission(StaffPermissions::RESOLVE_MPESA_REVIEW),
         ])->layout('components.layouts.app', ['title' => 'M-Pesa Review']);
     }
 }

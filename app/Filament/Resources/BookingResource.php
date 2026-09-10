@@ -82,21 +82,24 @@ class BookingResource extends Resource
                     ->icon('heroicon-s-check')
                     ->requiresConfirmation()
                     ->action(fn (Booking $record) => $record->update(['status' => 'confirmed', 'expires_at' => null]))
-                    ->visible(fn (Booking $record) => $record->status === 'pending'),
+                    ->visible(fn (Booking $record) => $record->status === 'pending'
+                        && auth()->user()->hasPermission(\App\Support\StaffPermissions::MANAGE_BOOKINGS)),
 
                 Tables\Actions\Action::make('check_in')
                     ->label('Check in')
                     ->color('info')
                     ->icon('heroicon-s-arrow-right-circle')
                     ->action(fn (Booking $record) => $record->update(['status' => 'checked_in']))
-                    ->visible(fn (Booking $record) => $record->status === 'confirmed'),
+                    ->visible(fn (Booking $record) => $record->status === 'confirmed'
+                        && auth()->user()->hasPermission(\App\Support\StaffPermissions::MANAGE_BOOKINGS)),
 
                 Tables\Actions\Action::make('check_out')
                     ->label('Check out')
                     ->color('gray')
                     ->icon('heroicon-s-arrow-left-circle')
                     ->action(fn (Booking $record) => $record->update(['status' => 'checked_out']))
-                    ->visible(fn (Booking $record) => $record->status === 'checked_in'),
+                    ->visible(fn (Booking $record) => $record->status === 'checked_in'
+                        && auth()->user()->hasPermission(\App\Support\StaffPermissions::MANAGE_BOOKINGS)),
 
                 Tables\Actions\Action::make('cancel')
                     ->label('Cancel')
@@ -104,7 +107,8 @@ class BookingResource extends Resource
                     ->icon('heroicon-s-x-mark')
                     ->requiresConfirmation()
                     ->action(fn (Booking $record) => $record->update(['status' => 'cancelled', 'expires_at' => null]))
-                    ->visible(fn (Booking $record) => !in_array($record->status, ['checked_out', 'cancelled'])),
+                    ->visible(fn (Booking $record) => !in_array($record->status, ['checked_out', 'cancelled'])
+                        && auth()->user()->hasPermission(\App\Support\StaffPermissions::MANAGE_BOOKINGS)),
             ]);
     }
 

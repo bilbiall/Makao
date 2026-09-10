@@ -57,6 +57,7 @@ class SmsTemplateHelper
             'template_issue_notification' => 'Hi {tenant_name}, issue reported: {issue_title}. Description: {issue_description}',
             'template_mass_reminder' => 'Hi {tenant_name}, reminder for Invoice {invoice_number}: KES {amount} due by {due_date}.',
             'template_new_user_sms' => 'Hi {user_name}, your {role} account has been created. Email: {email} | Password: {password} | Login: {site_url} - {app_name}',
+            'template_tenant_invite' => 'Hi {tenant_name}, {property_name} has added you as a tenant. Visit {join_url} to create an account (or log in), then enter your code {code} to see your invoices and bills. - {app_name}',
         ];
 
         return $defaults[$templateKey] ?? '';

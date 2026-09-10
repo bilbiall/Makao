@@ -71,11 +71,13 @@ class IssueResource extends Resource
                     ->query(fn (Builder $query, $value = null) => $query->when($value !== null, fn () => $query->where('status', $value))),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->visible(fn () => auth()->user()->hasPermission(\App\Support\StaffPermissions::RESOLVE_ISSUES)),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->visible(fn () => auth()->user()->hasPermission(\App\Support\StaffPermissions::DELETE_ISSUES)),
                 ]),
             ]);
     }
@@ -91,6 +93,16 @@ class IssueResource extends Resource
     public static function canCreate(): bool
     {
         return false;
+    }
+
+    public static function canEdit($record): bool
+    {
+        return auth()->user()->hasPermission(\App\Support\StaffPermissions::RESOLVE_ISSUES);
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return auth()->user()->hasPermission(\App\Support\StaffPermissions::DELETE_ISSUES);
     }
 
     public static function getPages(): array

@@ -6,9 +6,11 @@
     @endif
 
     <div class="flex gap-2">
-        <button wire:click="startCreate" class="flex-1 rounded-xl bg-emerald-600 text-white text-sm font-semibold py-3 hover:bg-emerald-700 transition">
-            + Add a bill
-        </button>
+        @if (auth()->user()->hasPermission(\App\Support\StaffPermissions::MANAGE_BILLS))
+            <button wire:click="startCreate" class="flex-1 rounded-xl bg-emerald-600 text-white text-sm font-semibold py-3 hover:bg-emerald-700 transition">
+                + Add a bill
+            </button>
+        @endif
         <button type="button" wire:click="export" class="flex items-center justify-center rounded-xl border border-slate-300 dark:border-slate-700 px-4 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800" title="Export CSV">
             @svg('heroicon-o-arrow-down-tray', 'w-5 h-5')
         </button>
@@ -84,14 +86,16 @@
                 @if ($bill->note)
                     <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">{{ $bill->note }}</p>
                 @endif
-                <div class="mt-3 flex gap-2">
-                    <button wire:click="startEdit({{ $bill->id }})" class="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 py-2 text-xs font-medium text-slate-700 dark:text-slate-300">
-                        Edit
-                    </button>
-                    <button wire:click="delete({{ $bill->id }})" wire:confirm="Delete this bill record? This can't be undone." class="flex-1 rounded-lg border border-rose-200 dark:border-rose-500/30 py-2 text-xs font-medium text-rose-600 dark:text-rose-400">
-                        Delete
-                    </button>
-                </div>
+                @if (auth()->user()->hasPermission(\App\Support\StaffPermissions::MANAGE_BILLS))
+                    <div class="mt-3 flex gap-2">
+                        <button wire:click="startEdit({{ $bill->id }})" class="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 py-2 text-xs font-medium text-slate-700 dark:text-slate-300">
+                            Edit
+                        </button>
+                        <button wire:click="delete({{ $bill->id }})" wire:confirm="Delete this bill record? This can't be undone." class="flex-1 rounded-lg border border-rose-200 dark:border-rose-500/30 py-2 text-xs font-medium text-rose-600 dark:text-rose-400">
+                            Delete
+                        </button>
+                    </div>
+                @endif
             </div>
         @empty
             <div class="rounded-2xl bg-white border border-slate-200 p-8 text-center text-sm text-slate-500 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400">

@@ -210,11 +210,13 @@ class InvoiceResource extends Resource
                     ->preload(),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->visible(fn () => auth()->user()->hasPermission(\App\Support\StaffPermissions::EDIT_INVOICES)),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->visible(fn () => auth()->user()->hasPermission(\App\Support\StaffPermissions::DELETE_INVOICES)),
                 ]),
             ]);
     }
@@ -235,6 +237,26 @@ class InvoiceResource extends Resource
             'create' => Pages\CreateInvoice::route('/create'),
             'edit' => Pages\EditInvoice::route('/{record}/edit'),
         ];
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()->hasPermission(\App\Support\StaffPermissions::CREATE_INVOICES);
+    }
+
+    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()->hasPermission(\App\Support\StaffPermissions::EDIT_INVOICES);
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return auth()->user()->hasPermission(\App\Support\StaffPermissions::DELETE_INVOICES);
+    }
+
+    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()->hasPermission(\App\Support\StaffPermissions::DELETE_INVOICES);
     }
 
     /**

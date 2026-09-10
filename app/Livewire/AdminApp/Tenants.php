@@ -2,12 +2,11 @@
 
 namespace App\Livewire\AdminApp;
 
-use App\Helpers\SmsHelper;
 use App\Livewire\Concerns\ExportsCsv;
 use App\Models\DeletedTenant;
 use App\Models\House;
 use App\Models\Tenant;
-use App\Models\User;
+use App\Support\StaffPermissions;
 use App\Support\StaffScope;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -56,7 +55,7 @@ class Tenants extends Component
     {
         return [
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
+            'email' => 'nullable|email',
             'phone_number' => 'required|string|max:20',
             'house_id' => 'required|exists:houses,id',
             'date_admitted' => 'required|date',
@@ -67,7 +66,7 @@ class Tenants extends Component
     {
         return [
             'edit_name' => 'required|string|max:255',
-            'edit_email' => 'required|email',
+            'edit_email' => 'nullable|email',
             'edit_phone_number' => 'required|string|max:20',
             'edit_house_id' => 'required|exists:houses,id',
             'edit_payment_account_code' => 'nullable|string|max:50',
@@ -77,42 +76,42 @@ class Tenants extends Component
 
     public function admit(): void
     {
+        abort_unless(Auth::user()->hasPermission(StaffPermissions::ADMIT_TENANTS), 403);
+
         $this->validate();
 
-        $password = Str::random(8);
-        $landlordId = Auth::user()->landlord_id;
-
-        $user = User::create([
-            'name' => $this->name,
-            'email' => $this->email,
-            'phone_number' => $this->phone_number,
-            'password' => bcrypt($password),
-            'role' => 'tenant',
-            'landlord_id' => $landlordId,
-        ]);
-
-        try {
-            SmsHelper::sendSms(
-                $this->phone_number,
-                "Hi {$this->name}, your tenant account has been created. Login with Email: {$this->email}, Password: {$password} - " . \App\Helpers\AppHelper::getAppName($landlordId),
-                $landlordId
-            );
-        } catch (\Throwable $e) {
-            // ignore SMS failures (e.g. gateway not configured)
-        }
-
+        // No account is created here - the tenant self-registers and connects to
+        // this record via a join code texted to them (Tenant::sendInviteSms(),
+        // fired automatically by Tenant::booted()'s `created` hook below since
+        // user_id is left null).
         Tenant::create([
-            'user_id' => $user->id,
             'house_id' => $this->house_id,
             'tenant_name' => $this->name,
-            'email' => $this->email,
+            'email' => $this->email ?: null,
             'phone_number' => $this->phone_number,
             'date_admitted' => $this->date_admitted,
+            'join_code' => Tenant::generateJoinCode(),
+            'join_code_expires_at' => now()->addDays(14),
         ]);
 
         $this->reset(['name', 'email', 'phone_number', 'house_id', 'showForm']);
         $this->date_admitted = now()->format('Y-m-d');
-        session()->flash('tenant-admitted', 'Tenant admitted successfully.');
+        session()->flash('tenant-admitted', 'Tenant admitted - an invite code has been texted to them.');
+    }
+
+    public function resendInvite(int $tenantId): void
+    {
+        abort_unless(Auth::user()->hasPermission(StaffPermissions::ADMIT_TENANTS), 403);
+
+        $tenant = StaffScope::onTenant(Tenant::query())->whereNull('user_id')->findOrFail($tenantId);
+
+        $tenant->update([
+            'join_code' => Tenant::generateJoinCode(),
+            'join_code_expires_at' => now()->addDays(14),
+        ]);
+        $tenant->sendInviteSms();
+
+        session()->flash('tenant-updated', 'Invite resent.');
     }
 
     public function viewTenant(int $tenantId): void
@@ -158,6 +157,8 @@ class Tenants extends Component
 
     public function editTenant(int $tenantId): void
     {
+        abort_unless(Auth::user()->hasPermission(StaffPermissions::EDIT_TENANTS), 403);
+
         $tenant = StaffScope::onTenant(Tenant::query())->findOrFail($tenantId);
 
         $this->editingTenantId = $tenant->id;
@@ -176,6 +177,8 @@ class Tenants extends Component
 
     public function saveTenant(): void
     {
+        abort_unless(Auth::user()->hasPermission(StaffPermissions::EDIT_TENANTS), 403);
+
         $this->validate($this->editRules());
 
         $tenant = StaffScope::onTenant(Tenant::query())->findOrFail($this->editingTenantId);
@@ -195,6 +198,8 @@ class Tenants extends Component
 
     public function vacate(int $tenantId): void
     {
+        abort_unless(Auth::user()->hasPermission(StaffPermissions::VACATE_TENANTS), 403);
+
         $tenant = StaffScope::onTenant(Tenant::query())->findOrFail($tenantId);
 
         // TenantObserver::deleting() (registered app-wide) archives this tenancy
@@ -282,6 +287,9 @@ class Tenants extends Component
             'occupancyRate' => $occupancyRate,
             'occupiedUnits' => $occupiedUnits,
             'vacantUnits' => $vacantUnits,
+            'canAdmitTenants' => Auth::user()->hasPermission(StaffPermissions::ADMIT_TENANTS),
+            'canEditTenants' => Auth::user()->hasPermission(StaffPermissions::EDIT_TENANTS),
+            'canVacateTenants' => Auth::user()->hasPermission(StaffPermissions::VACATE_TENANTS),
         ])->layout('components.layouts.app', ['title' => 'Tenants']);
     }
 }

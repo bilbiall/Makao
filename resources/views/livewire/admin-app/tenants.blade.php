@@ -35,9 +35,11 @@
     </div>
 
     <div class="flex gap-2">
-        <button wire:click="$set('showForm', true)" class="flex-1 rounded-xl bg-emerald-600 text-white text-sm font-semibold py-3 hover:bg-emerald-700 transition">
-            + Admit a tenant
-        </button>
+        @if ($canAdmitTenants)
+            <button wire:click="$set('showForm', true)" class="flex-1 rounded-xl bg-emerald-600 text-white text-sm font-semibold py-3 hover:bg-emerald-700 transition">
+                + Admit a tenant
+            </button>
+        @endif
         <button type="button" wire:click="export" class="flex items-center justify-center rounded-xl border border-slate-300 dark:border-slate-700 px-4 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800" title="Export CSV">
             @svg('heroicon-o-arrow-down-tray', 'w-5 h-5')
         </button>
@@ -62,13 +64,14 @@
                 @error('name') <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p> @enderror
             </div>
             <div>
-                <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Email</label>
+                <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Email (optional)</label>
                 <input type="email" wire:model="email" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
                 @error('email') <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p> @enderror
             </div>
             <div>
                 <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Phone number</label>
                 <input type="text" wire:model="phone_number" placeholder="0712345678" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+                <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">The tenant self-registers and connects to their unit via a code texted here - double-check it.</p>
                 @error('phone_number') <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p> @enderror
             </div>
             <div>
@@ -85,7 +88,7 @@
                 <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Date admitted</label>
                 <input type="date" wire:model="date_admitted" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
             </div>
-            <p class="text-xs text-slate-500 dark:text-slate-400">A login account is created automatically and the temporary password is sent to the tenant by SMS.</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">An invite code is texted to the tenant - they self-register (or log in) and enter it to connect their account and see their invoices and bills.</p>
             <div class="flex gap-3">
                 <button wire:click="$set('showForm', false)" class="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300">Cancel</button>
                 <button wire:click="admit" class="flex-1 rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">Admit tenant</button>
@@ -108,7 +111,12 @@
                 <div class="rounded-2xl bg-white border border-slate-200 shadow-sm p-4 hover:border-emerald-300 dark:bg-slate-900 dark:border-slate-800 dark:hover:border-emerald-500/40">
                     <button type="button" wire:click="viewTenant({{ $tenant->id }})" class="w-full text-left flex items-center justify-between">
                         <div>
-                            <p class="font-semibold text-slate-900 dark:text-slate-100">{{ $tenant->tenant_name }}</p>
+                            <div class="flex items-center gap-2">
+                                <p class="font-semibold text-slate-900 dark:text-slate-100">{{ $tenant->tenant_name }}</p>
+                                @if (!$tenant->user_id)
+                                    <span class="rounded-full bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 px-2 py-0.5 text-[10px] font-medium">Pending invite</span>
+                                @endif
+                            </div>
                             <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{{ $tenant->house?->house_name ?? 'No house' }}</p>
                             <p class="text-xs text-slate-400 dark:text-slate-500">{{ $tenant->phone_number }}</p>
                         </div>
@@ -123,13 +131,23 @@
                                 WhatsApp
                             </a>
                         @endif
-                        <button type="button" wire:click="editTenant({{ $tenant->id }})" class="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300">
-                            Edit
-                        </button>
-                        <button type="button" wire:click="vacate({{ $tenant->id }})" wire:confirm="Vacate {{ $tenant->tenant_name }}? This ends the tenancy, frees the unit, and archives their history."
-                            class="flex-1 rounded-lg border border-rose-200 dark:border-rose-500/30 py-1.5 text-xs font-medium text-rose-600 dark:text-rose-400">
-                            Vacate
-                        </button>
+                        @if (!$tenant->user_id && $canAdmitTenants)
+                            <button type="button" wire:click="resendInvite({{ $tenant->id }})" wire:confirm="Resend the invite code to {{ $tenant->tenant_name }}?"
+                                class="flex-1 rounded-lg border border-amber-200 dark:border-amber-500/30 py-1.5 text-xs font-medium text-amber-700 dark:text-amber-400">
+                                Resend invite
+                            </button>
+                        @endif
+                        @if ($canEditTenants)
+                            <button type="button" wire:click="editTenant({{ $tenant->id }})" class="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300">
+                                Edit
+                            </button>
+                        @endif
+                        @if ($canVacateTenants)
+                            <button type="button" wire:click="vacate({{ $tenant->id }})" wire:confirm="Vacate {{ $tenant->tenant_name }}? This ends the tenancy, frees the unit, and archives their history."
+                                class="flex-1 rounded-lg border border-rose-200 dark:border-rose-500/30 py-1.5 text-xs font-medium text-rose-600 dark:text-rose-400">
+                                Vacate
+                            </button>
+                        @endif
                     </div>
                 </div>
             @empty
@@ -303,11 +321,13 @@
                     </div>
 
                     <div class="px-4 pb-4">
+                        @if ($canVacateTenants)
                         <button type="button" wire:click="vacate({{ $t->id }})"
                             wire:confirm="Vacate {{ $t->tenant_name }}? This ends the tenancy, frees the unit, and archives their history."
                             class="w-full rounded-lg border border-rose-200 dark:border-rose-500/30 py-2 text-sm font-medium text-rose-600 dark:text-rose-400">
                             Vacate tenant
                         </button>
+                        @endif
                     </div>
                 </div>
             </div>

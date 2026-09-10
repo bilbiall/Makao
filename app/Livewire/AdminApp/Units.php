@@ -7,6 +7,7 @@ use App\Models\House;
 use App\Models\Landlord;
 use App\Models\Location;
 use App\Services\PackageLimitService;
+use App\Support\StaffPermissions;
 use App\Support\StaffScope;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Url;
@@ -67,8 +68,10 @@ class Units extends Component
     public function canManageProperties(): bool
     {
         // Matches Properties::canManageProperties() - only the account owner/staff with
-        // full admin rights create new properties, not Manager/Caretaker/Agent.
-        return in_array(Auth::user()->role, ['admin', 'landlord']);
+        // full admin rights create new properties by default, unless a custom staff
+        // role has been explicitly granted the manage_properties permission.
+        return in_array(Auth::user()->role, ['admin', 'landlord'])
+            || Auth::user()->hasPermission(StaffPermissions::MANAGE_PROPERTIES);
     }
 
     protected function unitsQuery()

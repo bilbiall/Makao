@@ -9,6 +9,8 @@ use App\Models\House;
 use App\Models\Landlord;
 use App\Models\Location;
 use App\Services\PackageLimitService;
+use App\Support\StaffPermissions;
+use App\Support\StaffScope;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -37,15 +39,20 @@ class Properties extends Component
 
     protected function baseQuery()
     {
-        $user = Auth::user();
         $query = Location::with('houses');
 
-        // Manager/Caretaker are narrowed to their assigned locations via the
-        // staff_assignments pivot - same rule enforced in HouseResource::getEloquentQuery().
-        // Agent is scoped to specific houses for bookings only, not properties at all.
-        if (in_array($user->role, ['caretaker', 'manager'])) {
-            $query->whereIn('id', $user->staffAssignments()->pluck('location_id'));
-        } elseif ($user->role === 'agent') {
+        // Manager/Caretaker (and a location-scoped custom staff role) are narrowed
+        // to their assigned locations via the staff_assignments pivot - same rule
+        // enforced in HouseResource::getEloquentQuery(). Agent (and a house-scoped
+        // custom role) is scoped to specific houses for bookings only, not
+        // properties at all. Using StaffScope's helpers here (rather than a plain
+        // role-string check) is what makes this recognize the new 'staff' role -
+        // a hardcoded ['caretaker','manager'] check would silently leave a custom
+        // role's staff unscoped (seeing every property) since their role is 'staff',
+        // not literally 'manager'/'caretaker'.
+        if (StaffScope::isScopedStaff()) {
+            $query->whereIn('id', StaffScope::locationIds());
+        } elseif (StaffScope::isAgent()) {
             $query->whereRaw('1 = 0');
         }
 
@@ -55,8 +62,10 @@ class Properties extends Component
     public function canManageProperties(): bool
     {
         // Matches LocationResource::canAccess() - only the account owner/staff with
-        // full admin rights create new properties, not Manager/Caretaker/Agent.
-        return in_array(Auth::user()->role, ['admin', 'landlord']);
+        // full admin rights create new properties by default, unless a custom staff
+        // role has been explicitly granted the manage_properties permission.
+        return in_array(Auth::user()->role, ['admin', 'landlord'])
+            || Auth::user()->hasPermission(StaffPermissions::MANAGE_PROPERTIES);
     }
 
     public function startEditLocation(int $locationId): void

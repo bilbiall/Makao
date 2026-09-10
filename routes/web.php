@@ -184,6 +184,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureAdminRole::class])->prefix
     Route::get('/import-data', \App\Livewire\AdminApp\ImportData::class)->name('app.admin.import-data');
     Route::get('/bookings', \App\Livewire\AdminApp\Bookings::class)->name('app.admin.bookings');
     Route::get('/users', \App\Livewire\AdminApp\Users::class)->name('app.admin.users');
+    Route::get('/staff-roles', \App\Livewire\AdminApp\StaffRoles::class)->name('app.admin.staff-roles');
     Route::get('/chat', fn () => view('admin-app.chat'))->name('app.admin.chat');
     Route::get('/settings', \App\Livewire\AdminApp\Settings::class)->name('app.admin.settings');
     Route::get('/profile', \App\Livewire\Profile::class)->name('app.admin.profile');
@@ -194,6 +195,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureUserRole::class])->prefix(
     Route::get('/watchlist', \App\Livewire\UserApp\Watchlist::class)->name('app.user.watchlist');
     Route::get('/applications', \App\Livewire\UserApp\Applications::class)->name('app.user.applications');
     Route::get('/profile', \App\Livewire\Profile::class)->name('app.user.profile');
+    Route::get('/connect', \App\Livewire\UserApp\ConnectApartment::class)->name('app.user.connect');
 });
 
 // One-time guided setup for a brand-new landlord account - creates their first

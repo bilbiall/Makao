@@ -113,6 +113,7 @@
                     'template_mass_reminder' => ['Mass Reminder Template', 'Variables: {tenant_name}, {invoice_number}, {amount}, {due_date}, {app_name}, {property_name}'],
                     'template_issue_notification' => ['Issue Notification Template', 'Variables: {tenant_name}, {issue_title}, {issue_description}'],
                     'template_tenant_welcome' => ['Tenant Welcome Template', 'Variables: {tenant_name}, {app_name}, {house_name}, {rent_amount}, {property_name}'],
+                    'template_tenant_invite' => ['Tenant Invite Template', 'Sent instead of Welcome when a tenant has no account yet. Variables: {tenant_name}, {property_name}, {code}, {join_url}, {app_name}'],
                     'template_notice_approved' => ['Notice Approved Template', 'Variables: {tenant_name}, {balance}, {approval_date}, {vacate_date}, {property_name}'],
                     'template_notice_denied' => ['Notice Denied Template', 'Variables: {tenant_name}, {balance}, {vacate_date}, {property_name}'],
                     'template_password_reset_sms' => ['Password Reset SMS Template', 'Variables: {tenant_name}, {reset_code}, {app_name}'],

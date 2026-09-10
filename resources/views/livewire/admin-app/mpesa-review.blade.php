@@ -65,7 +65,7 @@
                         </div>
                     </div>
 
-                    @if ($t->match_status === 'needs_review')
+                    @if ($t->match_status === 'needs_review' && $canResolveMpesaReview)
                         @if ($assigningTransactionId === $t->id)
                             <div class="mt-3 flex gap-2">
                                 <select wire:model="assigningTenantId" class="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
@@ -128,7 +128,7 @@
                         </div>
                     </div>
 
-                    @if ($p->status === 'pending')
+                    @if ($p->status === 'pending' && $canResolveMpesaReview)
                         <div class="mt-3 flex gap-2">
                             <button type="button" wire:click="markFailed({{ $p->id }})" wire:confirm="Mark this payment as failed?" class="flex-1 rounded-lg border border-rose-300 text-rose-700 text-sm font-medium py-2">Mark failed</button>
                             <button type="button" wire:click="markCompleted({{ $p->id }})" wire:confirm="Mark this payment as completed? This will record it against the tenant's invoice." class="flex-1 rounded-lg bg-emerald-600 text-white text-sm font-semibold py-2">Mark completed</button>

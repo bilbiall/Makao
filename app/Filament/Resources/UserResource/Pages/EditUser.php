@@ -38,6 +38,26 @@ class EditUser extends EditRecord
         $data['location_ids'] = $this->record->staffAssignments()->whereNotNull('location_id')->pluck('location_id')->all();
         $data['house_ids'] = $this->record->staffAssignments()->whereNotNull('house_id')->pluck('house_id')->all();
 
+        // A custom-role assignee's role select value must round-trip back to
+        // "custom:{id}" (see UserResource::form()), not the literal 'staff'.
+        if ($this->record->staff_role_id) {
+            $data['role'] = "custom:{$this->record->staff_role_id}";
+        }
+
+        return $data;
+    }
+
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        if (is_string($data['role'] ?? null) && str_starts_with($data['role'], 'custom:')) {
+            $data['staff_role_id'] = (int) substr($data['role'], strlen('custom:'));
+            $data['role'] = 'staff';
+        } else {
+            // Switching away from a custom role back to a legacy one must clear
+            // the stale staff_role_id, not leave it pointing at the old role.
+            $data['staff_role_id'] = null;
+        }
+
         return $data;
     }
 
@@ -49,7 +69,9 @@ class EditUser extends EditRecord
         // simplest correct behaviour for a small admin-managed list like this.
         $user->staffAssignments()->delete();
 
-        if (in_array($user->role, ['manager', 'caretaker'])) {
+        $scopeType = $user->staff_role_id ? $user->staffRole?->scope_type : null;
+
+        if (in_array($user->role, ['manager', 'caretaker']) || $scopeType === 'location') {
             foreach (($this->data['location_ids'] ?? []) as $locationId) {
                 StaffAssignment::create([
                     'user_id' => $user->id,
@@ -60,12 +82,12 @@ class EditUser extends EditRecord
             }
         }
 
-        if ($user->role === 'agent') {
+        if ($user->role === 'agent' || $scopeType === 'house') {
             foreach (($this->data['house_ids'] ?? []) as $houseId) {
                 StaffAssignment::create([
                     'user_id' => $user->id,
                     'house_id' => $houseId,
-                    'role' => 'agent',
+                    'role' => $user->role,
                     'assigned_by' => auth()->id(),
                 ]);
             }

@@ -38,7 +38,7 @@
                 <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">Note: {{ $notice->admin_notes }}</p>
             @endif
 
-            @if ($notice->status === 'pending')
+            @if ($notice->status === 'pending' && $canDecideNotices)
                 <div class="mt-3 flex gap-2">
                     <button type="button" wire:click="startDeciding({{ $notice->id }}, 'deny')" class="flex-1 rounded-lg border border-rose-300 text-rose-700 text-sm font-medium py-2">Deny</button>
                     <button type="button" wire:click="startDeciding({{ $notice->id }}, 'approve')" class="flex-1 rounded-lg bg-emerald-600 text-white text-sm font-semibold py-2">Approve</button>

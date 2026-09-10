@@ -23,6 +23,16 @@
         Send notification to tenants
     </button>
 
+    <a href="{{ route('app.admin.staff-roles') }}" class="block w-full text-center rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-semibold py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800">
+        Manage custom staff roles
+    </a>
+
+    @php
+        $selectedCustomRole = str_starts_with($role, 'custom:')
+            ? $customRoles->firstWhere('id', (int) substr($role, strlen('custom:')))
+            : null;
+    @endphp
+
     @if ($showForm)
         <div class="rounded-2xl bg-white border border-slate-200 shadow-sm p-4 space-y-3 dark:bg-slate-900 dark:border-slate-800">
             <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ $editingId ? 'Edit staff member' : 'New staff member' }}</p>
@@ -50,9 +60,17 @@
                     <option value="manager">Manager</option>
                     <option value="caretaker">Caretaker</option>
                     <option value="agent">Agent (BnB bookings)</option>
+                    @if ($customRoles->isNotEmpty())
+                        <optgroup label="Custom roles">
+                            @foreach ($customRoles as $customRole)
+                                <option value="custom:{{ $customRole->id }}">{{ $customRole->name }}</option>
+                            @endforeach
+                        </optgroup>
+                    @endif
                 </select>
+                <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Need a different set of permissions? <a href="{{ route('app.admin.staff-roles') }}" class="underline">Create a custom role</a>.</p>
             </div>
-            @if (in_array($role, ['manager', 'caretaker']))
+            @if (in_array($role, ['manager', 'caretaker']) || optional($selectedCustomRole)->scope_type === 'location')
                 <div>
                     <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Assigned properties</label>
                     <div class="mt-1 space-y-1.5 max-h-40 overflow-y-auto rounded-lg border border-slate-300 dark:border-slate-700 p-2">
@@ -66,7 +84,7 @@
                     @error('location_ids') <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p> @enderror
                 </div>
             @endif
-            @if ($role === 'agent')
+            @if ($role === 'agent' || optional($selectedCustomRole)->scope_type === 'house')
                 <div>
                     <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Assigned houses (short-stay only)</label>
                     <div class="mt-1 space-y-1.5 max-h-40 overflow-y-auto rounded-lg border border-slate-300 dark:border-slate-700 p-2">
@@ -135,7 +153,8 @@
                         'bg-indigo-100 text-indigo-700' => $member->role === 'manager',
                         'bg-amber-100 text-amber-700' => $member->role === 'caretaker',
                         'bg-emerald-100 text-emerald-700' => $member->role === 'agent',
-                    ])>{{ ucfirst($member->role) }}</span>
+                        'bg-sky-100 text-sky-700' => $member->role === 'staff',
+                    ])>{{ $member->staffRole?->name ?? ucfirst($member->role) }}</span>
                 </div>
                 <div class="mt-3 flex gap-2">
                     <button type="button" wire:click="startEdit({{ $member->id }})" class="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 py-2 text-xs font-medium text-slate-700 dark:text-slate-300">

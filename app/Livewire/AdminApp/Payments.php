@@ -7,7 +7,9 @@ use App\Models\Invoice;
 use App\Models\MpesaTransaction;
 use App\Models\Payment;
 use App\Models\Tenant;
+use App\Support\StaffPermissions;
 use App\Support\StaffScope;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -99,6 +101,8 @@ class Payments extends Component
 
     public function record(): void
     {
+        abort_unless(Auth::user()->hasPermission(StaffPermissions::RECORD_PAYMENTS), 403);
+
         $this->validate();
 
         // Creating this record triggers Payment::booted()'s static::created hook,
@@ -171,6 +175,8 @@ class Payments extends Component
 
     public function update(): void
     {
+        abort_unless(Auth::user()->hasPermission(StaffPermissions::EDIT_PAYMENTS), 403);
+
         $this->validate([
             'edit_amount_paid' => 'required|numeric|min:1',
             'edit_payment_reference' => 'required|string|max:255',
@@ -196,6 +202,8 @@ class Payments extends Component
 
     public function delete(int $paymentId): void
     {
+        abort_unless(Auth::user()->hasPermission(StaffPermissions::DELETE_PAYMENTS), 403);
+
         StaffScope::onTenantChild(Payment::query())->findOrFail($paymentId)->delete();
 
         session()->flash('payment-recorded', 'Payment deleted.');

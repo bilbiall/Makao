@@ -46,6 +46,7 @@ class AppNavigation
                 ['label' => 'Bookings', 'icon' => 'heroicon-o-calendar-days', 'route' => 'app.admin.bookings', 'tab' => false],
                 ['label' => 'Reports', 'icon' => 'heroicon-o-chart-bar', 'route' => 'app.admin.reports', 'tab' => false],
                 ['label' => 'Staff', 'icon' => 'heroicon-o-identification', 'route' => 'app.admin.users', 'tab' => false],
+                ['label' => 'Staff Roles', 'icon' => 'heroicon-o-shield-check', 'route' => 'app.admin.staff-roles', 'tab' => false],
                 ['label' => 'Logs', 'icon' => 'heroicon-o-clipboard-document-list', 'route' => 'app.admin.logs', 'tab' => false],
                 ['label' => 'Import Data', 'icon' => 'heroicon-o-arrow-up-tray', 'route' => 'app.admin.import-data', 'tab' => false],
                 ['label' => 'Chat', 'icon' => 'heroicon-o-chat-bubble-left-right', 'route' => 'app.admin.chat', 'tab' => false],
@@ -54,7 +55,10 @@ class AppNavigation
             // Manager and Caretaker share an identical, trimmed nav for now (see the
             // Phase 1 plan for why) - missing Reports/Staff/Settings, matching
             // UserResource::canAccess(), Reports::mount(), Settings::mount().
-            'caretaker', 'manager' => [
+            // A landlord-defined custom role (App\Models\StaffRole) always gets this
+            // same trimmed nav regardless of its checkbox permissions - the checkboxes
+            // gate actions *within* these pages, not which pages are reachable at all.
+            'caretaker', 'manager', 'staff' => [
                 ['label' => 'Dashboard', 'icon' => 'heroicon-o-home', 'route' => 'app.admin.dashboard', 'tab' => true],
                 ['label' => 'Tenants', 'icon' => 'heroicon-o-users', 'route' => 'app.admin.tenants', 'tab' => true],
                 ['label' => 'Properties', 'icon' => 'heroicon-o-building-office-2', 'route' => 'app.admin.properties', 'tab' => true],
@@ -152,7 +156,7 @@ class AppNavigation
     public static function filamentDashboardRoute(string $role): ?string
     {
         return match ($role) {
-            'admin', 'landlord', 'manager', 'caretaker', 'agent' => 'filament.admin.pages.dashboard',
+            'admin', 'landlord', 'manager', 'caretaker', 'agent', 'staff' => 'filament.admin.pages.dashboard',
             'tenant' => 'filament.tenant.pages.tenant-dashboard',
             'superadmin' => 'filament.superadmin.pages.superadmin-dashboard',
             default => null,

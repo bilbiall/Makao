@@ -80,49 +80,75 @@ class UserResource extends Resource
                             $options = ['admin' => 'Admin'] + $options;
                         }
 
-                        return $options;
+                        // Landlord-defined custom roles (see StaffRole/StaffPermissions) -
+                        // encoded as "custom:{id}" so the form can tell a custom role apart
+                        // from the legacy literal role strings above; converted back to
+                        // role='staff' + staff_role_id in mutateFormDataBeforeCreate/Save.
+                        $customRoles = \App\Models\StaffRole::where('landlord_id', auth()->user()?->landlord_id)
+                            ->pluck('name', 'id')
+                            ->mapWithKeys(fn ($name, $id) => ["custom:{$id}" => $name]);
+
+                        return $options + $customRoles->all();
                     })
                     ->reactive()
                     ->afterStateUpdated(function ($state, callable $set) {
-                        if (!in_array($state, ['manager', 'caretaker'])) {
+                        $scopeType = static::customRoleScopeType($state);
+
+                        if (!in_array($state, ['manager', 'caretaker']) && $scopeType !== 'location') {
                             $set('location_ids', []);
                         }
-                        if ($state !== 'agent') {
+                        if ($state !== 'agent' && $scopeType !== 'house') {
                             $set('house_ids', []);
                         }
                     })
                     ->native(false), // optional: to use searchable dropdown
 
-                // Assigned properties (only for manager/caretaker) - writes to the
-                // staff_assignments pivot via CreateUser::afterCreate()/EditUser::afterSave(),
-                // not a direct model attribute, since a staff member can hold more than one.
+                // Assigned properties (manager/caretaker, or a location-scoped custom role) -
+                // writes to the staff_assignments pivot via
+                // CreateUser::afterCreate()/EditUser::afterSave(), not a direct model
+                // attribute, since a staff member can hold more than one.
                 Select::make('location_ids')
                     ->label('Assigned Properties')
                     ->multiple()
                     ->options(fn () => Location::pluck('location_name', 'id'))
-                    ->required(fn (callable $get) => in_array($get('role'), ['manager', 'caretaker']))
-                    ->visible(fn (callable $get) => in_array($get('role'), ['manager', 'caretaker']))
+                    ->required(fn (callable $get) => in_array($get('role'), ['manager', 'caretaker']) || static::customRoleScopeType($get('role')) === 'location')
+                    ->visible(fn (callable $get) => in_array($get('role'), ['manager', 'caretaker']) || static::customRoleScopeType($get('role')) === 'location')
                     ->helperText('This staff member will only access resources in these properties')
                     ->dehydrated(false)
                     ->searchable()
                     ->preload()
                     ->native(false),
 
-                // Assigned houses (agent only) - a specific short_term (BnB) unit, not a
-                // whole property. Also writes to staff_assignments, via house_id instead
-                // of location_id.
+                // Assigned houses (agent, or a house-scoped custom role) - a specific
+                // short_term (BnB) unit, not a whole property. Also writes to
+                // staff_assignments, via house_id instead of location_id.
                 Select::make('house_ids')
                     ->label('Assigned Houses (short-stay only)')
                     ->multiple()
                     ->options(fn () => \App\Models\House::where('listing_mode', 'short_term')->pluck('house_name', 'id'))
-                    ->required(fn (callable $get) => $get('role') === 'agent')
-                    ->visible(fn (callable $get) => $get('role') === 'agent')
+                    ->required(fn (callable $get) => $get('role') === 'agent' || static::customRoleScopeType($get('role')) === 'house')
+                    ->visible(fn (callable $get) => $get('role') === 'agent' || static::customRoleScopeType($get('role')) === 'house')
                     ->helperText('This agent will only manage bookings for these houses')
                     ->dehydrated(false)
                     ->searchable()
                     ->preload()
                     ->native(false),
                 ]);
+    }
+
+    /**
+     * Resolves the scope_type of a "custom:{id}" role Select value, or null for
+     * every other (legacy) value. Shared by the reactive show/hide logic above.
+     */
+    protected static function customRoleScopeType(?string $roleValue): ?string
+    {
+        if (!$roleValue || !str_starts_with($roleValue, 'custom:')) {
+            return null;
+        }
+
+        $id = (int) substr($roleValue, strlen('custom:'));
+
+        return \App\Models\StaffRole::find($id)?->scope_type;
     }
 
     public static function table(Table $table): Table
@@ -135,13 +161,14 @@ class UserResource extends Resource
                 TextColumn::make('role')
                     ->label('Role')
                     ->badge()
-                    ->formatStateUsing(fn (string $state) => \App\Support\AppNavigation::roleLabel($state))
+                    ->formatStateUsing(fn (string $state, ?\App\Models\User $record) => $record?->staffRole?->name ?? \App\Support\AppNavigation::roleLabel($state))
                     ->color(fn(string $state): string => match ($state) {
                         'admin' => 'danger',
                         'manager' => 'primary',
                         'caretaker' => 'warning',
                         'agent' => 'success',
                         'tenant' => 'info',
+                        'staff' => 'primary',
                         default => 'gray',
                     }),
             ])
@@ -160,6 +187,7 @@ class UserResource extends Resource
                         'caretaker' => 'Caretaker',
                         'agent' => 'Agent',
                         'tenant' => 'Tenant',
+                        'staff' => 'Custom role',
                     ])
                     ->query(fn (Builder $query, $value = null) => $query->when($value !== null, fn () => $query->where('role', $value))),
             ])

@@ -118,7 +118,8 @@ class NoticeToVacateResource extends Resource
                     ->action(function (NoticeToVacate $record, array $data) {
                         $record->approve($data['admin_notes'] ?? null);
                     })
-                    ->visible(fn (NoticeToVacate $record) => $record->status === 'pending'),
+                    ->visible(fn (NoticeToVacate $record) => $record->status === 'pending'
+                        && auth()->user()->hasPermission(\App\Support\StaffPermissions::DECIDE_NOTICES)),
 
                 Tables\Actions\Action::make('deny')
                     ->label('Deny')
@@ -132,7 +133,8 @@ class NoticeToVacateResource extends Resource
                     ->action(function (NoticeToVacate $record, array $data) {
                         $record->deny($data['admin_notes'] ?? null);
                     })
-                    ->visible(fn (NoticeToVacate $record) => $record->status === 'pending'),
+                    ->visible(fn (NoticeToVacate $record) => $record->status === 'pending'
+                        && auth()->user()->hasPermission(\App\Support\StaffPermissions::DECIDE_NOTICES)),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([]),

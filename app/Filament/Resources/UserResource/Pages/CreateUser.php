@@ -40,7 +40,7 @@ class CreateUser extends CreateRecord
             throw new Halt();
         }
 
-        if (!in_array($role, ['admin', 'manager', 'caretaker', 'agent'])) {
+        if (!in_array($role, ['admin', 'manager', 'caretaker', 'agent', 'staff'])) {
             return;
         }
 
@@ -65,6 +65,15 @@ class CreateUser extends CreateRecord
         // New staff (admin/caretaker) belong to the creating landlord's own account -
         // landlord_id is never a form field, so it can't be tampered with by the submitter.
         $data['landlord_id'] = auth()->user()->landlord_id;
+
+        // A landlord-defined custom role is submitted as "custom:{id}" (see
+        // UserResource::form()) - resolve it to the real role='staff' + staff_role_id
+        // columns before the record is created.
+        if (is_string($data['role'] ?? null) && str_starts_with($data['role'], 'custom:')) {
+            $data['staff_role_id'] = (int) substr($data['role'], strlen('custom:'));
+            $data['role'] = 'staff';
+        }
+
         return $data;
     }
 
@@ -72,7 +81,9 @@ class CreateUser extends CreateRecord
     {
         $user = $this->record;
 
-        if (in_array($user->role, ['manager', 'caretaker'])) {
+        $scopeType = $user->staff_role_id ? $user->staffRole?->scope_type : null;
+
+        if (in_array($user->role, ['manager', 'caretaker']) || $scopeType === 'location') {
             foreach (($this->data['location_ids'] ?? []) as $locationId) {
                 \App\Models\StaffAssignment::create([
                     'user_id' => $user->id,
@@ -83,12 +94,12 @@ class CreateUser extends CreateRecord
             }
         }
 
-        if ($user->role === 'agent') {
+        if ($user->role === 'agent' || $scopeType === 'house') {
             foreach (($this->data['house_ids'] ?? []) as $houseId) {
                 \App\Models\StaffAssignment::create([
                     'user_id' => $user->id,
                     'house_id' => $houseId,
-                    'role' => 'agent',
+                    'role' => $user->role,
                     'assigned_by' => auth()->id(),
                 ]);
             }

@@ -6,7 +6,9 @@ use App\Livewire\Concerns\ExportsCsv;
 use App\Models\Bill;
 use App\Models\Location;
 use App\Models\Tenant;
+use App\Support\StaffPermissions;
 use App\Support\StaffScope;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -79,6 +81,8 @@ class Bills extends Component
 
     public function record(): void
     {
+        abort_unless(Auth::user()->hasPermission(StaffPermissions::MANAGE_BILLS), 403);
+
         $this->validate();
 
         $data = [
@@ -105,6 +109,8 @@ class Bills extends Component
 
     public function delete(int $billId): void
     {
+        abort_unless(Auth::user()->hasPermission(StaffPermissions::MANAGE_BILLS), 403);
+
         StaffScope::onTenantChild(Bill::query())->findOrFail($billId)->delete();
         session()->flash('bill-recorded', 'Bill deleted.');
     }

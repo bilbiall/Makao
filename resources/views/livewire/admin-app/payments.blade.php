@@ -48,9 +48,11 @@
         </div>
     </div>
 
-    <button wire:click="$set('showForm', true)" class="w-full rounded-xl bg-emerald-600 text-white text-sm font-semibold py-3 hover:bg-emerald-700 transition">
-        + Record a payment
-    </button>
+    @if (auth()->user()->hasPermission(\App\Support\StaffPermissions::RECORD_PAYMENTS))
+        <button wire:click="$set('showForm', true)" class="w-full rounded-xl bg-emerald-600 text-white text-sm font-semibold py-3 hover:bg-emerald-700 transition">
+            + Record a payment
+        </button>
+    @endif
 
     @if ($showForm)
         <div class="rounded-2xl bg-white border border-slate-200 shadow-sm p-4 space-y-3 dark:bg-slate-900 dark:border-slate-800">
@@ -146,14 +148,20 @@
                     </div>
                     <p class="font-semibold text-emerald-700 dark:text-emerald-400">KES {{ number_format($payment->amount_paid) }}</p>
                 </button>
-                <div class="mt-3 flex gap-2">
-                    <button type="button" wire:click="startEdit({{ $payment->id }})" class="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 py-2 text-xs font-medium text-slate-700 dark:text-slate-300">
-                        Edit
-                    </button>
-                    <button type="button" wire:click="delete({{ $payment->id }})" wire:confirm="Delete this payment? The invoice/tenant balance will be recalculated." class="flex-1 rounded-lg border border-rose-200 dark:border-rose-500/30 py-2 text-xs font-medium text-rose-600 dark:text-rose-400">
-                        Delete
-                    </button>
-                </div>
+                @if (auth()->user()->hasPermission(\App\Support\StaffPermissions::EDIT_PAYMENTS) || auth()->user()->hasPermission(\App\Support\StaffPermissions::DELETE_PAYMENTS))
+                    <div class="mt-3 flex gap-2">
+                        @if (auth()->user()->hasPermission(\App\Support\StaffPermissions::EDIT_PAYMENTS))
+                            <button type="button" wire:click="startEdit({{ $payment->id }})" class="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 py-2 text-xs font-medium text-slate-700 dark:text-slate-300">
+                                Edit
+                            </button>
+                        @endif
+                        @if (auth()->user()->hasPermission(\App\Support\StaffPermissions::DELETE_PAYMENTS))
+                            <button type="button" wire:click="delete({{ $payment->id }})" wire:confirm="Delete this payment? The invoice/tenant balance will be recalculated." class="flex-1 rounded-lg border border-rose-200 dark:border-rose-500/30 py-2 text-xs font-medium text-rose-600 dark:text-rose-400">
+                                Delete
+                            </button>
+                        @endif
+                    </div>
+                @endif
             </div>
         @empty
             <div class="rounded-2xl bg-white border border-slate-200 p-8 text-center text-sm text-slate-500 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400">

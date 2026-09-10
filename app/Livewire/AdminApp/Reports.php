@@ -4,6 +4,7 @@ namespace App\Livewire\AdminApp;
 
 use App\Models\Invoice;
 use App\Models\Payment;
+use App\Support\StaffPermissions;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
@@ -29,7 +30,10 @@ class Reports extends Component
 
     public function mount(): void
     {
-        abort_unless(in_array(Auth::user()->role, ['admin', 'landlord']), 403);
+        abort_unless(
+            in_array(Auth::user()->role, ['admin', 'landlord']) || Auth::user()->hasPermission(StaffPermissions::VIEW_REPORTS),
+            403
+        );
 
         $this->to = Carbon::now();
         $this->from = (clone $this->to)->subMonths(5)->startOfMonth();

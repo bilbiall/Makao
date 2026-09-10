@@ -273,11 +273,13 @@ class PaymentResource extends Resource
                     ]),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->visible(fn () => auth()->user()->hasPermission(\App\Support\StaffPermissions::EDIT_PAYMENTS)),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->visible(fn () => auth()->user()->hasPermission(\App\Support\StaffPermissions::DELETE_PAYMENTS)),
                 ]),
             ]);
     }
@@ -296,6 +298,26 @@ class PaymentResource extends Resource
             'create' => Pages\CreatePayment::route('/create'),
             'edit' => Pages\EditPayment::route('/{record}/edit'),
         ];
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()->hasPermission(\App\Support\StaffPermissions::RECORD_PAYMENTS);
+    }
+
+    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()->hasPermission(\App\Support\StaffPermissions::EDIT_PAYMENTS);
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return auth()->user()->hasPermission(\App\Support\StaffPermissions::DELETE_PAYMENTS);
+    }
+
+    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()->hasPermission(\App\Support\StaffPermissions::DELETE_PAYMENTS);
     }
 
     /**

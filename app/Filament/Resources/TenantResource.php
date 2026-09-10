@@ -95,54 +95,12 @@ class TenantResource extends Resource
                             'password' => bcrypt($data['password']),
                         ]);
                     }),*/
-                //new user with the role setup auto and the sms sent with password and login
-                Select::make('user_id')
-                    ->label('Linked User')
-                    ->relationship('user', 'full_label') //drop down to be John Doe (john@example.com)
-                    //->relationship('user', 'name') // or 'email' if you use email
-                    ->searchable()
-                    ->getSearchResultsUsing(function (string $search) { // ✅ Added to enable search by name or email
-                        return \App\Models\User::query()
-                            ->where('name', 'like', "%{$search}%")
-                            ->orWhere('email', 'like', "%{$search}%")
-                            ->limit(10)
-                            ->get()
-                            ->mapWithKeys(function ($user) {
-                                return [$user->id => $user->full_label]; // ✅ returns full_label like "John Doe (john@example.com)"
-                            });
-                    }) // ✅ End of addition
-                    ->required()
-                    ->createOptionForm([
-                        TextInput::make('name')->required(),
-                        TextInput::make('email')->email()->required()->unique(User::class, 'email'),
-                        TextInput::make('phone_number')
-                            ->label('Phone Number')
-                            ->required(),
-                    ])
-                    ->createOptionUsing(function (array $data) {
-                        $password = Str::random(8); // Generate temp password
-
-                        $user = User::create([
-                            'name' => $data['name'],
-                            'email' => $data['email'],
-                            'phone_number' => $data['phone_number'],
-                            'password' => bcrypt($password),
-                            'role' => 'tenant', // ✅ Automatically assign tenant role
-                            'landlord_id' => auth()->user()->landlord_id,
-                        ]);
-
-                        // ✅ Send SMS
-                        $message = "Hi {$user->name}, your tenant account has been created. Login with Email: {$user->email}, Password: {$password} - " . \App\Helpers\AppHelper::getAppName($user->landlord_id);
-                        try {
-                            SmsHelper::sendSms($user->phone_number, $message, $user->landlord_id);
-                        } catch (\Throwable $e) {
-                            // ignore SMS failures (e.g. gateway not configured)
-                        }
-
-                        return $user->getKey();
-                    }),
-
-
+                // No account is created here anymore - the tenant self-registers and
+                // connects to this record via a 6-char join code sent by SMS (see
+                // Tenant::booted()'s `created` hook / Tenant::sendInviteSms()). If this
+                // tenant already has a linked account (e.g. admitted via an approved
+                // viewing request first), `user_id` stays whatever it already is -
+                // this form never sets it directly.
                 Select::make('house_id')
                     ->label('House')
                     ->relationship('house', 'house_name', modifyQueryUsing: fn ($query) =>
@@ -154,8 +112,9 @@ class TenantResource extends Resource
 
 
                 TextInput::make('tenant_name')->required(),
-                TextInput::make('email')->email()->required(),
-                TextInput::make('phone_number')->required(),
+                TextInput::make('email')->email()->helperText('Optional - only used if you want to reach this tenant by email too.'),
+                TextInput::make('phone_number')->required()
+                    ->helperText('The tenant self-registers and connects to this record via a code texted to this number - make sure it\'s correct.'),
                 TextInput::make('payment_account_code')
                     ->label('M-Pesa Account Number')
                     ->helperText('What this tenant should type as the Paybill Account Number when paying rent directly via M-Pesa. Defaults to their unit name - change it if you\'d rather they use something else.')
@@ -206,11 +165,35 @@ class TenantResource extends Resource
 
 
                 TextColumn::make('date_admitted')->date(),
+                Tables\Columns\TextColumn::make('user_id')
+                    ->label('Account')
+                    ->state(fn (Tenant $record) => $record->user_id ? 'Connected' : 'Pending invite')
+                    ->badge()
+                    ->color(fn (Tenant $record) => $record->user_id ? 'success' : 'warning'),
             ])
             ->filters([
                 //
             ])
             ->actions([
+                Tables\Actions\Action::make('resend_invite')
+                    ->label('Resend invite')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('warning')
+                    ->visible(fn (Tenant $record) => !$record->user_id)
+                    ->requiresConfirmation()
+                    ->modalDescription('Generates a new code and re-sends the invite SMS to this tenant\'s phone number.')
+                    ->action(function (Tenant $record) {
+                        $record->update([
+                            'join_code' => Tenant::generateJoinCode(),
+                            'join_code_expires_at' => now()->addDays(14),
+                        ]);
+                        $record->sendInviteSms();
+
+                        \Filament\Notifications\Notification::make()
+                            ->success()
+                            ->title('Invite resent')
+                            ->send();
+                    }),
                 Tables\Actions\Action::make('message')
                     ->label('Message')
                     ->icon('heroicon-s-chat-bubble-left')
@@ -277,11 +260,34 @@ class TenantResource extends Resource
     public static function canCreate(): bool
     {
         $user = auth()->user();
-        if (!$user || !$user->landlord_id) {
+        if (!$user) {
+            return true;
+        }
+
+        if (!$user->hasPermission(\App\Support\StaffPermissions::ADMIT_TENANTS)) {
+            return false;
+        }
+
+        if (!$user->landlord_id) {
             return true;
         }
 
         return app(\App\Services\PackageLimitService::class)
             ->canAdd('tenants', \App\Models\Landlord::find($user->landlord_id));
+    }
+
+    public static function canEdit($record): bool
+    {
+        return auth()->user()?->hasPermission(\App\Support\StaffPermissions::EDIT_TENANTS) ?? false;
+    }
+
+    public static function canDelete($record): bool
+    {
+        return auth()->user()?->hasPermission(\App\Support\StaffPermissions::VACATE_TENANTS) ?? false;
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return auth()->user()?->hasPermission(\App\Support\StaffPermissions::VACATE_TENANTS) ?? false;
     }
 }

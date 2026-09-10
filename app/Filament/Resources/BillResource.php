@@ -155,11 +155,13 @@ class BillResource extends Resource
                     }),*/
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->visible(fn () => auth()->user()->hasPermission(\App\Support\StaffPermissions::MANAGE_BILLS)),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->visible(fn () => auth()->user()->hasPermission(\App\Support\StaffPermissions::MANAGE_BILLS)),
                 ]),
             ]);
     }
@@ -178,6 +180,26 @@ class BillResource extends Resource
             'create' => Pages\CreateBill::route('/create'),
             'edit' => Pages\EditBill::route('/{record}/edit'),
         ];
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()->hasPermission(\App\Support\StaffPermissions::MANAGE_BILLS);
+    }
+
+    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()->hasPermission(\App\Support\StaffPermissions::MANAGE_BILLS);
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return auth()->user()->hasPermission(\App\Support\StaffPermissions::MANAGE_BILLS);
+    }
+
+    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return auth()->user()->hasPermission(\App\Support\StaffPermissions::MANAGE_BILLS);
     }
 
     /**

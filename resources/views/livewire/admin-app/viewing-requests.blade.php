@@ -76,7 +76,7 @@
                                 <button wire:click="confirmRevoke" class="flex-1 rounded-lg bg-rose-600 py-2 text-xs font-semibold text-white hover:bg-rose-700">Confirm revoke</button>
                             </div>
                         </div>
-                    @else
+                    @elseif ($canAdmitViewingRequests)
                         <div class="mt-3 flex gap-2">
                             <button wire:click="startRevoke({{ $request->id }})" class="flex-1 rounded-lg border border-rose-200 text-rose-700 py-2 text-xs font-semibold hover:bg-rose-50 dark:border-rose-500/30 dark:text-rose-400 dark:hover:bg-rose-500/10">Revoke</button>
                             <button wire:click="startAdmit({{ $request->id }})" class="flex-1 rounded-lg bg-emerald-600 text-white py-2 text-xs font-semibold hover:bg-emerald-700">Admit</button>

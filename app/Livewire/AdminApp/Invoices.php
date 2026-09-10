@@ -7,7 +7,9 @@ use App\Models\Bill;
 use App\Models\Invoice;
 use App\Models\Location;
 use App\Models\Tenant;
+use App\Support\StaffPermissions;
 use App\Support\StaffScope;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -164,6 +166,9 @@ class Invoices extends Component
 
     public function save(): void
     {
+        $slug = $this->editingId ? StaffPermissions::EDIT_INVOICES : StaffPermissions::CREATE_INVOICES;
+        abort_unless(Auth::user()->hasPermission($slug), 403);
+
         $this->validate();
 
         if ($this->editingId) {
@@ -193,6 +198,8 @@ class Invoices extends Component
 
     public function delete(int $invoiceId): void
     {
+        abort_unless(Auth::user()->hasPermission(StaffPermissions::DELETE_INVOICES), 403);
+
         StaffScope::onTenantChild(Invoice::query())->findOrFail($invoiceId)->delete();
         session()->flash('invoice-saved', 'Invoice deleted.');
     }
@@ -204,6 +211,8 @@ class Invoices extends Component
      */
     public function sendMassInvoices(): void
     {
+        abort_unless(Auth::user()->hasPermission(StaffPermissions::SEND_MASS_INVOICES), 403);
+
         $tenants = StaffScope::onTenant(Tenant::query())->with('house')->get();
         $today = now();
         $count = 0;
@@ -257,6 +266,8 @@ class Invoices extends Component
      */
     public function sendMassReminders(): void
     {
+        abort_unless(Auth::user()->hasPermission(StaffPermissions::SEND_MASS_REMINDERS), 403);
+
         $invoices = StaffScope::onTenantChild(Invoice::where('balance', '>', 0))->with('tenant.house.location')->get();
         $count = 0;
 

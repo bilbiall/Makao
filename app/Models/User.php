@@ -34,6 +34,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'role',
         'location_id',
         'landlord_id',
+        'staff_role_id',
     ];
 
     /**
@@ -163,6 +164,35 @@ class User extends Authenticatable implements MustVerifyEmail
     public function isAgent(): bool
     {
         return $this->role === 'agent';
+    }
+
+    // A staff member assigned a landlord-defined custom role (see StaffRole /
+    // App\Support\StaffPermissions) instead of the built-in manager/caretaker/agent.
+    public function staffRole()
+    {
+        return $this->belongsTo(\App\Models\StaffRole::class);
+    }
+
+    /**
+     * Whether this user can perform a specific "managerial" action (see
+     * App\Support\StaffPermissions::catalog() for the full list). Named
+     * hasPermission() rather than can() to avoid colliding with Laravel's
+     * built-in Authorizable::can() (Gates/Policies aren't used in this app,
+     * but the name collision would be confusing regardless).
+     */
+    public function hasPermission(string $slug): bool
+    {
+        if (in_array($this->role, ['admin', 'landlord', 'superadmin'], true)) {
+            return true;
+        }
+
+        if ($this->staff_role_id) {
+            // A custom role's checkbox list is authoritative - it replaces the
+            // legacy default entirely for this user, it doesn't layer on top of it.
+            return $this->staffRole?->hasPermission($slug) ?? false;
+        }
+
+        return \App\Support\StaffPermissions::defaultFor($this->role, $slug);
     }
 
     // Manager/Caretaker property access - see App\Support\StaffScope, which replaces

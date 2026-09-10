@@ -29,6 +29,8 @@ class Tenant extends Model
         'landlord_id',
         'user_id',
         'payment_account_code',
+        'join_code',
+        'join_code_expires_at',
     ];
 
     //relationship for with the house model
@@ -82,6 +84,40 @@ class Tenant extends Model
         return $this->hasMany(Issue::class);
     }
 
+    /**
+     * A 6-char code unique against tenants.join_code - retried until unique
+     * since it's genuinely random, not derived from anything monotonic.
+     */
+    public static function generateJoinCode(): string
+    {
+        do {
+            $code = strtoupper(\Illuminate\Support\Str::random(6));
+        } while (static::withoutGlobalScopes()->where('join_code', $code)->exists());
+
+        return $code;
+    }
+
+    /**
+     * Sends the "you've been added as a tenant, here's your connect code" SMS -
+     * used both by the created-hook below (first admission) and by a PM's
+     * "Resend invite" action for a tenant who lost the original message.
+     */
+    public function sendInviteSms(): void
+    {
+        $message = \App\Helpers\SmsTemplateHelper::render('template_tenant_invite', [
+            'tenant_name' => $this->tenant_name,
+            'property_name' => $this->house?->location?->location_name ?? '',
+            'code' => $this->join_code,
+            'join_url' => route('app.user.connect'),
+        ], $this->landlord_id);
+
+        try {
+            SmsHelper::sendSms($this->phone_number, $message, $this->landlord_id);
+        } catch (\Throwable $e) {
+            // ignore SMS failures (e.g. gateway not configured)
+        }
+    }
+
 
 
 
@@ -127,22 +163,27 @@ class Tenant extends Model
             // Welcome SMS/notifications are only for a real new admission - skipped
             // during a bulk data import of pre-existing tenants, see ImportContext
             if (!\App\Support\ImportContext::active()) {
-                // Get template from settings
-                $settings = \App\Models\Setting::forLandlord($tenant->landlord_id);
-                $template = $settings->payload['template_tenant_welcome'] ?? 'Hello {tenant_name}, welcome to {app_name}. You were admitted to {house_name} with a monthly rent of KES {rent_amount}';
+                if ($tenant->user_id) {
+                    // Already has a linked account (e.g. admitted via an approved
+                    // viewing request) - the existing welcome message, unchanged.
+                    $settings = \App\Models\Setting::forLandlord($tenant->landlord_id);
+                    $template = $settings->payload['template_tenant_welcome'] ?? 'Hello {tenant_name}, welcome to {app_name}. You were admitted to {house_name} with a monthly rent of KES {rent_amount}';
 
-                // Replace variables
-                $message = str_replace(
-                    ['{tenant_name}', '{app_name}', '{house_name}', '{rent_amount}', '{property_name}'],
-                    [$tenant->tenant_name, \App\Helpers\AppHelper::getAppName($tenant->landlord_id), $tenant->house->house_name, $tenant->house->rent_amount, $tenant->house->location?->location_name ?? ''],
-                    $template
-                );
+                    $message = str_replace(
+                        ['{tenant_name}', '{app_name}', '{house_name}', '{rent_amount}', '{property_name}'],
+                        [$tenant->tenant_name, \App\Helpers\AppHelper::getAppName($tenant->landlord_id), $tenant->house->house_name, $tenant->house->rent_amount, $tenant->house->location?->location_name ?? ''],
+                        $template
+                    );
 
-                // Send SMS using your helper
-                try {
-                    SmsHelper::sendSms($tenant->phone_number, $message, $tenant->landlord_id);
-                } catch (\Throwable $e) {
-                    // ignore SMS failures (e.g. gateway not configured)
+                    try {
+                        SmsHelper::sendSms($tenant->phone_number, $message, $tenant->landlord_id);
+                    } catch (\Throwable $e) {
+                        // ignore SMS failures (e.g. gateway not configured)
+                    }
+                } else {
+                    // No account yet - send the invite code instead of a welcome
+                    // message; they self-register and connect via app.user.connect.
+                    $tenant->sendInviteSms();
                 }
 
                 // Notify this landlord's own admins via database about new tenant admission
