@@ -4,12 +4,16 @@ namespace App\Livewire\AdminApp;
 
 use App\Livewire\Concerns\ExportsCsv;
 use App\Models\House;
+use App\Models\HousePhoto;
 use App\Models\Landlord;
 use App\Models\Location;
+use App\Services\ImageCompressor;
 use App\Services\PackageLimitService;
 use App\Support\StaffPermissions;
 use App\Support\StaffScope;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -57,6 +61,12 @@ class Units extends Component
     public string $unit_description = '';
     public array $unit_amenities = [];
     public array $unit_nearby = [];
+
+    /** Newly-selected photo uploads waiting to be compressed + saved (append, not replace). */
+    public array $unit_new_photos = [];
+
+    /** Existing HousePhoto rows for the unit being edited - shown with a remove button each. */
+    public $unit_existing_photos = [];
 
     public array $selectedUnitIds = [];
 
@@ -384,6 +394,8 @@ class Units extends Component
             'unit_bnb_nightly' => 'nullable|numeric',
             'unit_bnb_weekly' => 'nullable|numeric',
             'unit_bnb_monthly' => 'nullable|numeric',
+            'unit_new_photos' => 'nullable|array',
+            'unit_new_photos.*' => 'image|max:10240',
         ];
     }
 
@@ -421,7 +433,67 @@ class Units extends Component
         $this->unit_bnb_weekly = $weekly ? (string) $weekly->price : '';
         $this->unit_bnb_monthly = $monthly ? (string) $monthly->price : '';
 
+        $this->unit_existing_photos = $house->photos()->orderBy('sort_order')->get();
+        $this->unit_new_photos = [];
+
         $this->showAddUnit = true;
+    }
+
+    public function removeExistingPhoto(int $photoId): void
+    {
+        abort_unless($this->canEditProperties(), 403);
+
+        $photo = HousePhoto::whereKey($photoId)
+            ->whereIn('house_id', $this->unitsQuery()->pluck('id'))
+            ->first();
+
+        if (!$photo) {
+            return;
+        }
+
+        Storage::disk('public')->delete($photo->path);
+        $photo->delete();
+
+        $this->unit_existing_photos = $this->unit_existing_photos->reject(fn ($p) => $p->id === $photoId);
+    }
+
+    public function removeNewPhoto(int $index): void
+    {
+        unset($this->unit_new_photos[$index]);
+        $this->unit_new_photos = array_values($this->unit_new_photos);
+    }
+
+    /**
+     * Compresses and stores any newly-selected uploads (see ImageCompressor),
+     * appending after whatever photos already exist rather than replacing them.
+     */
+    private function storeNewPhotos(House $house): void
+    {
+        if (empty($this->unit_new_photos)) {
+            return;
+        }
+
+        $disk = Storage::disk('public');
+        $directory = 'house-photos';
+        $disk->makeDirectory($directory);
+
+        $nextSortOrder = (int) $house->photos()->max('sort_order');
+        $compressor = new ImageCompressor();
+
+        foreach ($this->unit_new_photos as $upload) {
+            $nextSortOrder++;
+            $relativePath = $directory.'/'.Str::random(24).'.jpg';
+
+            $compressor->compress($upload->getRealPath(), $disk->path($relativePath));
+
+            HousePhoto::create([
+                'house_id' => $house->id,
+                'path' => $relativePath,
+                'sort_order' => $nextSortOrder,
+            ]);
+        }
+
+        $this->unit_new_photos = [];
     }
 
     public function cancelUnitForm(): void
@@ -434,7 +506,7 @@ class Units extends Component
         $this->reset([
             'unit_property_id', 'unit_name', 'unit_display_name', 'unit_type', 'unit_rent_amount',
             'unit_bnb_nightly', 'unit_bnb_weekly', 'unit_bnb_monthly', 'showAddUnit', 'editingUnitId',
-            'unit_description', 'unit_amenities', 'unit_nearby',
+            'unit_description', 'unit_amenities', 'unit_nearby', 'unit_new_photos', 'unit_existing_photos',
         ]);
         $this->unit_listing_mode = 'long_term';
         $this->unit_status = 'Vacant';
@@ -496,6 +568,8 @@ class Units extends Component
                 $house->pricePackages()->create($price + ['sort_order' => $sortOrder]);
             }
 
+            $this->storeNewPhotos($house);
+
             $this->resetUnitForm();
             session()->flash('unit-success', 'Unit updated.');
 
@@ -515,6 +589,8 @@ class Units extends Component
         foreach ($bnbPrices as $sortOrder => $price) {
             $house->pricePackages()->create($price + ['sort_order' => $sortOrder]);
         }
+
+        $this->storeNewPhotos($house);
 
         $this->resetUnitForm();
         $this->resetPage();

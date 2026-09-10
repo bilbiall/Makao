@@ -129,6 +129,36 @@
                         @endforeach
                     </div>
                 </div>
+                <div>
+                    <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Photos</label>
+
+                    @if (count($unit_existing_photos))
+                        <div class="mt-1 grid grid-cols-3 gap-2">
+                            @foreach ($unit_existing_photos as $photo)
+                                <div class="relative">
+                                    <img src="{{ $photo->url() }}" class="h-20 w-full rounded-lg object-cover border border-slate-200 dark:border-slate-700">
+                                    <button type="button" wire:click="removeExistingPhoto({{ $photo->id }})" wire:confirm="Remove this photo?" class="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-rose-600 text-white text-xs leading-none">&times;</button>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+
+                    <input type="file" wire:model="unit_new_photos" multiple accept="image/*" class="{{ $fieldClass }} mt-2">
+                    <div wire:loading wire:target="unit_new_photos" class="text-xs text-slate-500 dark:text-slate-400 mt-1">Uploading…</div>
+                    @error('unit_new_photos.*') <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p> @enderror
+
+                    @if (count($unit_new_photos))
+                        <div class="mt-2 grid grid-cols-3 gap-2">
+                            @foreach ($unit_new_photos as $index => $newPhoto)
+                                <div class="relative">
+                                    <img src="{{ $newPhoto->temporaryUrl() }}" class="h-20 w-full rounded-lg object-cover border border-slate-200 dark:border-slate-700">
+                                    <button type="button" wire:click="removeNewPhoto({{ $index }})" class="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-rose-600 text-white text-xs leading-none">&times;</button>
+                                </div>
+                            @endforeach
+                        </div>
+                        <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Photos are compressed automatically when you save.</p>
+                    @endif
+                </div>
             @endif
 
             <div class="flex gap-3">
