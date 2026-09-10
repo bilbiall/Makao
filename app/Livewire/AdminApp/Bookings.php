@@ -32,7 +32,7 @@ class Bookings extends Component
 
     public function confirm(int $id): void
     {
-        abort_unless(Auth::user()->hasPermission(StaffPermissions::MANAGE_BOOKINGS), 403);
+        abort_unless(Auth::user()->hasPermission(StaffPermissions::CONFIRM_BOOKINGS), 403);
 
         $booking = StaffScope::onHouseOrAssignedHouse(Booking::query())->findOrFail($id);
         $booking->update(['status' => 'confirmed', 'expires_at' => null]);
@@ -40,7 +40,7 @@ class Bookings extends Component
 
     public function check_in(int $id): void
     {
-        abort_unless(Auth::user()->hasPermission(StaffPermissions::MANAGE_BOOKINGS), 403);
+        abort_unless(Auth::user()->hasPermission(StaffPermissions::CHECKIN_BOOKINGS), 403);
 
         $booking = StaffScope::onHouseOrAssignedHouse(Booking::query())->findOrFail($id);
         $booking->update(['status' => 'checked_in']);
@@ -48,7 +48,7 @@ class Bookings extends Component
 
     public function check_out(int $id): void
     {
-        abort_unless(Auth::user()->hasPermission(StaffPermissions::MANAGE_BOOKINGS), 403);
+        abort_unless(Auth::user()->hasPermission(StaffPermissions::CHECKOUT_BOOKINGS), 403);
 
         $booking = StaffScope::onHouseOrAssignedHouse(Booking::query())->findOrFail($id);
         $booking->update(['status' => 'checked_out']);
@@ -56,7 +56,7 @@ class Bookings extends Component
 
     public function cancel(int $id): void
     {
-        abort_unless(Auth::user()->hasPermission(StaffPermissions::MANAGE_BOOKINGS), 403);
+        abort_unless(Auth::user()->hasPermission(StaffPermissions::CANCEL_BOOKINGS), 403);
 
         $booking = StaffScope::onHouseOrAssignedHouse(Booking::query())->findOrFail($id);
         $booking->update(['status' => 'cancelled', 'expires_at' => null]);
@@ -119,7 +119,10 @@ class Bookings extends Component
         return view('livewire.admin-app.bookings', [
             'bookings' => $bookings,
             'houses' => $houses,
-            'canManageBookings' => Auth::user()->hasPermission(StaffPermissions::MANAGE_BOOKINGS),
+            'canConfirmBookings' => Auth::user()->hasPermission(StaffPermissions::CONFIRM_BOOKINGS),
+            'canCheckinBookings' => Auth::user()->hasPermission(StaffPermissions::CHECKIN_BOOKINGS),
+            'canCheckoutBookings' => Auth::user()->hasPermission(StaffPermissions::CHECKOUT_BOOKINGS),
+            'canCancelBookings' => Auth::user()->hasPermission(StaffPermissions::CANCEL_BOOKINGS),
         ])->layout('components.layouts.app', ['title' => 'Bookings']);
     }
 }

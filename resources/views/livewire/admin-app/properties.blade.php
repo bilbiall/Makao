@@ -11,17 +11,20 @@
         </div>
     @endif
 
-    @if ($this->canManageProperties())
-        @if (!$showPropertyForm)
-            <div class="flex gap-2">
+    @if (!$showPropertyForm)
+        <div class="flex gap-2">
+            @if ($this->canCreateProperties())
                 <button wire:click="$set('showPropertyForm', true)" class="flex-1 rounded-xl bg-emerald-600 text-white text-sm font-semibold py-3 hover:bg-emerald-700 transition">
                     + Add property
                 </button>
-                <button type="button" wire:click="exportProperties" class="flex items-center justify-center rounded-xl border border-slate-300 dark:border-slate-700 px-4 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800" title="Export CSV">
-                    @svg('heroicon-o-arrow-down-tray', 'w-5 h-5')
-                </button>
-            </div>
-        @else
+            @endif
+            <button type="button" wire:click="exportProperties" class="flex items-center justify-center rounded-xl border border-slate-300 dark:border-slate-700 px-4 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800" title="Export CSV">
+                @svg('heroicon-o-arrow-down-tray', 'w-5 h-5')
+            </button>
+        </div>
+    @endif
+    @if ($this->canManageProperties())
+        @if ($showPropertyForm)
             <div class="rounded-2xl bg-white border border-slate-200 shadow-sm p-4 space-y-3 dark:bg-slate-900 dark:border-slate-800">
                 <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ $editingLocationId ? 'Edit property' : 'New property' }}</p>
                 @if (!$editingLocationId)
@@ -72,15 +75,17 @@
                     </p>
                 </div>
                 <div class="flex items-center gap-3 shrink-0">
-                    <button wire:click="startAddingHouse({{ $location->id }})" class="text-xs font-semibold text-emerald-700 hover:underline whitespace-nowrap">
-                        + Add unit
-                    </button>
-                    @if ($this->canManageProperties())
+                    @if ($this->canCreateProperties())
+                        <button wire:click="startAddingHouse({{ $location->id }})" class="text-xs font-semibold text-emerald-700 hover:underline whitespace-nowrap">
+                            + Add unit
+                        </button>
+                    @endif
+                    @if ($this->canEditProperties())
                         <button wire:click="startEditLocation({{ $location->id }})" class="text-xs font-semibold text-slate-600 dark:text-slate-300 hover:underline whitespace-nowrap">
                             Edit
                         </button>
                     @endif
-                    @if ($this->canManageProperties() && $location->houses->count() === 0)
+                    @if ($this->canDeleteProperties() && $location->houses->count() === 0)
                         <button
                             wire:click="deleteLocation({{ $location->id }})"
                             wire:confirm="Delete this property? This can't be undone."

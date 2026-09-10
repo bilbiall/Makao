@@ -65,13 +65,29 @@ class Units extends Component
         'rent_amount', 'bnb_nightly_price', 'bnb_weekly_price', 'bnb_monthly_price',
     ];
 
+    protected function isFullAccessStaff(): bool
+    {
+        return in_array(Auth::user()->role, ['admin', 'landlord']);
+    }
+
     public function canManageProperties(): bool
     {
-        // Matches Properties::canManageProperties() - only the account owner/staff with
-        // full admin rights create new properties by default, unless a custom staff
-        // role has been explicitly granted the manage_properties permission.
-        return in_array(Auth::user()->role, ['admin', 'landlord'])
-            || Auth::user()->hasPermission(StaffPermissions::MANAGE_PROPERTIES);
+        return $this->canCreateProperties() || $this->canEditProperties() || $this->canDeleteProperties();
+    }
+
+    public function canCreateProperties(): bool
+    {
+        return $this->isFullAccessStaff() || Auth::user()->hasPermission(StaffPermissions::CREATE_PROPERTIES);
+    }
+
+    public function canEditProperties(): bool
+    {
+        return $this->isFullAccessStaff() || Auth::user()->hasPermission(StaffPermissions::EDIT_PROPERTIES);
+    }
+
+    public function canDeleteProperties(): bool
+    {
+        return $this->isFullAccessStaff() || Auth::user()->hasPermission(StaffPermissions::DELETE_PROPERTIES);
     }
 
     protected function unitsQuery()
@@ -126,6 +142,8 @@ class Units extends Component
      */
     public function togglePublish(int $houseId): void
     {
+        abort_unless($this->canEditProperties(), 403);
+
         $house = $this->unitsQuery()->whereKey($houseId)->firstOrFail();
         $house->update(['is_published' => !$house->is_published]);
     }
@@ -139,6 +157,8 @@ class Units extends Component
      */
     public function deleteUnit(int $houseId): void
     {
+        abort_unless($this->canDeleteProperties(), 403);
+
         $house = $this->unitsQuery()->whereKey($houseId)->firstOrFail();
 
         if ($house->house_status === 'Occupied') {
@@ -158,6 +178,8 @@ class Units extends Component
      */
     public function bulkDeleteUnits(): void
     {
+        abort_unless($this->canDeleteProperties(), 403);
+
         $units = $this->unitsQuery()->whereIn('id', $this->selectedUnitIds)->get();
         $deletable = $units->where('house_status', '!=', 'Occupied');
         $blockedCount = $units->count() - $deletable->count();
@@ -217,6 +239,8 @@ class Units extends Component
 
     public function import(): void
     {
+        abort_unless($this->canCreateProperties(), 403);
+
         $this->validate(['importFile' => 'required|file|mimes:csv,txt|max:2048']);
 
         $rows = array_map('str_getcsv', file($this->importFile->getRealPath()));
@@ -269,7 +293,7 @@ class Units extends Component
                     $location = Location::whereRaw('LOWER(location_name) = ?', [$cacheKey])->first();
 
                     if (!$location) {
-                        if (!$this->canManageProperties()) {
+                        if (!$this->canCreateProperties()) {
                             throw new \RuntimeException("property \"{$propertyName}\" doesn't exist yet, and you don't have permission to create new properties.");
                         }
                         if (!$limitService->canAdd('locations', $landlord)) {
@@ -365,12 +389,16 @@ class Units extends Component
 
     public function startAddUnit(): void
     {
+        abort_unless($this->canCreateProperties(), 403);
+
         $this->resetUnitForm();
         $this->showAddUnit = true;
     }
 
     public function startEditUnit(int $houseId): void
     {
+        abort_unless($this->canEditProperties(), 403);
+
         $house = $this->unitsQuery()->whereKey($houseId)->with('pricePackages')->firstOrFail();
 
         $this->editingUnitId = $house->id;
@@ -415,6 +443,8 @@ class Units extends Component
 
     public function saveUnit(): void
     {
+        abort_unless($this->editingUnitId ? $this->canEditProperties() : $this->canCreateProperties(), 403);
+
         $this->validate($this->addUnitRules());
 
         $location = Location::find($this->unit_property_id);

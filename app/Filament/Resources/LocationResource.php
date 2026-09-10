@@ -118,8 +118,11 @@ class LocationResource extends Resource
     public static function canAccess(): bool
     {
         $user = auth()->user();
+
         return $user && (in_array($user->role, ['admin', 'landlord'])
-            || $user->hasPermission(\App\Support\StaffPermissions::MANAGE_PROPERTIES));
+            || $user->hasPermission(\App\Support\StaffPermissions::CREATE_PROPERTIES)
+            || $user->hasPermission(\App\Support\StaffPermissions::EDIT_PROPERTIES)
+            || $user->hasPermission(\App\Support\StaffPermissions::DELETE_PROPERTIES));
     }
 
     public static function canCreate(): bool
@@ -129,11 +132,32 @@ class LocationResource extends Resource
             return true;
         }
 
-        if (!in_array($user->role, ['admin', 'landlord']) && !$user->hasPermission(\App\Support\StaffPermissions::MANAGE_PROPERTIES)) {
+        if (!in_array($user->role, ['admin', 'landlord']) && !$user->hasPermission(\App\Support\StaffPermissions::CREATE_PROPERTIES)) {
             return false;
         }
 
         return app(\App\Services\PackageLimitService::class)
             ->canAdd('locations', \App\Models\Landlord::find($user->landlord_id));
+    }
+
+    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        $user = auth()->user();
+
+        return $user && (in_array($user->role, ['admin', 'landlord'])
+            || $user->hasPermission(\App\Support\StaffPermissions::EDIT_PROPERTIES));
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        $user = auth()->user();
+
+        return $user && (in_array($user->role, ['admin', 'landlord'])
+            || $user->hasPermission(\App\Support\StaffPermissions::DELETE_PROPERTIES));
+    }
+
+    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return static::canDeleteAny();
     }
 }

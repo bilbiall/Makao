@@ -39,6 +39,10 @@ class AppNavigation
                 ['label' => 'Invoices', 'icon' => 'heroicon-o-credit-card', 'route' => 'app.admin.invoices', 'tab' => true],
                 ['label' => 'Payments', 'icon' => 'heroicon-o-banknotes', 'route' => 'app.admin.payments', 'tab' => false],
                 ['label' => 'M-Pesa Review', 'icon' => 'heroicon-o-device-phone-mobile', 'route' => 'app.admin.mpesa-review', 'tab' => false],
+                // No app-shell page exists for this yet (setup is rare, one-time) - links
+                // straight into the Filament panel rather than leaving it unreachable from
+                // the main nav, which is where a landlord actually lands by default.
+                ['label' => 'M-Pesa Setup (Advanced)', 'icon' => 'heroicon-o-key', 'route' => 'filament.admin.resources.mpesa-channels.index', 'tab' => false],
                 ['label' => 'Bills', 'icon' => 'heroicon-o-receipt-percent', 'route' => 'app.admin.bills', 'tab' => false],
                 ['label' => 'Expenses', 'icon' => 'heroicon-o-banknotes', 'route' => 'app.admin.expenses', 'tab' => false],
                 ['label' => 'Issues', 'icon' => 'heroicon-o-wrench-screwdriver', 'route' => 'app.admin.issues', 'tab' => false],

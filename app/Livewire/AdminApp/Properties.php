@@ -59,18 +59,37 @@ class Properties extends Component
         return $query;
     }
 
+    protected function isFullAccessStaff(): bool
+    {
+        return in_array(Auth::user()->role, ['admin', 'landlord']);
+    }
+
     public function canManageProperties(): bool
     {
-        // Matches LocationResource::canAccess() - only the account owner/staff with
-        // full admin rights create new properties by default, unless a custom staff
-        // role has been explicitly granted the manage_properties permission.
-        return in_array(Auth::user()->role, ['admin', 'landlord'])
-            || Auth::user()->hasPermission(StaffPermissions::MANAGE_PROPERTIES);
+        // General "can do something here at all" check for the AdminApp
+        // wrapper around the create/edit form - the specific actions below
+        // each check their own granular permission.
+        return $this->canCreateProperties() || $this->canEditProperties() || $this->canDeleteProperties();
+    }
+
+    public function canCreateProperties(): bool
+    {
+        return $this->isFullAccessStaff() || Auth::user()->hasPermission(StaffPermissions::CREATE_PROPERTIES);
+    }
+
+    public function canEditProperties(): bool
+    {
+        return $this->isFullAccessStaff() || Auth::user()->hasPermission(StaffPermissions::EDIT_PROPERTIES);
+    }
+
+    public function canDeleteProperties(): bool
+    {
+        return $this->isFullAccessStaff() || Auth::user()->hasPermission(StaffPermissions::DELETE_PROPERTIES);
     }
 
     public function startEditLocation(int $locationId): void
     {
-        abort_unless($this->canManageProperties(), 403);
+        abort_unless($this->canEditProperties(), 403);
 
         $location = $this->baseQuery()->whereKey($locationId)->firstOrFail();
 
@@ -87,7 +106,7 @@ class Properties extends Component
 
     public function saveProperty(): void
     {
-        abort_unless($this->canManageProperties(), 403);
+        abort_unless($this->editingLocationId ? $this->canEditProperties() : $this->canCreateProperties(), 403);
 
         $this->validate([
             'location_name' => 'required|string|max:255',
@@ -160,7 +179,7 @@ class Properties extends Component
      */
     public function deleteLocation(int $locationId): void
     {
-        abort_unless($this->canManageProperties(), 403);
+        abort_unless($this->canDeleteProperties(), 403);
 
         $location = $this->baseQuery()->withCount('houses')->whereKey($locationId)->firstOrFail();
 
@@ -181,6 +200,8 @@ class Properties extends Component
 
     public function createHouse(): void
     {
+        abort_unless($this->canCreateProperties(), 403);
+
         $this->validate([
             'house_name' => 'required|string|max:255',
             'display_name' => 'nullable|string|max:255',

@@ -12,9 +12,11 @@
     @endif
 
     <div class="flex gap-2">
-        <button wire:click="startAddUnit" class="flex-1 rounded-xl bg-emerald-600 text-white text-sm font-semibold py-3 hover:bg-emerald-700 transition">
-            + Add unit
-        </button>
+        @if ($this->canCreateProperties())
+            <button wire:click="startAddUnit" class="flex-1 rounded-xl bg-emerald-600 text-white text-sm font-semibold py-3 hover:bg-emerald-700 transition">
+                + Add unit
+            </button>
+        @endif
         <button type="button" wire:click="exportUnits" class="flex items-center justify-center rounded-xl border border-slate-300 dark:border-slate-700 px-4 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800" title="Export CSV">
             @svg('heroicon-o-arrow-down-tray', 'w-5 h-5')
         </button>
@@ -279,7 +281,7 @@
         </div>
     </div>
 
-    @if (count($selectedUnitIds))
+    @if (count($selectedUnitIds) && $this->canDeleteProperties())
         <div class="flex items-center justify-between rounded-xl bg-slate-100 border border-slate-200 px-4 py-2 dark:bg-slate-800 dark:border-slate-700">
             <span class="text-xs font-medium text-slate-600 dark:text-slate-300">{{ count($selectedUnitIds) }} selected</span>
             <button type="button" wire:click="bulkDeleteUnits" wire:confirm="Delete the selected units? Occupied units will be skipped. This can't be undone." class="text-xs font-semibold text-rose-600 dark:text-rose-400 hover:underline">
@@ -293,7 +295,7 @@
         @forelse ($units as $unit)
             <div class="flex items-center justify-between px-4 py-3 text-sm">
                 <div class="flex items-center gap-3 min-w-0">
-                    @if ($unit->house_status !== 'Occupied')
+                    @if ($unit->house_status !== 'Occupied' && $this->canDeleteProperties())
                         <input type="checkbox" wire:model="selectedUnitIds" value="{{ $unit->id }}" class="rounded border-slate-300 dark:border-slate-700 shrink-0">
                     @endif
                 <div class="min-w-0">
@@ -325,31 +327,35 @@
                         'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400' => $unit->house_status === 'Vacant',
                         'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400' => $unit->house_status === 'Unavailable',
                     ])>{{ $unit->house_status }}</span>
-                    <button
-                        wire:click="togglePublish({{ $unit->id }})"
-                        wire:loading.attr="disabled"
-                        wire:target="togglePublish({{ $unit->id }})"
-                        title="{{ $unit->is_published ? 'Listed on the public site - click to unlist' : 'Not listed on the public site - click to list' }}"
-                        @class([
-                            'rounded-full px-2 py-0.5 text-[11px] font-medium whitespace-nowrap border',
-                            'bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-500/10 dark:text-sky-400 dark:border-sky-500/20' => $unit->is_published,
-                            'bg-slate-50 text-slate-400 border-slate-200 dark:bg-slate-800 dark:text-slate-500 dark:border-slate-700' => !$unit->is_published,
-                        ])
-                    >{{ $unit->is_published ? 'Listed' : 'Unlisted' }}</button>
+                    @if ($this->canEditProperties())
+                        <button
+                            wire:click="togglePublish({{ $unit->id }})"
+                            wire:loading.attr="disabled"
+                            wire:target="togglePublish({{ $unit->id }})"
+                            title="{{ $unit->is_published ? 'Listed on the public site - click to unlist' : 'Not listed on the public site - click to list' }}"
+                            @class([
+                                'rounded-full px-2 py-0.5 text-[11px] font-medium whitespace-nowrap border',
+                                'bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-500/10 dark:text-sky-400 dark:border-sky-500/20' => $unit->is_published,
+                                'bg-slate-50 text-slate-400 border-slate-200 dark:bg-slate-800 dark:text-slate-500 dark:border-slate-700' => !$unit->is_published,
+                            ])
+                        >{{ $unit->is_published ? 'Listed' : 'Unlisted' }}</button>
+                    @endif
                     @if ($unit->is_published && $unit->photos_count === 0)
                         <span class="rounded-full px-2 py-0.5 text-[11px] font-medium whitespace-nowrap bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20"
                             title="Listed, but won't actually show on the public site, search, or the AI assistant until it has at least one photo - add one via Edit.">
                             No photos - hidden
                         </span>
                     @endif
-                    <button
-                        wire:click="startEditUnit({{ $unit->id }})"
-                        title="Edit unit"
-                        class="text-slate-400 hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-300"
-                    >
-                        @svg('heroicon-o-pencil-square', 'w-4 h-4')
-                    </button>
-                    @if ($unit->house_status !== 'Occupied')
+                    @if ($this->canEditProperties())
+                        <button
+                            wire:click="startEditUnit({{ $unit->id }})"
+                            title="Edit unit"
+                            class="text-slate-400 hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-300"
+                        >
+                            @svg('heroicon-o-pencil-square', 'w-4 h-4')
+                        </button>
+                    @endif
+                    @if ($unit->house_status !== 'Occupied' && $this->canDeleteProperties())
                         <button
                             wire:click="deleteUnit({{ $unit->id }})"
                             wire:confirm="Delete this unit? This can't be undone."

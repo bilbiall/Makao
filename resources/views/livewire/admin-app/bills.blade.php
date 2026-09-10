@@ -6,7 +6,7 @@
     @endif
 
     <div class="flex gap-2">
-        @if (auth()->user()->hasPermission(\App\Support\StaffPermissions::MANAGE_BILLS))
+        @if (auth()->user()->hasPermission(\App\Support\StaffPermissions::CREATE_BILLS))
             <button wire:click="startCreate" class="flex-1 rounded-xl bg-emerald-600 text-white text-sm font-semibold py-3 hover:bg-emerald-700 transition">
                 + Add a bill
             </button>
@@ -86,14 +86,18 @@
                 @if ($bill->note)
                     <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">{{ $bill->note }}</p>
                 @endif
-                @if (auth()->user()->hasPermission(\App\Support\StaffPermissions::MANAGE_BILLS))
+                @if (auth()->user()->hasPermission(\App\Support\StaffPermissions::EDIT_BILLS) || auth()->user()->hasPermission(\App\Support\StaffPermissions::DELETE_BILLS))
                     <div class="mt-3 flex gap-2">
-                        <button wire:click="startEdit({{ $bill->id }})" class="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 py-2 text-xs font-medium text-slate-700 dark:text-slate-300">
-                            Edit
-                        </button>
-                        <button wire:click="delete({{ $bill->id }})" wire:confirm="Delete this bill record? This can't be undone." class="flex-1 rounded-lg border border-rose-200 dark:border-rose-500/30 py-2 text-xs font-medium text-rose-600 dark:text-rose-400">
-                            Delete
-                        </button>
+                        @if (auth()->user()->hasPermission(\App\Support\StaffPermissions::EDIT_BILLS))
+                            <button wire:click="startEdit({{ $bill->id }})" class="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 py-2 text-xs font-medium text-slate-700 dark:text-slate-300">
+                                Edit
+                            </button>
+                        @endif
+                        @if (auth()->user()->hasPermission(\App\Support\StaffPermissions::DELETE_BILLS))
+                            <button wire:click="delete({{ $bill->id }})" wire:confirm="Delete this bill record? This can't be undone." class="flex-1 rounded-lg border border-rose-200 dark:border-rose-500/30 py-2 text-xs font-medium text-rose-600 dark:text-rose-400">
+                                Delete
+                            </button>
+                        @endif
                     </div>
                 @endif
             </div>

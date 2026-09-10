@@ -48,16 +48,16 @@
             </div>
 
             <div class="mt-3 flex gap-2">
-                @if ($canManageBookings && $booking->status === 'pending')
+                @if ($canConfirmBookings && $booking->status === 'pending')
                     <button wire:click="confirm({{ $booking->id }})" wire:confirm="Confirm this booking?" class="flex-1 rounded-lg bg-emerald-600 py-2 text-xs font-semibold text-white">Confirm</button>
                 @endif
-                @if ($canManageBookings && $booking->status === 'confirmed')
+                @if ($canCheckinBookings && $booking->status === 'confirmed')
                     <button wire:click="check_in({{ $booking->id }})" class="flex-1 rounded-lg bg-sky-600 py-2 text-xs font-semibold text-white">Check in</button>
                 @endif
-                @if ($canManageBookings && $booking->status === 'checked_in')
+                @if ($canCheckoutBookings && $booking->status === 'checked_in')
                     <button wire:click="check_out({{ $booking->id }})" class="flex-1 rounded-lg bg-slate-700 py-2 text-xs font-semibold text-white">Check out</button>
                 @endif
-                @if ($canManageBookings && !in_array($booking->status, ['checked_out', 'cancelled']))
+                @if ($canCancelBookings && !in_array($booking->status, ['checked_out', 'cancelled']))
                     <button wire:click="cancel({{ $booking->id }})" wire:confirm="Cancel this booking?" class="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300">Cancel</button>
                 @endif
             </div>

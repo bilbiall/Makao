@@ -30,14 +30,24 @@ class StaffPermissions
     public const SEND_MASS_INVOICES = 'send_mass_invoices';
     public const SEND_MASS_REMINDERS = 'send_mass_reminders';
 
-    public const MANAGE_BILLS = 'manage_bills';
-    public const MANAGE_PROPERTIES = 'manage_properties';
+    public const CREATE_BILLS = 'create_bills';
+    public const EDIT_BILLS = 'edit_bills';
+    public const DELETE_BILLS = 'delete_bills';
+
+    public const CREATE_PROPERTIES = 'create_properties';
+    public const EDIT_PROPERTIES = 'edit_properties';
+    public const DELETE_PROPERTIES = 'delete_properties';
 
     public const RESOLVE_ISSUES = 'resolve_issues';
     public const DELETE_ISSUES = 'delete_issues';
 
     public const DECIDE_NOTICES = 'decide_notices';
-    public const MANAGE_BOOKINGS = 'manage_bookings';
+
+    public const CONFIRM_BOOKINGS = 'confirm_bookings';
+    public const CHECKIN_BOOKINGS = 'checkin_bookings';
+    public const CHECKOUT_BOOKINGS = 'checkout_bookings';
+    public const CANCEL_BOOKINGS = 'cancel_bookings';
+
     public const ADMIT_VIEWING_REQUESTS = 'admit_viewing_requests';
     public const RESOLVE_MPESA_REVIEW = 'resolve_mpesa_review';
 
@@ -68,10 +78,14 @@ class StaffPermissions
                 self::SEND_MASS_REMINDERS => 'Send mass reminders',
             ],
             'Bills' => [
-                self::MANAGE_BILLS => 'Create / edit / delete bills',
+                self::CREATE_BILLS => 'Create bills',
+                self::EDIT_BILLS => 'Edit bills',
+                self::DELETE_BILLS => 'Delete bills',
             ],
             'Properties & Units' => [
-                self::MANAGE_PROPERTIES => 'Create / edit / delete properties & units',
+                self::CREATE_PROPERTIES => 'Create properties & units',
+                self::EDIT_PROPERTIES => 'Edit properties & units',
+                self::DELETE_PROPERTIES => 'Delete properties & units',
             ],
             'Issues' => [
                 self::RESOLVE_ISSUES => 'Resolve issues',
@@ -81,7 +95,10 @@ class StaffPermissions
                 self::DECIDE_NOTICES => 'Approve / deny notices to vacate',
             ],
             'Bookings' => [
-                self::MANAGE_BOOKINGS => 'Confirm / check in / check out / cancel bookings',
+                self::CONFIRM_BOOKINGS => 'Confirm bookings',
+                self::CHECKIN_BOOKINGS => 'Check in bookings',
+                self::CHECKOUT_BOOKINGS => 'Check out bookings',
+                self::CANCEL_BOOKINGS => 'Cancel bookings',
             ],
             'Viewing Requests' => [
                 self::ADMIT_VIEWING_REQUESTS => 'Admit viewing requests',
@@ -116,7 +133,12 @@ class StaffPermissions
         }
 
         if ($role === 'agent') {
-            return $slug === self::MANAGE_BOOKINGS;
+            return in_array($slug, [
+                self::CONFIRM_BOOKINGS,
+                self::CHECKIN_BOOKINGS,
+                self::CHECKOUT_BOOKINGS,
+                self::CANCEL_BOOKINGS,
+            ], true);
         }
 
         return false;

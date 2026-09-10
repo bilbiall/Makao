@@ -220,11 +220,15 @@ class HouseResource extends Resource
                     ->searchable()*/
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->visible(fn () => in_array(auth()->user()->role, ['admin', 'landlord'])
+                        || auth()->user()->hasPermission(\App\Support\StaffPermissions::EDIT_PROPERTIES)),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->visible(fn () => in_array(auth()->user()->role, ['admin', 'landlord'])
+                            || auth()->user()->hasPermission(\App\Support\StaffPermissions::DELETE_PROPERTIES)),
                 ]),
             ]);
     }
@@ -263,7 +267,32 @@ class HouseResource extends Resource
             return true;
         }
 
+        if (!in_array($user->role, ['admin', 'landlord']) && !$user->hasPermission(\App\Support\StaffPermissions::CREATE_PROPERTIES)) {
+            return false;
+        }
+
         return app(\App\Services\PackageLimitService::class)
             ->canAdd('houses', \App\Models\Landlord::find($user->landlord_id));
+    }
+
+    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        $user = auth()->user();
+
+        return $user && (in_array($user->role, ['admin', 'landlord'])
+            || $user->hasPermission(\App\Support\StaffPermissions::EDIT_PROPERTIES));
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        $user = auth()->user();
+
+        return $user && (in_array($user->role, ['admin', 'landlord'])
+            || $user->hasPermission(\App\Support\StaffPermissions::DELETE_PROPERTIES));
+    }
+
+    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return static::canDeleteAny();
     }
 }

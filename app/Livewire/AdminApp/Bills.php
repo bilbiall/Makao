@@ -81,7 +81,8 @@ class Bills extends Component
 
     public function record(): void
     {
-        abort_unless(Auth::user()->hasPermission(StaffPermissions::MANAGE_BILLS), 403);
+        $slug = $this->editingId ? StaffPermissions::EDIT_BILLS : StaffPermissions::CREATE_BILLS;
+        abort_unless(Auth::user()->hasPermission($slug), 403);
 
         $this->validate();
 
@@ -109,7 +110,7 @@ class Bills extends Component
 
     public function delete(int $billId): void
     {
-        abort_unless(Auth::user()->hasPermission(StaffPermissions::MANAGE_BILLS), 403);
+        abort_unless(Auth::user()->hasPermission(StaffPermissions::DELETE_BILLS), 403);
 
         StaffScope::onTenantChild(Bill::query())->findOrFail($billId)->delete();
         session()->flash('bill-recorded', 'Bill deleted.');

@@ -83,7 +83,7 @@ class BookingResource extends Resource
                     ->requiresConfirmation()
                     ->action(fn (Booking $record) => $record->update(['status' => 'confirmed', 'expires_at' => null]))
                     ->visible(fn (Booking $record) => $record->status === 'pending'
-                        && auth()->user()->hasPermission(\App\Support\StaffPermissions::MANAGE_BOOKINGS)),
+                        && auth()->user()->hasPermission(\App\Support\StaffPermissions::CONFIRM_BOOKINGS)),
 
                 Tables\Actions\Action::make('check_in')
                     ->label('Check in')
@@ -91,7 +91,7 @@ class BookingResource extends Resource
                     ->icon('heroicon-s-arrow-right-circle')
                     ->action(fn (Booking $record) => $record->update(['status' => 'checked_in']))
                     ->visible(fn (Booking $record) => $record->status === 'confirmed'
-                        && auth()->user()->hasPermission(\App\Support\StaffPermissions::MANAGE_BOOKINGS)),
+                        && auth()->user()->hasPermission(\App\Support\StaffPermissions::CHECKIN_BOOKINGS)),
 
                 Tables\Actions\Action::make('check_out')
                     ->label('Check out')
@@ -99,7 +99,7 @@ class BookingResource extends Resource
                     ->icon('heroicon-s-arrow-left-circle')
                     ->action(fn (Booking $record) => $record->update(['status' => 'checked_out']))
                     ->visible(fn (Booking $record) => $record->status === 'checked_in'
-                        && auth()->user()->hasPermission(\App\Support\StaffPermissions::MANAGE_BOOKINGS)),
+                        && auth()->user()->hasPermission(\App\Support\StaffPermissions::CHECKOUT_BOOKINGS)),
 
                 Tables\Actions\Action::make('cancel')
                     ->label('Cancel')
@@ -108,7 +108,7 @@ class BookingResource extends Resource
                     ->requiresConfirmation()
                     ->action(fn (Booking $record) => $record->update(['status' => 'cancelled', 'expires_at' => null]))
                     ->visible(fn (Booking $record) => !in_array($record->status, ['checked_out', 'cancelled'])
-                        && auth()->user()->hasPermission(\App\Support\StaffPermissions::MANAGE_BOOKINGS)),
+                        && auth()->user()->hasPermission(\App\Support\StaffPermissions::CANCEL_BOOKINGS)),
             ]);
     }
 
