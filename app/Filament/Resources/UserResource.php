@@ -20,12 +20,6 @@ use Filament\Forms\Components\Select;
 use Illuminate\Support\Facades\Hash;
 
 
-//use App\Filament\Resources\AdminResource\Pages\SendNotification;
-use App\Filament\Resources\UserResource\Pages\SendNotification;
-
-
-
-
 //to display columns in users
 use Filament\Tables\Columns\TextColumn;
 
@@ -235,9 +229,6 @@ class UserResource extends Resource
             'index' => Pages\ListUsers::route('/'),
             'create' => Pages\CreateUser::route('/create'),
             'edit' => Pages\EditUser::route('/{record}/edit'),
-            'sendNotification' => SendNotification::route('/send-notification'), // your custom page
-
-
         ];
     }
 

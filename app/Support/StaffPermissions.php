@@ -55,6 +55,8 @@ class StaffPermissions
     public const VIEW_REPORTS = 'view_reports';
     public const MANAGE_EXPENSES = 'manage_expenses';
 
+    public const SEND_ANNOUNCEMENTS = 'send_announcements';
+
     /**
      * Grouped for the checkbox UI: ['Group label' => ['slug' => 'Checkbox label']].
      */
@@ -111,6 +113,9 @@ class StaffPermissions
             'Reports & Expenses' => [
                 self::VIEW_REPORTS => 'View reports',
                 self::MANAGE_EXPENSES => 'Manage expenses',
+            ],
+            'Announcements' => [
+                self::SEND_ANNOUNCEMENTS => 'Send announcements to tenants',
             ],
         ];
     }

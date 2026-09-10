@@ -19,9 +19,11 @@
         </button>
     </div>
 
-    <button type="button" wire:click="startNotify" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-semibold py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800">
-        Send notification to tenants
-    </button>
+    @if (auth()->user()->hasPermission(\App\Support\StaffPermissions::SEND_ANNOUNCEMENTS))
+        <a href="{{ route('app.admin.announcements') }}" class="block w-full text-center rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-semibold py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800">
+            Send an announcement to tenants
+        </a>
+    @endif
 
     <a href="{{ route('app.admin.staff-roles') }}" class="block w-full text-center rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-semibold py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800">
         Manage custom staff roles
@@ -103,35 +105,6 @@
             <div class="flex gap-3">
                 <button wire:click="cancelForm" class="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300">Cancel</button>
                 <button wire:click="{{ $editingId ? 'update' : 'create' }}" class="flex-1 rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">{{ $editingId ? 'Save changes' : 'Create' }}</button>
-            </div>
-        </div>
-    @endif
-
-    @if ($showNotifyForm)
-        <div class="rounded-2xl bg-white border border-slate-200 shadow-sm p-4 space-y-3 dark:bg-slate-900 dark:border-slate-800">
-            <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">Send notification to tenants</p>
-            <div>
-                <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Tenants</label>
-                <div class="mt-1 space-y-1.5 max-h-40 overflow-y-auto rounded-lg border border-slate-300 dark:border-slate-700 p-2">
-                    @forelse ($tenants as $tenant)
-                        <label class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
-                            <input type="checkbox" wire:model="notify_tenant_ids" value="{{ $tenant->id }}" class="rounded border-slate-300 dark:border-slate-600">
-                            {{ $tenant->name }}
-                        </label>
-                    @empty
-                        <p class="text-xs text-slate-400 dark:text-slate-500">No tenant accounts yet.</p>
-                    @endforelse
-                </div>
-                @error('notify_tenant_ids') <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p> @enderror
-            </div>
-            <div>
-                <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Message</label>
-                <textarea wire:model="notify_message" rows="3" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"></textarea>
-                @error('notify_message') <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p> @enderror
-            </div>
-            <div class="flex gap-3">
-                <button wire:click="$set('showNotifyForm', false)" class="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300">Cancel</button>
-                <button wire:click="sendNotification" class="flex-1 rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">Send</button>
             </div>
         </div>
     @endif

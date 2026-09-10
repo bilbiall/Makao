@@ -9,7 +9,6 @@ use App\Models\Location;
 use App\Models\StaffAssignment;
 use App\Models\User;
 use App\Services\PackageLimitService;
-use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Livewire\Component;
@@ -31,10 +30,6 @@ class Users extends Component
     public string $role = 'caretaker';
     public array $location_ids = [];
     public array $house_ids = [];
-
-    public bool $showNotifyForm = false;
-    public array $notify_tenant_ids = [];
-    public string $notify_message = '';
 
     public function mount(): void
     {
@@ -225,36 +220,6 @@ class Users extends Component
         $this->role = 'caretaker';
     }
 
-    public function startNotify(): void
-    {
-        $this->reset(['notify_tenant_ids', 'notify_message']);
-        $this->showNotifyForm = true;
-    }
-
-    public function sendNotification(): void
-    {
-        $this->validate([
-            'notify_tenant_ids' => 'required|array|min:1',
-            'notify_message' => 'required|string',
-        ]);
-
-        $tenants = User::where('role', 'tenant')
-            ->where('landlord_id', Auth::user()->landlord_id)
-            ->whereIn('id', $this->notify_tenant_ids)
-            ->get();
-
-        foreach ($tenants as $tenant) {
-            Notification::make()
-                ->title('Message from Admin')
-                ->body($this->notify_message)
-                ->sendToDatabase($tenant);
-        }
-
-        $this->showNotifyForm = false;
-        $this->reset(['notify_tenant_ids', 'notify_message']);
-        session()->flash('user-created', "Notification sent to {$tenants->count()} tenant(s).");
-    }
-
     public function export()
     {
         $landlordId = Auth::user()->landlord_id;
@@ -291,13 +256,11 @@ class Users extends Component
 
         $locations = Location::orderBy('location_name')->get();
         $shortTermHouses = House::where('landlord_id', $landlordId)->where('listing_mode', 'short_term')->get();
-        $tenants = User::where('role', 'tenant')->where('landlord_id', $landlordId)->orderBy('name')->get();
 
         return view('livewire.admin-app.users', [
             'staff' => $staff,
             'locations' => $locations,
             'shortTermHouses' => $shortTermHouses,
-            'tenants' => $tenants,
             'customRoles' => $customRoles,
             'canAssignAdmin' => Auth::user()->role === 'landlord',
         ])
