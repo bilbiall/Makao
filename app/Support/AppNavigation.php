@@ -101,6 +101,10 @@ class AppNavigation
                 ['label' => 'Packages', 'icon' => 'heroicon-o-cube', 'route' => 'app.superadmin.packages', 'tab' => false],
                 ['label' => 'Subscriptions', 'icon' => 'heroicon-o-arrow-path', 'route' => 'app.superadmin.subscriptions', 'tab' => true],
                 ['label' => 'Platform Settings', 'icon' => 'heroicon-o-cog-6-tooth', 'route' => 'app.superadmin.settings', 'tab' => true],
+                // Founder-only planning/pitch pages, published as private Artifacts - these
+                // routes just redirect out to them (see routes/web.php).
+                ['label' => 'Rollout Plan', 'icon' => 'heroicon-o-map', 'route' => 'app.superadmin.rollout-plan', 'tab' => false],
+                ['label' => 'Pitch Deck', 'icon' => 'heroicon-o-presentation-chart-line', 'route' => 'app.superadmin.pitch-deck', 'tab' => false],
             ],
             default => [],
         };

@@ -215,6 +215,12 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureSuperadminRole::class])->p
     Route::get('/subscriptions', \App\Livewire\SuperadminApp\Subscriptions::class)->name('app.superadmin.subscriptions');
     Route::get('/settings', \App\Livewire\SuperadminApp\PlatformSettings::class)->name('app.superadmin.settings');
     Route::get('/profile', \App\Livewire\Profile::class)->name('app.superadmin.profile');
+
+    // Named routes so these can sit in AppNavigation like any other item (its blade
+    // calls route($item['route']), so a raw URL can't go there directly) - both just
+    // redirect straight out to the private Artifact pages.
+    Route::get('/rollout-plan', fn () => redirect()->away('https://claude.ai/code/artifact/725ffb09-ec66-4303-87c7-694b91e012ec'))->name('app.superadmin.rollout-plan');
+    Route::get('/pitch-deck', fn () => redirect()->away('https://claude.ai/code/artifact/391e01a1-07b0-4fa1-89af-98d0110fda7f'))->name('app.superadmin.pitch-deck');
 });
 
 
