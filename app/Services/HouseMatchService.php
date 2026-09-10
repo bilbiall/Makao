@@ -35,6 +35,24 @@ class HouseMatchService
     public function search(array $filters): array
     {
         $unconfirmed = $filters['unconfirmed_preferences'] ?? [];
+        $propertyName = trim($filters['property_name'] ?? '');
+
+        // Distinguish "that property doesn't exist" from "that property exists
+        // but nothing matches the other filters" - conflating them previously
+        // meant a query for a nonexistent property silently fell through to
+        // whatever filters were carried over from an earlier turn instead of
+        // ever being recognized as a property-name search at all.
+        if ($propertyName !== '' && ! \App\Models\Location::where('location_name', 'like', "%{$propertyName}%")->exists()) {
+            return [
+                'results' => collect(),
+                'branch' => 'property_not_found',
+                'facts' => [
+                    'branch' => 'property_not_found',
+                    'requested_property_name' => $propertyName,
+                    'filters' => $this->publicFilters($filters),
+                ],
+            ];
+        }
 
         $matches = $this->baseQuery($filters)->get();
 
@@ -176,6 +194,14 @@ class HouseMatchService
     {
         $facts = [];
 
+        // The property itself exists (property_not_found already short-circuited
+        // above otherwise) but nothing there matches the other filters -
+        // suggesting the cheapest match ANYWHERE else would point at a
+        // completely different building than the one actually asked about.
+        if (filled($filters['property_name'] ?? null)) {
+            return $facts;
+        }
+
         if (filled($filters['max_rent'] ?? null) && filled($filters['house_type'] ?? null)) {
             $withoutBudget = (clone $this->baseQuery(array_merge($filters, ['max_rent' => null])))->get();
             $prices = $withoutBudget->map(fn (House $h) => $this->priceFor($h))->filter();
@@ -239,6 +265,11 @@ class HouseMatchService
 
         if (filled($filters['area'] ?? null)) {
             $query->inAreaOrCity($filters['area']);
+        }
+
+        if (filled($filters['property_name'] ?? null)) {
+            $propertyName = $filters['property_name'];
+            $query->whereHas('location', fn ($q) => $q->where('location_name', 'like', "%{$propertyName}%"));
         }
 
         if (filled($filters['house_type'] ?? null) && in_array($filters['house_type'], House::UNIT_TYPES, true)) {
@@ -305,7 +336,7 @@ class HouseMatchService
     protected function publicFilters(array $filters): array
     {
         $public = array_intersect_key($filters, array_flip([
-            'area', 'listing_mode', 'house_type', 'max_rent', 'amenities', 'nearby', 'landmark',
+            'area', 'listing_mode', 'house_type', 'max_rent', 'amenities', 'nearby', 'landmark', 'property_name',
         ]));
 
         // A flag, never the raw coordinates - the visitor's exact GPS position

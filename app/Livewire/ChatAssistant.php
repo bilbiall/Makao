@@ -238,6 +238,7 @@ class ChatAssistant extends Component
         $hasEnoughToSearch = filled($this->filters['house_type'] ?? null)
             || filled($this->filters['area'] ?? null)
             || filled($this->filters['landmark'] ?? null)
+            || filled($this->filters['property_name'] ?? null)
             || (filled($this->filters['near_lat'] ?? null) && filled($this->filters['near_lng'] ?? null));
 
         $result = $hasEnoughToSearch

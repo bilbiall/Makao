@@ -6,6 +6,7 @@ use App\Helpers\AppHelper;
 use App\Helpers\EmailHelper;
 use App\Helpers\PaymentGatewayRequestHelper;
 use App\Helpers\SmsHelper;
+use App\Helpers\SmsTemplateHelper;
 use App\Models\Setting;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
@@ -48,14 +49,17 @@ class Settings extends Component
             'app_name' => config('app.name'),
             'timezone' => 'Africa/Nairobi',
             'currency' => 'KES',
-            'template_payment' => "Hi {tenant_name}, we've received your payment of KES {amount_paid} for Invoice #{invoice_number}. Your remaining balance is KES {balance}. Thank you. - {app_name}",
-            'template_mass_reminder' => 'Hi {tenant_name}, this is a reminder for Invoice {invoice_number}: KES {amount} due by {due_date}. Thank you, {app_name}.',
-            'template_tenant_welcome' => 'Hello {tenant_name}, welcome to {app_name}. You were admitted to {house_name} with a monthly rent of KES {rent_amount}',
-            'template_tenant_invite' => 'Hi {tenant_name}, {property_name} has added you as a tenant. Visit {join_url} to create an account (or log in), then enter your code {code} to see your invoices and bills. - {app_name}',
-            'template_notice_approved' => 'Hi {tenant_name}, your vacate notice has been approved. Balance: KES {balance}. Approval date: {approval_date}. Vacate date: {vacate_date}.',
-            'template_notice_denied' => 'Hi {tenant_name}, your vacate notice has been denied. Balance: KES {balance}. Date requested: {vacate_date}.',
-            'template_password_reset_sms' => 'Hi {tenant_name}, use this code to reset your password: {reset_code}. - {app_name}',
-            'template_new_user_sms' => 'Hi {user_name}, your {role} account has been created. Email: {email} | Password: {password} | Login: {site_url} - {app_name}',
+            'template_invoice' => SmsTemplateHelper::getDefaultTemplate('template_invoice'),
+            'template_payment' => SmsTemplateHelper::getDefaultTemplate('template_payment'),
+            'template_payment_reminder' => SmsTemplateHelper::getDefaultTemplate('template_payment_reminder'),
+            'template_issue_notification' => SmsTemplateHelper::getDefaultTemplate('template_issue_notification'),
+            'template_mass_reminder' => SmsTemplateHelper::getDefaultTemplate('template_mass_reminder'),
+            'template_tenant_welcome' => SmsTemplateHelper::getDefaultTemplate('template_tenant_welcome'),
+            'template_tenant_invite' => SmsTemplateHelper::getDefaultTemplate('template_tenant_invite'),
+            'template_notice_approved' => SmsTemplateHelper::getDefaultTemplate('template_notice_approved'),
+            'template_notice_denied' => SmsTemplateHelper::getDefaultTemplate('template_notice_denied'),
+            'template_password_reset_sms' => SmsTemplateHelper::getDefaultTemplate('template_password_reset_sms'),
+            'template_new_user_sms' => SmsTemplateHelper::getDefaultTemplate('template_new_user_sms'),
             'email_template_message' => "Hi {tenant_name},\n\nYou have a new message from {sender_name}:\n{message_body}\n\nRegards, {app_name}",
             'email_template_notice_approved' => "Hi {tenant_name}, your notice to vacate {house_name} on {vacate_date} has been approved. Balance: KES {balance}.\n\nRegards, {app_name}",
             'email_template_notice_denied' => "Hi {tenant_name}, your notice to vacate {house_name} on {vacate_date} has been denied. {reason}\n\nRegards, {app_name}",

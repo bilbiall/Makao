@@ -137,6 +137,7 @@ class HouseSearchAiService
               "area": string or null,
               "area_flexible": true, false, or null,
               "landmark": string or null,
+              "property_name": string or null,
               "listing_mode": "long_term" or "short_term",
               "house_type": one of [{$unitTypes}] or null,
               "max_rent": integer or null,
@@ -149,6 +150,7 @@ class HouseSearchAiService
             - area: a Kenyan city/area/neighbourhood name exactly as the user said it (e.g. "Westlands", "Kasarani", "Mombasa"). null if never mentioned.
             - area_flexible: true once the user agrees to see other areas, false once they insist on only the named area, otherwise null.
             - landmark: a specific named place used as a proximity reference (e.g. "Yaya Centre", "JKIA", "Two Rivers Mall", "Nairobi CBD", a school or hospital name) - NOT a neighbourhood/area name, which always goes in "area" instead. Only set this when the user is describing closeness to a specific place ("near", "close to", "walking distance from"), not just naming where they want to live. null if not mentioned.
+            - property_name: the specific named building/property/complex the user is asking about (e.g. "Dakota Apartments", "Kilimani Breeze", "Westlands Vista") - NOT a neighbourhood/area name (that goes in "area") and NOT a landmark used only as a proximity reference. Set this whenever the user names a specific property, asks "is there vacancy in X", "any units at X", etc. null if not mentioned.
             - listing_mode: "short_term" only for BnB/nightly/short-stay/airbnb-style requests, otherwise "long_term". Default "long_term" when unclear.
             - house_type: must be an exact string from the allowed list above (e.g. "1 Bedroom", "Bedsitter") - map phrasing like "one bedroom" or "1br" to "1 Bedroom". null if not mentioned.
             - max_rent: convert phrasing like "20k", "under 20,000", "less than 20k" to a plain integer (KES per month). null if not mentioned.
@@ -212,6 +214,7 @@ class HouseSearchAiService
             - "zero_results": nothing matched in facts.filters.area - say so plainly, mention facts.alternative_areas (name and count), and ask if they want those instead or would rather wait.
             - "alternatives_shown": nothing in the originally requested area, but facts.sample is from other areas because the user agreed - note briefly that these are elsewhere.
             - "none": nothing matches at all, even ignoring area - say so honestly. If facts.cheapest_available_for_type is set, mention that's the actual lowest price available for that unit type right now and ask if they'd consider it. If facts.available_house_types is non-empty, mention which unit types genuinely are available instead. Otherwise just suggest loosening the budget or unit type.
+            - "property_not_found": the user asked about a specific named property (facts.requested_property_name) that doesn't exist in the database at all - say plainly you couldn't find a property by that name (quote it back), and ask if they'd like to search by area or budget instead. Never guess at what property they might have meant, and never fall back to talking about a different unit type or price - that would answer a question they didn't ask.
             PROMPT;
 
         $raw = $this->chat(array_merge([['role' => 'system', 'content' => $system]], $history));
@@ -234,6 +237,7 @@ class HouseSearchAiService
             'zero_results' => "No exact matches{$criteria} right now. Want me to check other areas?",
             'alternatives_shown' => "Nothing in that exact area, but here's what's available nearby.",
             'none' => $this->noneFallback($facts, $criteria),
+            'property_not_found' => "I couldn't find a property called \"{$facts['requested_property_name']}\". Want me to search by area or budget instead?",
             default => 'Tell me what you\'re looking for - e.g. "1 bedroom in Kasarani under 20k".',
         };
     }
@@ -267,13 +271,14 @@ class HouseSearchAiService
         $type = $filters['house_type'] ?? null;
         $area = $filters['area'] ?? null;
         $landmark = $filters['landmark'] ?? null;
+        $propertyName = $filters['property_name'] ?? null;
         $nearMe = $filters['near_me'] ?? false;
 
-        // area wins over landmark/near_me when more than one is set (rare -
-        // the LLM only sets landmark for a proximity phrase, not a
-        // named-area request), same priority HouseMatchService gives area
-        // everywhere else.
+        // A named property is the most specific thing the user could have
+        // asked for, so it wins over area/landmark/near_me when more than one
+        // is set - same priority HouseMatchService gives it everywhere else.
         $place = match (true) {
+            (bool) $propertyName => "at {$propertyName}",
             (bool) $area => "in {$area}",
             (bool) $landmark => "near {$landmark}",
             (bool) $nearMe => 'near you',
@@ -335,6 +340,21 @@ class HouseSearchAiService
         foreach ($names as $name) {
             if (mb_stripos($text, $name) !== false) {
                 $filters['area'] = $name;
+                break;
+            }
+        }
+
+        // Same idea, against real property names - lets a literal "is there
+        // vacancy in Dakota Apartments" still trigger a real property-name
+        // search even when the LLM call fails or misses it (see class docblock).
+        $propertyNames = \App\Models\Location::pluck('location_name')
+            ->filter()
+            ->unique()
+            ->sortByDesc(fn ($name) => mb_strlen($name));
+
+        foreach ($propertyNames as $name) {
+            if (mb_stripos($text, $name) !== false) {
+                $filters['property_name'] = $name;
                 break;
             }
         }

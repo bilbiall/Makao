@@ -169,64 +169,67 @@ trait HasLandlordSettingsSchema
                     Forms\Components\Textarea::make('template_invoice')
                         ->label('Invoice Notification Template')
                         ->helperText('Variables: {tenant_name}, {invoice_number}, {amount}, {due_date}, {property_name}')
+                        ->default(\App\Helpers\SmsTemplateHelper::getDefaultTemplate('template_invoice'))
                         ->rows(4),
 
                     Forms\Components\Textarea::make('template_payment')
                         ->label('Payment Confirmation Template')
                         ->helperText('Variables: {tenant_name}, {amount_paid}, {invoice_number}, {balance}, {app_name}, {property_name}')
-                        ->default('Hi {tenant_name}, we\'ve received your payment of KES {amount_paid} for Invoice #{invoice_number}. Your remaining balance is KES {balance}. Thank you. - {app_name}')
+                        ->default(\App\Helpers\SmsTemplateHelper::getDefaultTemplate('template_payment'))
                         ->rows(4),
 
                     Forms\Components\Textarea::make('template_payment_reminder')
                         ->label('Payment Reminder Template')
                         ->helperText('Variables: {tenant_name}, {amount}, {due_date}')
+                        ->default(\App\Helpers\SmsTemplateHelper::getDefaultTemplate('template_payment_reminder'))
                         ->rows(4),
 
                     Forms\Components\Textarea::make('template_mass_reminder')
                         ->label('Mass Reminder Template')
                         ->helperText('Variables: {tenant_name}, {invoice_number}, {amount}, {due_date}, {app_name}, {property_name}')
-                        ->default('Hi {tenant_name}, this is a reminder for Invoice {invoice_number}: KES {amount} due by {due_date}. Thank you, {app_name}.')
+                        ->default(\App\Helpers\SmsTemplateHelper::getDefaultTemplate('template_mass_reminder'))
                         ->rows(4),
 
                     Forms\Components\Textarea::make('template_issue_notification')
                         ->label('Issue Notification Template')
                         ->helperText('Variables: {tenant_name}, {issue_title}, {issue_description}')
+                        ->default(\App\Helpers\SmsTemplateHelper::getDefaultTemplate('template_issue_notification'))
                         ->rows(4),
 
                     Forms\Components\Textarea::make('template_tenant_welcome')
                         ->label('Tenant Welcome Template')
                         ->helperText('Variables: {tenant_name}, {app_name}, {house_name}, {rent_amount}, {property_name}')
-                        ->default('Hello {tenant_name}, welcome to {app_name}. You were admitted to {house_name} with a monthly rent of KES {rent_amount}')
+                        ->default(\App\Helpers\SmsTemplateHelper::getDefaultTemplate('template_tenant_welcome'))
                         ->rows(4),
 
                     Forms\Components\Textarea::make('template_tenant_invite')
                         ->label('Tenant Invite Template')
                         ->helperText('Sent instead of the Welcome template above when a tenant is admitted without an account yet - they self-register and enter this code to connect. Variables: {tenant_name}, {property_name}, {code}, {join_url}, {app_name}')
-                        ->default('Hi {tenant_name}, {property_name} has added you as a tenant. Visit {join_url} to create an account (or log in), then enter your code {code} to see your invoices and bills. - {app_name}')
+                        ->default(\App\Helpers\SmsTemplateHelper::getDefaultTemplate('template_tenant_invite'))
                         ->rows(4),
 
                     Forms\Components\Textarea::make('template_notice_approved')
                         ->label('Notice Approved Template')
                         ->helperText('Variables: {tenant_name}, {balance}, {approval_date}, {vacate_date}, {property_name}')
-                        ->default('Hi {tenant_name}, your vacate notice has been approved. Balance: KES {balance}. Approval date: {approval_date}. Vacate date: {vacate_date}.')
+                        ->default(\App\Helpers\SmsTemplateHelper::getDefaultTemplate('template_notice_approved'))
                         ->rows(4),
 
                     Forms\Components\Textarea::make('template_notice_denied')
                         ->label('Notice Denied Template')
                         ->helperText('Variables: {tenant_name}, {balance}, {vacate_date}, {property_name}')
-                        ->default('Hi {tenant_name}, your vacate notice has been denied. Balance: KES {balance}. Date requested: {vacate_date}.')
+                        ->default(\App\Helpers\SmsTemplateHelper::getDefaultTemplate('template_notice_denied'))
                         ->rows(4),
 
                     Forms\Components\Textarea::make('template_password_reset_sms')
                         ->label('Password Reset SMS Template')
                         ->helperText('Variables: {tenant_name}, {reset_code}, {app_name}')
-                        ->default('Hi {tenant_name}, use this code to reset your password: {reset_code}. - {app_name}')
+                        ->default(\App\Helpers\SmsTemplateHelper::getDefaultTemplate('template_password_reset_sms'))
                         ->rows(3),
 
                     Forms\Components\Textarea::make('template_new_user_sms')
                         ->label('New User Registration SMS Template')
                         ->helperText('Variables: {user_name}, {email}, {password}, {role}, {site_url}, {app_name}')
-                        ->default('Hi {user_name}, your {role} account has been created. Email: {email} | Password: {password} | Login: {site_url} - {app_name}')
+                        ->default(\App\Helpers\SmsTemplateHelper::getDefaultTemplate('template_new_user_sms'))
                         ->rows(4),
                 ]),
 
