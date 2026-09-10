@@ -224,53 +224,54 @@ class PlatformSettings extends Page implements HasForms
                                 Forms\Components\TextInput::make('smtp.from_name')
                                     ->label('From Name')
                                     ->maxLength(255),
+
+                                Forms\Components\Section::make('Send a test email')
+                                    ->description('Verify these credentials actually work before relying on them - sends using whatever is currently typed above, not the last saved values.')
+                                    ->columnSpanFull()
+                                    ->schema([
+                                        Forms\Components\TextInput::make('test_email_address')
+                                            ->label('Email address')
+                                            ->email()
+                                            ->placeholder('you@example.com')
+                                            ->dehydrated(false),
+
+                                        Forms\Components\Actions::make([
+                                            Forms\Components\Actions\Action::make('send_test_email')
+                                                ->label('Send test email')
+                                                ->color('gray')
+                                                ->action(function ($livewire) {
+                                                    $email = trim((string) ($livewire->data['test_email_address'] ?? ''));
+
+                                                    if ($email === '') {
+                                                        Notification::make()->danger()->title('Enter an email address first')->send();
+                                                        return;
+                                                    }
+
+                                                    try {
+                                                        EmailHelper::sendWithConfig(
+                                                            $email,
+                                                            'Test email from ' . ($livewire->data['app_name'] ?? config('app.name')),
+                                                            'This is a test message - your platform SMTP settings are working.',
+                                                            [
+                                                                'host' => $livewire->data['smtp']['host'] ?? null,
+                                                                'port' => $livewire->data['smtp']['port'] ?? null,
+                                                                'encryption' => $livewire->data['smtp']['encryption'] ?? null,
+                                                                'username' => $livewire->data['smtp']['username'] ?? null,
+                                                                'password' => $livewire->data['smtp']['password'] ?? null,
+                                                                'from_email' => $livewire->data['smtp']['from_email'] ?? null,
+                                                                'from_name' => $livewire->data['smtp']['from_name'] ?? null,
+                                                            ]
+                                                        );
+
+                                                        Notification::make()->success()->title('Test email sent - check the inbox (and spam folder).')->send();
+                                                    } catch (\Throwable $e) {
+                                                        Notification::make()->danger()->title('Failed to send test email')->body($e->getMessage())->send();
+                                                    }
+                                                }),
+                                        ]),
+                                    ]),
                             ])
                             ->columns(2),
-
-                        Forms\Components\Section::make('Send a test email')
-                            ->description('Verify these credentials actually work before relying on them - sends using whatever is currently typed above, not the last saved values.')
-                            ->schema([
-                                Forms\Components\TextInput::make('test_email_address')
-                                    ->label('Email address')
-                                    ->email()
-                                    ->placeholder('you@example.com')
-                                    ->dehydrated(false),
-
-                                Forms\Components\Actions::make([
-                                    Forms\Components\Actions\Action::make('send_test_email')
-                                        ->label('Send test email')
-                                        ->color('gray')
-                                        ->action(function ($livewire) {
-                                            $email = trim((string) ($livewire->data['test_email_address'] ?? ''));
-
-                                            if ($email === '') {
-                                                Notification::make()->danger()->title('Enter an email address first')->send();
-                                                return;
-                                            }
-
-                                            try {
-                                                EmailHelper::sendWithConfig(
-                                                    $email,
-                                                    'Test email from ' . ($livewire->data['app_name'] ?? config('app.name')),
-                                                    'This is a test message - your platform SMTP settings are working.',
-                                                    [
-                                                        'host' => $livewire->data['smtp']['host'] ?? null,
-                                                        'port' => $livewire->data['smtp']['port'] ?? null,
-                                                        'encryption' => $livewire->data['smtp']['encryption'] ?? null,
-                                                        'username' => $livewire->data['smtp']['username'] ?? null,
-                                                        'password' => $livewire->data['smtp']['password'] ?? null,
-                                                        'from_email' => $livewire->data['smtp']['from_email'] ?? null,
-                                                        'from_name' => $livewire->data['smtp']['from_name'] ?? null,
-                                                    ]
-                                                );
-
-                                                Notification::make()->success()->title('Test email sent - check the inbox (and spam folder).')->send();
-                                            } catch (\Throwable $e) {
-                                                Notification::make()->danger()->title('Failed to send test email')->body($e->getMessage())->send();
-                                            }
-                                        }),
-                                ]),
-                            ]),
 
                         Forms\Components\Tabs\Tab::make('AI Search')
                             ->schema([
