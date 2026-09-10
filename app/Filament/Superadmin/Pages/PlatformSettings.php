@@ -2,6 +2,7 @@
 
 namespace App\Filament\Superadmin\Pages;
 
+use App\Helpers\EmailHelper;
 use App\Helpers\SmsHelper;
 use App\Models\Setting;
 use Filament\Forms;
@@ -56,8 +57,17 @@ class PlatformSettings extends Page implements HasForms
                         Forms\Components\Tabs\Tab::make('Appearance')
                             ->schema([
                                 Forms\Components\FileUpload::make('logo_path')
-                                    ->label('Site logo')
-                                    ->helperText('Replaces the "R Renty" text logo everywhere (marketing site, app header, Filament panels). Also used as the browser tab favicon, unless you set a dedicated one below. Leave blank to keep the text logo.')
+                                    ->label('Site logo (light mode)')
+                                    ->helperText('Replaces the "R Renty" text logo everywhere (marketing site, app header, Filament panels). Also used as the browser tab favicon, unless you set a dedicated one below. Leave blank to keep the text logo. Shown whenever no dark-mode logo below is set, so this alone is enough if you only have one version.')
+                                    ->image()
+                                    ->disk('public')
+                                    ->visibility('public')
+                                    ->directory('branding')
+                                    ->maxSize(2048),
+
+                                Forms\Components\FileUpload::make('logo_path_dark')
+                                    ->label('Site logo (dark mode)')
+                                    ->helperText('Optional - shown instead of the logo above whenever a viewer has dark mode on. Leave blank to use the light-mode logo in both themes.')
                                     ->image()
                                     ->disk('public')
                                     ->visibility('public')
@@ -216,6 +226,51 @@ class PlatformSettings extends Page implements HasForms
                                     ->maxLength(255),
                             ])
                             ->columns(2),
+
+                        Forms\Components\Section::make('Send a test email')
+                            ->description('Verify these credentials actually work before relying on them - sends using whatever is currently typed above, not the last saved values.')
+                            ->schema([
+                                Forms\Components\TextInput::make('test_email_address')
+                                    ->label('Email address')
+                                    ->email()
+                                    ->placeholder('you@example.com')
+                                    ->dehydrated(false),
+
+                                Forms\Components\Actions::make([
+                                    Forms\Components\Actions\Action::make('send_test_email')
+                                        ->label('Send test email')
+                                        ->color('gray')
+                                        ->action(function ($livewire) {
+                                            $email = trim((string) ($livewire->data['test_email_address'] ?? ''));
+
+                                            if ($email === '') {
+                                                Notification::make()->danger()->title('Enter an email address first')->send();
+                                                return;
+                                            }
+
+                                            try {
+                                                EmailHelper::sendWithConfig(
+                                                    $email,
+                                                    'Test email from ' . ($livewire->data['app_name'] ?? config('app.name')),
+                                                    'This is a test message - your platform SMTP settings are working.',
+                                                    [
+                                                        'host' => $livewire->data['smtp']['host'] ?? null,
+                                                        'port' => $livewire->data['smtp']['port'] ?? null,
+                                                        'encryption' => $livewire->data['smtp']['encryption'] ?? null,
+                                                        'username' => $livewire->data['smtp']['username'] ?? null,
+                                                        'password' => $livewire->data['smtp']['password'] ?? null,
+                                                        'from_email' => $livewire->data['smtp']['from_email'] ?? null,
+                                                        'from_name' => $livewire->data['smtp']['from_name'] ?? null,
+                                                    ]
+                                                );
+
+                                                Notification::make()->success()->title('Test email sent - check the inbox (and spam folder).')->send();
+                                            } catch (\Throwable $e) {
+                                                Notification::make()->danger()->title('Failed to send test email')->body($e->getMessage())->send();
+                                            }
+                                        }),
+                                ]),
+                            ]),
 
                         Forms\Components\Tabs\Tab::make('AI Search')
                             ->schema([
@@ -392,12 +447,17 @@ class PlatformSettings extends Page implements HasForms
 
         $settings = Setting::forLandlord(null);
         $previousLogoPath = $settings->payload['logo_path'] ?? null;
+        $previousLogoDarkPath = $settings->payload['logo_path_dark'] ?? null;
         $previousFaviconPath = $settings->payload['favicon_path'] ?? null;
         $settings->payload = $state;
         $settings->save();
 
         if (! empty($previousLogoPath) && $state['logo_path'] !== $previousLogoPath) {
             \Illuminate\Support\Facades\Storage::disk('public')->delete($previousLogoPath);
+        }
+
+        if (! empty($previousLogoDarkPath) && ($state['logo_path_dark'] ?? null) !== $previousLogoDarkPath) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($previousLogoDarkPath);
         }
 
         if (! empty($previousFaviconPath) && $state['favicon_path'] !== $previousFaviconPath) {

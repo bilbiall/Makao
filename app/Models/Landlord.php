@@ -53,6 +53,14 @@ class Landlord extends Model
         return $this->hasMany(User::class);
     }
 
+    // The actual login account for this business - the "landlord" role user
+    // among the (possibly many) User rows this Landlord hasMany() of, which
+    // also include their admin/manager/caretaker/agent staff and tenants.
+    public function owner(): HasOne
+    {
+        return $this->hasOne(User::class)->where('role', 'landlord');
+    }
+
     public function subscriptions(): HasMany
     {
         return $this->hasMany(Subscription::class);

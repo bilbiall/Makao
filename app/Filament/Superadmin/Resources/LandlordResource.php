@@ -10,6 +10,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Hash;
 
 class LandlordResource extends Resource
 {
@@ -46,6 +47,30 @@ class LandlordResource extends Resource
                 Forms\Components\Toggle::make('c2b_enabled')
                     ->label('C2B (Paybill) reconciliation enabled')
                     ->helperText('Lets this landlord register their M-Pesa Channels for C2B - i.e. automatically reconcile tenants who pay Paybill directly instead of using "Pay Now" on the site. Off by default: misrouted/unreconciled real cash is a higher-stakes failure mode than a rejected STK push, so review before switching this on.'),
+
+                Forms\Components\Section::make('Owner login')
+                    ->description('The actual account this business owner signs in with - separate from the business details above. Fields here are pulled from / written to their User record, not this Landlord row.')
+                    ->schema([
+                        Forms\Components\TextInput::make('owner_name')
+                            ->label('Owner name')
+                            ->maxLength(255),
+
+                        Forms\Components\TextInput::make('owner_email')
+                            ->label('Owner login email')
+                            ->email()
+                            ->maxLength(255)
+                            ->unique(table: 'users', column: 'email', ignorable: fn ($record) => $record?->owner),
+
+                        Forms\Components\TextInput::make('owner_password')
+                            ->label('Reset password')
+                            ->password()
+                            ->revealable()
+                            ->helperText('Leave blank to keep their current password.')
+                            ->minLength(6)
+                            ->dehydrated(fn ($state) => filled($state)),
+                    ])
+                    ->visibleOn('edit')
+                    ->columns(2),
             ]);
     }
 

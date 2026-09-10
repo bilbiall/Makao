@@ -37,7 +37,7 @@
             <p class="text-xs text-slate-500 dark:text-slate-400">Re-skins the whole site - marketing pages, the mobile app-shell for every role, and every Filament panel. Takes effect on next page load.</p>
 
             <div class="pb-2 border-b border-slate-100 dark:border-slate-800">
-                <label class="{{ $labelClass }}">Site logo</label>
+                <label class="{{ $labelClass }}">Site logo (light mode)</label>
                 <div class="flex items-center gap-3">
                     @if ($logoUpload)
                         <img src="{{ $logoUpload->temporaryUrl() }}" alt="" class="h-10 w-auto max-w-[8rem] object-contain">
@@ -49,9 +49,27 @@
                         <button type="button" wire:click="removeLogo" wire:confirm="Remove the site logo and go back to the text logo?" class="text-xs text-rose-600 dark:text-rose-400 whitespace-nowrap">Remove</button>
                     @endif
                 </div>
-                <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Replaces the "R Renty" text logo everywhere (marketing site, app header, Filament panels). Also used as the browser tab favicon, unless you set a dedicated one below. Leave blank to keep the text logo.</p>
+                <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Replaces the "R Renty" text logo everywhere (marketing site, app header, Filament panels). Also used as the browser tab favicon, unless you set a dedicated one below. Leave blank to keep the text logo. Shown in both themes whenever no dark-mode logo below is set.</p>
                 <p wire:loading wire:target="logoUpload" class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Uploading...</p>
                 @error('logoUpload') <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p> @enderror
+            </div>
+
+            <div class="pb-2 border-b border-slate-100 dark:border-slate-800">
+                <label class="{{ $labelClass }}">Site logo (dark mode)</label>
+                <div class="flex items-center gap-3 rounded-lg bg-slate-900 p-2">
+                    @if ($logoDarkUpload)
+                        <img src="{{ $logoDarkUpload->temporaryUrl() }}" alt="" class="h-10 w-auto max-w-[8rem] object-contain">
+                    @elseif (! empty($data['logo_path_dark']))
+                        <img src="{{ Illuminate\Support\Facades\Storage::disk('public')->url($data['logo_path_dark']) }}" alt="" class="h-10 w-auto max-w-[8rem] object-contain">
+                    @endif
+                    <input type="file" accept="image/*" wire:model="logoDarkUpload" class="{{ $inputClass }} bg-white">
+                    @if (! empty($data['logo_path_dark']))
+                        <button type="button" wire:click="removeLogoDark" wire:confirm="Remove the dark-mode logo? The light-mode logo above will be used in both themes instead." class="text-xs text-rose-400 whitespace-nowrap">Remove</button>
+                    @endif
+                </div>
+                <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Optional - shown instead of the logo above whenever a viewer has dark mode on (shown here on a dark background so you can preview it properly). Leave blank to use the light-mode logo in both themes.</p>
+                <p wire:loading wire:target="logoDarkUpload" class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Uploading...</p>
+                @error('logoDarkUpload') <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p> @enderror
             </div>
 
             <div class="pb-2 border-b border-slate-100 dark:border-slate-800">
@@ -223,6 +241,16 @@
                     <label class="{{ $labelClass }}">From Name</label>
                     <input type="text" wire:model="data.smtp.from_name" class="{{ $inputClass }}">
                 </div>
+            </div>
+
+            <div class="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">Send a test email</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Verifies whatever's currently typed above, not the last saved values.</p>
+                <input type="email" wire:model="testEmailAddress" placeholder="you@example.com" class="{{ $inputClass }} mt-0">
+                <button type="button" wire:click="sendTestEmail" wire:loading.attr="disabled" wire:target="sendTestEmail" class="w-full rounded-lg border border-slate-300 dark:border-slate-700 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60">
+                    <span wire:loading.remove wire:target="sendTestEmail">Send test email</span>
+                    <span wire:loading wire:target="sendTestEmail">Sending...</span>
+                </button>
             </div>
         @elseif ($activeTab === 'billing')
             <p class="text-xs text-slate-500 dark:text-slate-400">These credentials collect payment FROM landlords FOR their own Renty subscription - completely separate from a landlord's own M-Pesa/Pesapal, which each business sets individually in their own Settings &gt; Payments tab to collect rent from their tenants.</p>

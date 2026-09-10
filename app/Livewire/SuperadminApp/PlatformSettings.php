@@ -2,6 +2,7 @@
 
 namespace App\Livewire\SuperadminApp;
 
+use App\Helpers\EmailHelper;
 use App\Helpers\SmsHelper;
 use App\Models\Setting;
 use App\Support\FaviconGenerator;
@@ -29,11 +30,16 @@ class PlatformSettings extends Component
 
     public string $testSmsPhone = '';
 
+    public string $testEmailAddress = '';
+
     /** Temporary upload for the assistant avatar - moved to storage in save(). */
     public $aiAvatarUpload = null;
 
-    /** Temporary upload for the site logo - moved to storage in save(). */
+    /** Temporary upload for the site logo (light mode) - moved to storage in save(). */
     public $logoUpload = null;
+
+    /** Temporary upload for the site logo (dark mode) - moved to storage in save(). */
+    public $logoDarkUpload = null;
 
     /** Temporary upload for a dedicated favicon image - moved to storage in save(). */
     public $faviconUpload = null;
@@ -74,6 +80,7 @@ class PlatformSettings extends Component
             'data.ai_search_enabled' => 'nullable|boolean',
             'aiAvatarUpload' => 'nullable|image|max:2048',
             'logoUpload' => 'nullable|image|max:2048',
+            'logoDarkUpload' => 'nullable|image|max:2048',
             'faviconUpload' => 'nullable|image|max:2048',
         ]);
 
@@ -99,6 +106,15 @@ class PlatformSettings extends Component
             if (empty($this->data['favicon_path'])) {
                 FaviconGenerator::generate($this->data['logo_path']);
             }
+        }
+
+        if ($this->logoDarkUpload) {
+            if (! empty($this->data['logo_path_dark'])) {
+                Storage::disk('public')->delete($this->data['logo_path_dark']);
+            }
+
+            $this->data['logo_path_dark'] = $this->logoDarkUpload->store('branding', 'public');
+            $this->logoDarkUpload = null;
         }
 
         if ($this->faviconUpload) {
@@ -134,6 +150,22 @@ class PlatformSettings extends Component
         $settings->save();
 
         session()->flash('platform-settings-saved', 'Site logo removed - back to the text logo.');
+    }
+
+    public function removeLogoDark(): void
+    {
+        if (! empty($this->data['logo_path_dark'])) {
+            Storage::disk('public')->delete($this->data['logo_path_dark']);
+        }
+
+        $this->data['logo_path_dark'] = null;
+        $this->logoDarkUpload = null;
+
+        $settings = Setting::forLandlord(null);
+        $settings->payload = array_replace_recursive($settings->payload ?? [], $this->data);
+        $settings->save();
+
+        session()->flash('platform-settings-saved', 'Dark-mode logo removed - the light-mode logo will be used in both themes.');
     }
 
     public function removeFavicon(): void
@@ -198,6 +230,41 @@ class PlatformSettings extends Component
             session()->flash('platform-settings-saved', 'Test SMS sent - check the phone.');
         } catch (\Throwable $e) {
             session()->flash('platform-settings-error', 'Failed to send test SMS: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Sends using whatever is currently typed in the Email tab (not the last saved
+     * values), so superadmin can verify SMTP credentials work before saving them.
+     */
+    public function sendTestEmail(): void
+    {
+        $email = trim($this->testEmailAddress);
+
+        if ($email === '') {
+            session()->flash('platform-settings-error', 'Enter an email address first.');
+            return;
+        }
+
+        try {
+            EmailHelper::sendWithConfig(
+                $email,
+                'Test email from ' . ($this->data['app_name'] ?? config('app.name')),
+                'This is a test message - your platform SMTP settings are working.',
+                [
+                    'host' => $this->data['smtp']['host'] ?? null,
+                    'port' => $this->data['smtp']['port'] ?? null,
+                    'encryption' => $this->data['smtp']['encryption'] ?? null,
+                    'username' => $this->data['smtp']['username'] ?? null,
+                    'password' => $this->data['smtp']['password'] ?? null,
+                    'from_email' => $this->data['smtp']['from_email'] ?? null,
+                    'from_name' => $this->data['smtp']['from_name'] ?? null,
+                ]
+            );
+
+            session()->flash('platform-settings-saved', 'Test email sent - check the inbox (and spam folder).');
+        } catch (\Throwable $e) {
+            session()->flash('platform-settings-error', 'Failed to send test email: ' . $e->getMessage());
         }
     }
 

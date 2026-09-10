@@ -51,6 +51,43 @@ class EmailHelper
             'from_name' => Setting::effective($resolvedLandlordId, 'smtp.from_name'),
         ];
 
+        static::applyMailerConfig($smtp);
+    }
+
+    /**
+     * Send a raw test email using an explicit, not-yet-saved SMTP config rather than a
+     * landlord's stored settings - used by the "Send test email" button in Settings, so
+     * whoever's editing the Email tab can verify the values they've just typed in
+     * actually work before saving them. Mirrors SmsHelper::sendWithConfig().
+     */
+    public static function sendWithConfig(string $to, string $subject, string $body, array $config): void
+    {
+        $host = trim((string) ($config['host'] ?? ''));
+
+        if ($host === '') {
+            throw new \RuntimeException('SMTP host is not configured.');
+        }
+
+        static::applyMailerConfig($config);
+
+        $fromEmail = config('mail.from.address');
+        $fromName = config('mail.from.name');
+
+        Mail::raw($body, function ($message) use ($to, $subject, $fromEmail, $fromName) {
+            $message->to($to)->subject($subject);
+            if ($fromEmail) {
+                $message->from($fromEmail, $fromName ?? $fromEmail);
+            }
+        });
+    }
+
+    /**
+     * Points the "smtp" mailer at the given config for the rest of the request - shared
+     * by configureMailer() (reads stored Settings) and sendWithConfig() (explicit,
+     * not-yet-saved values) so the scheme/auto_tls mapping below only lives in one place.
+     */
+    protected static function applyMailerConfig(array $smtp): void
+    {
         // Laravel 12's MailManager::createSmtpTransport() does NOT read an "encryption"
         // key at all - it only reads "scheme" (smtp|smtps) and "auto_tls". The old code
         // here set "encryption", which Laravel silently ignored, so the TLS/SSL/None

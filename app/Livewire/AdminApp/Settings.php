@@ -3,6 +3,7 @@
 namespace App\Livewire\AdminApp;
 
 use App\Helpers\AppHelper;
+use App\Helpers\EmailHelper;
 use App\Helpers\PaymentGatewayRequestHelper;
 use App\Helpers\SmsHelper;
 use App\Models\Setting;
@@ -33,6 +34,8 @@ class Settings extends Component
     public string $gatewayRequestNote = '';
 
     public string $testSmsPhone = '';
+
+    public string $testEmailAddress = '';
 
     public function mount(): void
     {
@@ -145,6 +148,41 @@ class Settings extends Component
             session()->flash('settings-saved', 'Test SMS sent - check the phone.');
         } catch (\Throwable $e) {
             session()->flash('settings-error', 'Failed to send test SMS: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Sends using whatever is currently typed in the Email tab (not the last saved
+     * values), so admin can verify SMTP credentials work before saving them.
+     */
+    public function sendTestEmail(): void
+    {
+        $email = trim($this->testEmailAddress);
+
+        if ($email === '') {
+            session()->flash('settings-error', 'Enter an email address first.');
+            return;
+        }
+
+        try {
+            EmailHelper::sendWithConfig(
+                $email,
+                'Test email from ' . ($this->data['app_name'] ?? AppHelper::getAppName()),
+                'This is a test message - your SMTP settings are working.',
+                [
+                    'host' => $this->data['smtp']['host'] ?? null,
+                    'port' => $this->data['smtp']['port'] ?? null,
+                    'encryption' => $this->data['smtp']['encryption'] ?? null,
+                    'username' => $this->data['smtp']['username'] ?? null,
+                    'password' => $this->data['smtp']['password'] ?? null,
+                    'from_email' => $this->data['smtp']['from_email'] ?? null,
+                    'from_name' => $this->data['smtp']['from_name'] ?? null,
+                ]
+            );
+
+            session()->flash('settings-saved', 'Test email sent - check the inbox (and spam folder).');
+        } catch (\Throwable $e) {
+            session()->flash('settings-error', 'Failed to send test email: ' . $e->getMessage());
         }
     }
 
