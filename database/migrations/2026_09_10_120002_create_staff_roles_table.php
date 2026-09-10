@@ -18,8 +18,11 @@ return new class extends Migration
             $table->string('scope_type'); // 'location' | 'house'
             // Fixed catalog of permission slugs (see App\Support\StaffPermissions),
             // not a landlord-editable list, so a plain JSON column is enough -
-            // no separate permissions-catalog table needed.
-            $table->json('permissions')->default('[]');
+            // no separate permissions-catalog table needed. MySQL/MariaDB refuse a
+            // DEFAULT on JSON/BLOB/TEXT columns entirely (error 1101) - the app
+            // always supplies this explicitly on create (see StaffRole's model
+            // attribute default below), so no DB-level default is needed anyway.
+            $table->json('permissions')->nullable();
             $table->timestamps();
         });
     }
