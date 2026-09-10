@@ -76,7 +76,7 @@ class Units extends Component
 
     protected function unitsQuery()
     {
-        $query = House::with(['location', 'pricePackages'])->orderBy('house_name');
+        $query = House::with(['location', 'pricePackages'])->withCount('photos')->orderBy('house_name');
         StaffScope::onHouse($query);
 
         if ($this->search !== '') {

@@ -190,6 +190,12 @@ class HouseResource extends Resource
                             ->title('Public listing visibility updated')
                             ->send();
                     }),
+                Tables\Columns\TextColumn::make('photos_count')
+                    ->label('Photos')
+                    ->counts('photos')
+                    ->badge()
+                    ->color(fn (int $state) => $state === 0 ? 'danger' : 'success')
+                    ->tooltip(fn (int $state) => $state === 0 ? "Won't show on the public site, search, or the AI assistant until it has at least one photo" : null),
                 TextColumn::make('created_at')->dateTime()
             ])
             ->filters([

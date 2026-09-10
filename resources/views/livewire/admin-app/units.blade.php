@@ -164,8 +164,11 @@
                 @endif
 
                 @if ($importSummary)
-                    <div class="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-700 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-400">
-                        Created {{ $importSummary['properties'] }} new {{ \Illuminate\Support\Str::plural('property', $importSummary['properties']) }} and {{ $importSummary['units'] }} {{ \Illuminate\Support\Str::plural('unit', $importSummary['units']) }}.
+                    <div class="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-700 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-400 space-y-1">
+                        <p>Created {{ $importSummary['properties'] }} new {{ \Illuminate\Support\Str::plural('property', $importSummary['properties']) }} and {{ $importSummary['units'] }} {{ \Illuminate\Support\Str::plural('unit', $importSummary['units']) }}.</p>
+                        @if ($importSummary['units'] > 0)
+                            <p class="text-xs">A CSV can't carry photos - each imported unit needs at least one added (via Edit) before it shows up on the public site, search, or the AI assistant. Look for the "No photos - hidden" tag below.</p>
+                        @endif
                     </div>
                 @endif
 
@@ -333,6 +336,12 @@
                             'bg-slate-50 text-slate-400 border-slate-200 dark:bg-slate-800 dark:text-slate-500 dark:border-slate-700' => !$unit->is_published,
                         ])
                     >{{ $unit->is_published ? 'Listed' : 'Unlisted' }}</button>
+                    @if ($unit->is_published && $unit->photos_count === 0)
+                        <span class="rounded-full px-2 py-0.5 text-[11px] font-medium whitespace-nowrap bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20"
+                            title="Listed, but won't actually show on the public site, search, or the AI assistant until it has at least one photo - add one via Edit.">
+                            No photos - hidden
+                        </span>
+                    @endif
                     <button
                         wire:click="startEditUnit({{ $unit->id }})"
                         title="Edit unit"
