@@ -100,6 +100,12 @@ class Landlords extends Component
             if (! empty($ownerData)) {
                 $owner->update($ownerData);
             }
+        } elseif ($this->owner_name || $this->owner_email || $this->owner_password) {
+            // No linked role='landlord' User to update - surface this loudly
+            // rather than silently discarding what was just typed and saved.
+            $this->cancelForm();
+            session()->flash('landlord-error', 'Business details were saved, but this business has no linked login account (role=landlord User) to apply the name/email/password change to.');
+            return;
         }
 
         $this->cancelForm();

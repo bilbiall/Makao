@@ -8,6 +8,11 @@
             {{ session('landlord-saved') }}
         </div>
     @endif
+    @if (session('landlord-error'))
+        <div class="rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 text-sm text-rose-700 dark:bg-rose-500/10 dark:border-rose-500/20 dark:text-rose-400">
+            {{ session('landlord-error') }}
+        </div>
+    @endif
 
     @forelse ($landlords as $landlord)
         <div class="rounded-2xl bg-white border border-slate-200 shadow-sm p-4 dark:bg-slate-900 dark:border-slate-800">

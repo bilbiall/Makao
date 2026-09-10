@@ -4,6 +4,7 @@ namespace App\Filament\Superadmin\Resources\LandlordResource\Pages;
 
 use App\Filament\Superadmin\Resources\LandlordResource;
 use Filament\Actions;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Support\Facades\Hash;
 
@@ -53,6 +54,18 @@ class EditLandlord extends EditRecord
         $owner = $this->record->owner;
 
         if (! $owner) {
+            // No linked role='landlord' User to update - surface this loudly
+            // rather than silently discarding the owner_name/owner_email/
+            // owner_password fields the superadmin just typed and saved.
+            if ($this->ownerName || $this->ownerEmail || $this->ownerPassword) {
+                Notification::make()
+                    ->danger()
+                    ->title('No owner account found for this business')
+                    ->body('The business details were saved, but there is no linked login account (role=landlord User) to apply the name/email/password change to.')
+                    ->persistent()
+                    ->send();
+            }
+
             return;
         }
 
