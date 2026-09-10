@@ -30,59 +30,78 @@ class MpesaChannelResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('label')
-                    ->label('Label')
-                    ->placeholder('e.g. Kilimani Apartments Paybill')
-                    ->maxLength(255),
+                Forms\Components\Section::make('Channel')
+                    ->description('Which of your properties this Paybill or Till belongs to.')
+                    ->schema([
+                        Forms\Components\TextInput::make('label')
+                            ->label('Label')
+                            ->placeholder('e.g. Kilimani Apartments Paybill')
+                            ->maxLength(255),
 
-                Forms\Components\Select::make('location_id')
-                    ->label('Applies to')
-                    ->relationship('location', 'location_name')
-                    ->placeholder('All my properties (default channel)')
-                    ->helperText('Leave blank to make this the default used by any property without its own channel.')
-                    ->searchable(),
+                        Forms\Components\Select::make('location_id')
+                            ->label('Applies to')
+                            ->relationship('location', 'location_name')
+                            ->placeholder('All my properties (default channel)')
+                            ->helperText('Leave blank to make this the default used by any property without its own channel.')
+                            ->searchable(),
 
-                Forms\Components\TextInput::make('business_shortcode')
-                    ->label('Paybill / Till Number')
-                    ->required()
-                    ->unique(ignoreRecord: true)
-                    ->maxLength(20),
+                        Forms\Components\TextInput::make('business_shortcode')
+                            ->label('Paybill / Till Number')
+                            ->required()
+                            ->unique(ignoreRecord: true)
+                            ->maxLength(20),
+                    ])
+                    ->columns(2),
 
-                Forms\Components\TextInput::make('consumer_key')
-                    ->label('Daraja Consumer Key')
-                    ->required()
-                    ->maxLength(255),
+                Forms\Components\Section::make('Daraja app credentials')
+                    ->description('The Consumer Key and Secret from your Daraja app - Safaricom uses this same pair to authenticate BOTH STK push and C2B calls, there is no separate key per feature. The STK Passkey and C2B registration below are configured separately because those two use different parts of the Daraja API, even though they share this same key/secret.')
+                    ->schema([
+                        Forms\Components\TextInput::make('consumer_key')
+                            ->label('Daraja Consumer Key')
+                            ->required()
+                            ->maxLength(255),
 
-                Forms\Components\TextInput::make('consumer_secret')
-                    ->label('Daraja Consumer Secret')
-                    ->password()
-                    ->revealable()
-                    ->required()
-                    ->maxLength(255),
+                        Forms\Components\TextInput::make('consumer_secret')
+                            ->label('Daraja Consumer Secret')
+                            ->password()
+                            ->revealable()
+                            ->required()
+                            ->maxLength(255),
 
-                Forms\Components\TextInput::make('passkey')
-                    ->label('M-Pesa Online Passkey')
-                    ->password()
-                    ->revealable()
-                    ->helperText('Needed for STK push in live mode - optional in sandbox.')
-                    ->maxLength(255),
+                        Forms\Components\Toggle::make('sandbox')
+                            ->label('Use Sandbox (Daraja Test)')
+                            ->default(true),
+                    ])
+                    ->columns(2),
 
-                Forms\Components\Toggle::make('sandbox')
-                    ->label('Use Sandbox (Daraja Test)')
-                    ->default(true),
+                Forms\Components\Section::make('STK push ("Pay Now" button)')
+                    ->description('Lets a tenant pay by tapping "Pay Now" and confirming a prompt on their phone - only these two fields are specific to STK, on top of the shared Daraja credentials above.')
+                    ->schema([
+                        Forms\Components\Toggle::make('stk_enabled')
+                            ->label('Use for "Pay Now" (STK push)')
+                            ->default(true),
 
-                Forms\Components\Toggle::make('stk_enabled')
-                    ->label('Use for "Pay Now" (STK push)')
-                    ->default(true),
+                        Forms\Components\TextInput::make('passkey')
+                            ->label('M-Pesa Online Passkey')
+                            ->password()
+                            ->revealable()
+                            ->helperText('STK-only - not used anywhere in the C2B flow below. Needed in live mode, optional in sandbox.')
+                            ->maxLength(255),
+                    ])
+                    ->columns(2),
 
-                Forms\Components\Placeholder::make('c2b_status')
-                    ->label('C2B (Paybill payment) reconciliation')
-                    ->content(fn (?MpesaChannel $record) => match (true) {
-                        !auth()->user()?->landlord?->c2b_enabled => 'Not enabled for your account yet - contact support to have this turned on.',
-                        $record && $record->c2b_registered_at => 'Registered with Safaricom on ' . $record->c2b_registered_at->format('d M Y, H:i') . '. Use the "Re-register C2B" button above if you change these credentials.',
-                        $record => 'Not yet registered - save this channel, then use the "Register C2B" button above.',
-                        default => 'Save this channel first, then register it for C2B.',
-                    }),
+                Forms\Components\Section::make('C2B (Paybill payment reconciliation)')
+                    ->description('Lets a tenant who pays this Paybill/Till directly (outside "Pay Now") still get matched to their invoice automatically - uses the same Daraja credentials and the Paybill/Till number above, no separate key.')
+                    ->schema([
+                        Forms\Components\Placeholder::make('c2b_status')
+                            ->label('Status')
+                            ->content(fn (?MpesaChannel $record) => match (true) {
+                                !auth()->user()?->landlord?->c2b_enabled => 'Not enabled for your account yet - contact support to have this turned on.',
+                                $record && $record->c2b_registered_at => 'Registered with Safaricom on ' . $record->c2b_registered_at->format('d M Y, H:i') . '. Use the "Re-register C2B" button above if you change these credentials.',
+                                $record => 'Not yet registered - save this channel, then use the "Register C2B" button above.',
+                                default => 'Save this channel first, then register it for C2B.',
+                            }),
+                    ]),
             ]);
     }
 
