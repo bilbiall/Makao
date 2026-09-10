@@ -23,8 +23,17 @@
     </div>
 
     @if ($showAddUnit)
-        <div class="rounded-2xl bg-white border border-slate-200 shadow-sm p-4 space-y-3 dark:bg-slate-900 dark:border-slate-800">
-            <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ $editingUnitId ? 'Edit unit' : 'New unit' }}</p>
+        <div class="fixed inset-0 z-50">
+            <div class="absolute inset-0 bg-slate-900/40" wire:click="cancelUnitForm"></div>
+            <div class="absolute inset-x-0 bottom-0 sm:inset-0 sm:flex sm:items-center sm:justify-center">
+                <div class="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg max-h-[85vh] overflow-y-auto shadow-xl dark:bg-slate-900">
+                    <div class="sticky top-0 bg-white border-b border-slate-200 p-4 flex items-center justify-between dark:bg-slate-900 dark:border-slate-800">
+                        <p class="font-semibold text-slate-900 dark:text-slate-100">{{ $editingUnitId ? 'Edit unit' : 'New unit' }}</p>
+                        <button type="button" wire:click="cancelUnitForm" class="p-1 text-slate-400 hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-300" aria-label="Close">
+                            @svg('heroicon-o-x-mark', 'w-5 h-5')
+                        </button>
+                    </div>
+                    <div class="p-4 space-y-3">
             <div>
                 <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Property</label>
                 <select wire:model="unit_property_id" class="{{ $fieldClass }}">
@@ -132,12 +141,47 @@
                 <div>
                     <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Photos</label>
 
-                    @if (count($unit_existing_photos))
+                    @php
+                        $orderedPhotos = collect($unit_photo_order)->map(function ($key) use ($unit_existing_photos, $unit_new_photos) {
+                            if (str_starts_with($key, 'existing_')) {
+                                $id = (int) substr($key, 9);
+                                $photo = $unit_existing_photos->firstWhere('id', $id);
+
+                                return $photo ? ['key' => $key, 'url' => $photo->url(), 'removeAction' => 'removeExistingPhoto', 'removeArg' => $id] : null;
+                            }
+
+                            $newKey = substr($key, 4);
+                            $file = $unit_new_photos[$newKey] ?? null;
+
+                            return $file ? ['key' => $key, 'url' => $file->temporaryUrl(), 'removeAction' => 'removeNewPhoto', 'removeArg' => $newKey] : null;
+                        })->filter()->values();
+                    @endphp
+
+                    @if ($orderedPhotos->isEmpty())
+                        <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">No photos yet. The first photo becomes the cover shown on the public listing.</p>
+                    @else
                         <div class="mt-1 grid grid-cols-3 gap-2">
-                            @foreach ($unit_existing_photos as $photo)
+                            @foreach ($orderedPhotos as $index => $photo)
                                 <div class="relative">
-                                    <img src="{{ $photo->url() }}" class="h-20 w-full rounded-lg object-cover border border-slate-200 dark:border-slate-700">
-                                    <button type="button" wire:click="removeExistingPhoto({{ $photo->id }})" wire:confirm="Remove this photo?" class="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-rose-600 text-white text-xs leading-none">&times;</button>
+                                    <img src="{{ $photo['url'] }}" class="h-20 w-full rounded-lg object-cover border border-slate-200 dark:border-slate-700">
+
+                                    @if ($index === 0)
+                                        <span class="absolute bottom-1 left-1 rounded bg-emerald-600 px-1.5 py-0.5 text-[10px] font-semibold text-white">Cover</span>
+                                    @endif
+
+                                    <button type="button"
+                                        @if ($photo['removeAction'] === 'removeExistingPhoto') wire:confirm="Remove this photo?" @endif
+                                        wire:click="{{ $photo['removeAction'] }}('{{ $photo['removeArg'] }}')"
+                                        class="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-rose-600 text-white text-xs leading-none">&times;</button>
+
+                                    <div class="absolute bottom-1 right-1 flex gap-0.5">
+                                        @if ($index > 0)
+                                            <button type="button" wire:click="movePhoto('{{ $photo['key'] }}', -1)" class="flex h-5 w-5 items-center justify-center rounded-full bg-slate-900/70 text-white text-xs leading-none" title="Move earlier">&larr;</button>
+                                        @endif
+                                        @if ($index < $orderedPhotos->count() - 1)
+                                            <button type="button" wire:click="movePhoto('{{ $photo['key'] }}', 1)" class="flex h-5 w-5 items-center justify-center rounded-full bg-slate-900/70 text-white text-xs leading-none" title="Move later">&rarr;</button>
+                                        @endif
+                                    </div>
                                 </div>
                             @endforeach
                         </div>
@@ -147,23 +191,16 @@
                     <div wire:loading wire:target="unit_new_photos" class="text-xs text-slate-500 dark:text-slate-400 mt-1">Uploading…</div>
                     @error('unit_new_photos.*') <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p> @enderror
 
-                    @if (count($unit_new_photos))
-                        <div class="mt-2 grid grid-cols-3 gap-2">
-                            @foreach ($unit_new_photos as $index => $newPhoto)
-                                <div class="relative">
-                                    <img src="{{ $newPhoto->temporaryUrl() }}" class="h-20 w-full rounded-lg object-cover border border-slate-200 dark:border-slate-700">
-                                    <button type="button" wire:click="removeNewPhoto({{ $index }})" class="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-rose-600 text-white text-xs leading-none">&times;</button>
-                                </div>
-                            @endforeach
-                        </div>
-                        <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Photos are compressed automatically when you save.</p>
-                    @endif
+                    <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Use the arrows to reorder - the first photo is the cover shown on the public listing. New photos are compressed automatically when you save.</p>
                 </div>
             @endif
 
             <div class="flex gap-3">
                 <button wire:click="cancelUnitForm" class="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300">Cancel</button>
                 <button wire:click="saveUnit" wire:loading.attr="disabled" wire:target="saveUnit" class="flex-1 rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">{{ $editingUnitId ? 'Save changes' : 'Add unit' }}</button>
+            </div>
+                    </div>
+                </div>
             </div>
         </div>
     @endif

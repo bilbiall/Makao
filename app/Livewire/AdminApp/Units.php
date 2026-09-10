@@ -62,11 +62,27 @@ class Units extends Component
     public array $unit_amenities = [];
     public array $unit_nearby = [];
 
-    /** Newly-selected photo uploads waiting to be compressed + saved (append, not replace). */
+    /**
+     * Newly-selected photo uploads waiting to be compressed + saved, keyed by a
+     * stable "new_xxxx" string (not the raw input index) so a photo keeps its
+     * identity across re-renders and repeated file picks - see
+     * updatingUnitNewPhotos()/updatedUnitNewPhotos().
+     */
     public array $unit_new_photos = [];
 
     /** Existing HousePhoto rows for the unit being edited - shown with a remove button each. */
     public $unit_existing_photos = [];
+
+    /**
+     * Single display order across BOTH existing and newly-picked photos, as
+     * "existing_{id}" / "new_{key}" strings - position 0 is the cover photo
+     * shown on the public listing. Reordered via movePhoto(); persisted to
+     * each HousePhoto's sort_order in applyPhotoOrder() at save time.
+     */
+    public array $unit_photo_order = [];
+
+    /** Scratch space so updatedUnitNewPhotos() can see the pre-update selection - see updatingUnitNewPhotos(). */
+    protected array $unitNewPhotosBeforeUpdate = [];
 
     public array $selectedUnitIds = [];
 
@@ -435,6 +451,7 @@ class Units extends Component
 
         $this->unit_existing_photos = $house->photos()->orderBy('sort_order')->get();
         $this->unit_new_photos = [];
+        $this->unit_photo_order = $this->unit_existing_photos->map(fn ($p) => "existing_{$p->id}")->all();
 
         $this->showAddUnit = true;
     }
@@ -455,17 +472,70 @@ class Units extends Component
         $photo->delete();
 
         $this->unit_existing_photos = $this->unit_existing_photos->reject(fn ($p) => $p->id === $photoId);
+        $this->removeFromPhotoOrder("existing_{$photoId}");
     }
 
-    public function removeNewPhoto(int $index): void
+    public function removeNewPhoto(string $key): void
     {
-        unset($this->unit_new_photos[$index]);
-        $this->unit_new_photos = array_values($this->unit_new_photos);
+        unset($this->unit_new_photos[$key]);
+        $this->removeFromPhotoOrder("new_{$key}");
+    }
+
+    private function removeFromPhotoOrder(string $key): void
+    {
+        $this->unit_photo_order = array_values(array_filter(
+            $this->unit_photo_order,
+            fn ($k) => $k !== $key
+        ));
+    }
+
+    /**
+     * Livewire replaces $unit_new_photos wholesale with whatever the file
+     * input's current FileList is - stash the prior selection here so
+     * updatedUnitNewPhotos() can merge instead of losing photos picked in an
+     * earlier round (native <input multiple> doesn't accumulate on its own).
+     */
+    public function updatingUnitNewPhotos($value): void
+    {
+        $this->unitNewPhotosBeforeUpdate = $this->unit_new_photos;
+    }
+
+    public function updatedUnitNewPhotos($value): void
+    {
+        $incoming = is_array($value) ? $value : [$value];
+        $merged = $this->unitNewPhotosBeforeUpdate;
+
+        foreach ($incoming as $file) {
+            $key = Str::random(12);
+            $merged[$key] = $file;
+            $this->unit_photo_order[] = "new_{$key}";
+        }
+
+        $this->unit_new_photos = $merged;
+    }
+
+    /**
+     * Moves the photo at $key one slot earlier ($direction -1) or later (+1)
+     * in unit_photo_order - position 0 becomes the public listing's cover photo.
+     */
+    public function movePhoto(string $key, int $direction): void
+    {
+        $index = array_search($key, $this->unit_photo_order, true);
+        $target = $index + $direction;
+
+        if ($index === false || $target < 0 || $target >= count($this->unit_photo_order)) {
+            return;
+        }
+
+        [$this->unit_photo_order[$index], $this->unit_photo_order[$target]]
+            = [$this->unit_photo_order[$target], $this->unit_photo_order[$index]];
     }
 
     /**
      * Compresses and stores any newly-selected uploads (see ImageCompressor),
      * appending after whatever photos already exist rather than replacing them.
+     * Swaps each temporary "new_xxx" order key for the real "existing_{id}"
+     * once its HousePhoto row exists, so applyPhotoOrder() can place it.
      */
     private function storeNewPhotos(House $house): void
     {
@@ -477,23 +547,40 @@ class Units extends Component
         $directory = 'house-photos';
         $disk->makeDirectory($directory);
 
-        $nextSortOrder = (int) $house->photos()->max('sort_order');
         $compressor = new ImageCompressor();
 
-        foreach ($this->unit_new_photos as $upload) {
-            $nextSortOrder++;
+        foreach ($this->unit_new_photos as $key => $upload) {
             $relativePath = $directory.'/'.Str::random(24).'.jpg';
 
             $compressor->compress($upload->getRealPath(), $disk->path($relativePath));
 
-            HousePhoto::create([
+            $photo = HousePhoto::create([
                 'house_id' => $house->id,
                 'path' => $relativePath,
-                'sort_order' => $nextSortOrder,
+                'sort_order' => 0,
             ]);
+
+            $this->unit_photo_order = array_map(
+                fn ($k) => $k === "new_{$key}" ? "existing_{$photo->id}" : $k,
+                $this->unit_photo_order
+            );
         }
 
         $this->unit_new_photos = [];
+    }
+
+    /** Writes unit_photo_order's final positions to each HousePhoto's sort_order - position 0 is the cover photo. */
+    private function applyPhotoOrder(House $house): void
+    {
+        foreach ($this->unit_photo_order as $position => $key) {
+            if (!str_starts_with($key, 'existing_')) {
+                continue;
+            }
+
+            HousePhoto::where('id', (int) substr($key, 9))
+                ->where('house_id', $house->id)
+                ->update(['sort_order' => $position]);
+        }
     }
 
     public function cancelUnitForm(): void
@@ -507,6 +594,7 @@ class Units extends Component
             'unit_property_id', 'unit_name', 'unit_display_name', 'unit_type', 'unit_rent_amount',
             'unit_bnb_nightly', 'unit_bnb_weekly', 'unit_bnb_monthly', 'showAddUnit', 'editingUnitId',
             'unit_description', 'unit_amenities', 'unit_nearby', 'unit_new_photos', 'unit_existing_photos',
+            'unit_photo_order',
         ]);
         $this->unit_listing_mode = 'long_term';
         $this->unit_status = 'Vacant';
@@ -569,6 +657,7 @@ class Units extends Component
             }
 
             $this->storeNewPhotos($house);
+            $this->applyPhotoOrder($house);
 
             $this->resetUnitForm();
             session()->flash('unit-success', 'Unit updated.');
@@ -591,6 +680,7 @@ class Units extends Component
         }
 
         $this->storeNewPhotos($house);
+        $this->applyPhotoOrder($house);
 
         $this->resetUnitForm();
         $this->resetPage();
