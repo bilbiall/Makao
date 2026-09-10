@@ -33,6 +33,7 @@ class StaffPermissions
     public const CREATE_BILLS = 'create_bills';
     public const EDIT_BILLS = 'edit_bills';
     public const DELETE_BILLS = 'delete_bills';
+    public const MANAGE_BILL_TYPES = 'manage_bill_types';
 
     public const CREATE_PROPERTIES = 'create_properties';
     public const EDIT_PROPERTIES = 'edit_properties';
@@ -81,6 +82,7 @@ class StaffPermissions
                 self::CREATE_BILLS => 'Create bills',
                 self::EDIT_BILLS => 'Edit bills',
                 self::DELETE_BILLS => 'Delete bills',
+                self::MANAGE_BILL_TYPES => 'Manage bill types (create/edit charge types, mark recurring)',
             ],
             'Properties & Units' => [
                 self::CREATE_PROPERTIES => 'Create properties & units',

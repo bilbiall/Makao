@@ -53,29 +53,17 @@ class BillResource extends Resource
                     ->date('F Y')
                     ->sortable(),
 
-                TextColumn::make('water')
-                    ->label('Water (KES)')
-                    ->money('KES'),
-
-                TextColumn::make('electricity')
-                    ->label('Electricity (KES)')
-                    ->money('KES'),
-
-                TextColumn::make('internet')
-                    ->label('Internet (KES)')
-                    ->money('KES'),
-
-                TextColumn::make('trash')
-                    ->label('Trash (KES)')
-                    ->money('KES'),
+                TextColumn::make('charges')
+                    ->label('Charges')
+                    ->getStateUsing(fn ($record) => $record->items
+                        ->map(fn ($item) => ($item->billType?->name ?? 'Charge') . ': ' . number_format($item->amount))
+                        ->implode(', ') ?: '—')
+                    ->wrap(),
 
                 TextColumn::make('total')
                     ->label('Total (KES)')
                     ->money('KES')
-                    ->getStateUsing(
-                        fn($record) =>
-                        $record->water + $record->electricity + $record->internet + $record->trash
-                    ),
+                    ->getStateUsing(fn ($record) => $record->total),
             ])
             ->filters([
                 //tenants filters

@@ -176,6 +176,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureAdminRole::class])->prefix
     Route::get('/payments/print', [\App\Http\Controllers\AdminPrintController::class, 'payments'])->name('app.admin.payments.print');
     Route::get('/tenants/print', [\App\Http\Controllers\AdminPrintController::class, 'tenants'])->name('app.admin.tenants.print');
     Route::get('/bills', \App\Livewire\AdminApp\Bills::class)->name('app.admin.bills');
+    Route::get('/bill-types', \App\Livewire\AdminApp\BillTypes::class)->name('app.admin.bill-types');
     Route::get('/expenses', \App\Livewire\AdminApp\Expenses::class)->name('app.admin.expenses');
     Route::get('/issues', \App\Livewire\AdminApp\Issues::class)->name('app.admin.issues');
     Route::get('/notices', \App\Livewire\AdminApp\Notices::class)->name('app.admin.notices');

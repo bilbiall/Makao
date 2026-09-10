@@ -75,7 +75,7 @@ class ManageLandlordSettings extends Page implements HasForms
      * Points at the superadmin's own M-Pesa Channels resource (per-property Daraja
      * credentials + sandbox toggle + C2B registration) rather than duplicating that
      * schema here - MpesaChannel is a separate table from this page's Setting-payload
-     * form, so it can't just be another field on this same form. See C2BFORRENT.md.
+     * form, so it can't just be another field on this same form. See darajaapis.md.
      */
     protected function mpesaChannelsTab(): Forms\Components\Tabs\Tab
     {
@@ -116,7 +116,7 @@ class ManageLandlordSettings extends Page implements HasForms
                     ->content(new \Illuminate\Support\HtmlString(
                         '<p class="text-sm text-gray-600 dark:text-gray-400 mb-3">'
                         . 'Per-property Daraja (M-Pesa) credentials for STK push and C2B Paybill reconciliation - live or sandbox, for testing before going live. '
-                        . 'See <code>C2BFORRENT.md</code> for the full setup and Daraja sandbox testing walkthrough.'
+                        . 'See <code>darajaapis.md</code> for the full setup and Daraja sandbox testing walkthrough.'
                         . '</p>'
                         . $table
                         . "<a href=\"{$createUrl}\" class=\"mt-3 inline-block rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-500\">Add M-Pesa Channel</a>"

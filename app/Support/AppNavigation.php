@@ -44,6 +44,7 @@ class AppNavigation
                 // the main nav, which is where a landlord actually lands by default.
                 ['label' => 'M-Pesa Setup (Advanced)', 'icon' => 'heroicon-o-key', 'route' => 'filament.admin.resources.mpesa-channels.index', 'tab' => false],
                 ['label' => 'Bills', 'icon' => 'heroicon-o-receipt-percent', 'route' => 'app.admin.bills', 'tab' => false],
+                ['label' => 'Bill Types', 'icon' => 'heroicon-o-adjustments-horizontal', 'route' => 'app.admin.bill-types', 'tab' => false],
                 ['label' => 'Expenses', 'icon' => 'heroicon-o-banknotes', 'route' => 'app.admin.expenses', 'tab' => false],
                 ['label' => 'Issues', 'icon' => 'heroicon-o-wrench-screwdriver', 'route' => 'app.admin.issues', 'tab' => false],
                 ['label' => 'Notices', 'icon' => 'heroicon-o-flag', 'route' => 'app.admin.notices', 'tab' => false],
@@ -72,6 +73,7 @@ class AppNavigation
                 ['label' => 'Payments', 'icon' => 'heroicon-o-banknotes', 'route' => 'app.admin.payments', 'tab' => false],
                 ['label' => 'M-Pesa Review', 'icon' => 'heroicon-o-device-phone-mobile', 'route' => 'app.admin.mpesa-review', 'tab' => false],
                 ['label' => 'Bills', 'icon' => 'heroicon-o-receipt-percent', 'route' => 'app.admin.bills', 'tab' => false],
+                ['label' => 'Bill Types', 'icon' => 'heroicon-o-adjustments-horizontal', 'route' => 'app.admin.bill-types', 'tab' => false],
                 ['label' => 'Issues', 'icon' => 'heroicon-o-wrench-screwdriver', 'route' => 'app.admin.issues', 'tab' => false],
                 ['label' => 'Notices', 'icon' => 'heroicon-o-flag', 'route' => 'app.admin.notices', 'tab' => false],
                 ['label' => 'Bookings', 'icon' => 'heroicon-o-calendar-days', 'route' => 'app.admin.bookings', 'tab' => false],

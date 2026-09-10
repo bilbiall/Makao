@@ -16,7 +16,7 @@ class Bills extends Component
         $tenant = Auth::user()->tenant;
 
         $bills = $tenant
-            ? Bill::where('tenant_id', $tenant->id)->latest('bill_month')->paginate(10)
+            ? Bill::where('tenant_id', $tenant->id)->with('items.billType')->latest('bill_month')->paginate(10)
             : Bill::whereRaw('1 = 0')->paginate(10);
 
         return view('livewire.tenant.bills', ['bills' => $bills])

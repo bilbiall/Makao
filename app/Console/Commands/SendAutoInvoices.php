@@ -105,9 +105,7 @@ class SendAutoInvoices extends Command
                     ->whereYear('bill_month', $year)
                     ->first();
 
-                $billTotal = $bills
-                    ? ($bills->water + $bills->electricity + $bills->trash + $bills->internet)
-                    : 0;
+                $billTotal = $bills ? $bills->total : 0;
 
                 $total = $rent + $billTotal;
 

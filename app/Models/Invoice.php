@@ -107,9 +107,7 @@ class Invoice extends Model
                     ->whereYear('bill_month', $periodDate->year)
                     ->get();
 
-                $billTotal = $bills->sum(function ($bill) {
-                    return $bill->water + $bill->electricity + $bill->trash + $bill->internet;
-                });
+                $billTotal = $bills->sum(fn ($bill) => $bill->total);
 
                 $invoice->amount = $rent + $billTotal; // <<== Important
             }

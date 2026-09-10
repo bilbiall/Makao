@@ -50,10 +50,37 @@ class BillResource extends Resource
                     ->label('Bill Month')
                     ->required(),
 
-                TextInput::make('electricity')->numeric()->default(0)->required(),
-                TextInput::make('water')->numeric()->default(0)->required(),
-                TextInput::make('trash')->numeric()->default(0)->required(),
-                TextInput::make('internet')->numeric()->default(0)->required(),
+                Forms\Components\Repeater::make('items')
+                    ->label('Charges')
+                    ->relationship('items')
+                    ->schema([
+                        Select::make('bill_type_id')
+                            ->label('Type')
+                            ->options(fn () => \App\Models\BillType::where('landlord_id', auth()->user()->landlord_id)
+                                ->where('is_active', true)
+                                ->orderBy('name')
+                                ->pluck('name', 'id'))
+                            ->searchable()
+                            ->required()
+                            ->live()
+                            ->afterStateUpdated(function ($state, Forms\Set $set) {
+                                $type = $state ? \App\Models\BillType::find($state) : null;
+
+                                if ($type && $type->default_amount !== null) {
+                                    $set('amount', $type->default_amount);
+                                }
+                            }),
+
+                        TextInput::make('amount')
+                            ->label('Amount (KES)')
+                            ->numeric()
+                            ->minValue(0)
+                            ->required(),
+                    ])
+                    ->columns(2)
+                    ->addActionLabel('+ Add a charge')
+                    ->defaultItems(0)
+                    ->helperText('No bill types set up yet? Add one first under Bill Types.'),
 
                 Textarea::make('note')->nullable(),
 
@@ -75,29 +102,17 @@ class BillResource extends Resource
                     ->date('F Y')
                     ->sortable(),
 
-                TextColumn::make('water')
-                    ->label('Water (KES)')
-                    ->money('KES'),
-
-                TextColumn::make('electricity')
-                    ->label('Electricity (KES)')
-                    ->money('KES'),
-
-                TextColumn::make('internet')
-                    ->label('Internet (KES)')
-                    ->money('KES'),
-
-                TextColumn::make('trash')
-                    ->label('Trash (KES)')
-                    ->money('KES'),
+                TextColumn::make('charges')
+                    ->label('Charges')
+                    ->getStateUsing(fn ($record) => $record->items
+                        ->map(fn ($item) => ($item->billType?->name ?? 'Deleted type') . ': ' . number_format($item->amount))
+                        ->implode(', ') ?: '—')
+                    ->wrap(),
 
                 TextColumn::make('total')
                     ->label('Total (KES)')
                     ->money('KES')
-                    ->getStateUsing(
-                        fn($record) =>
-                        $record->water + $record->electricity + $record->internet + $record->trash
-                    ),
+                    ->getStateUsing(fn ($record) => $record->total),
 
                 TextColumn::make('note')
                     ->label('Note')

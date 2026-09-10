@@ -52,7 +52,7 @@ php artisan migrate --force
 
 M-Pesa and Pesapal credentials, SMS gateway overrides, and email templates are **not**
 set via `.env` - they're configured through the app itself (log in as an admin/landlord
-→ Settings) and stored in the `app_settings` table. See `MPESA_INTEGRATION.md` and
+→ Settings) and stored in the `app_settings` table. See `darajaapis.md` and
 `PESAPAL_INTEGRATION.md` for the specifics of each gateway.
 
 ## 5. Seed data
