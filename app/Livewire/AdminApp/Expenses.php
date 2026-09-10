@@ -2,12 +2,17 @@
 
 namespace App\Livewire\AdminApp;
 
+use App\Livewire\Concerns\ExportsCsv;
 use App\Models\Expense;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 class Expenses extends Component
 {
+    use WithPagination;
+    use ExportsCsv;
+
     public bool $showForm = false;
     public ?int $editingId = null;
 
@@ -98,9 +103,31 @@ class Expenses extends Component
         session()->flash('expense-saved', 'Expense deleted.');
     }
 
+    public function export()
+    {
+        abort_unless($this->canManageExpenses(), 403);
+
+        $expenses = Expense::orderByDesc('expense_month')->get();
+
+        return $this->streamCsv(
+            'expenses.csv',
+            ['Month', 'Electricity', 'Water', 'Internet', 'Maintenance', 'Other', 'Total', 'Notes'],
+            $expenses->map(fn (Expense $expense) => [
+                $expense->expense_month->format('Y-m'),
+                $expense->electricity,
+                $expense->water,
+                $expense->internet,
+                $expense->maintenance,
+                $expense->other,
+                $expense->total(),
+                $expense->notes,
+            ])
+        );
+    }
+
     public function render()
     {
-        $expenses = Expense::orderByDesc('expense_month')->get();
+        $expenses = Expense::orderByDesc('expense_month')->paginate(15);
 
         return view('livewire.admin-app.expenses', ['expenses' => $expenses])
             ->layout('components.layouts.app', ['title' => 'Expenses']);

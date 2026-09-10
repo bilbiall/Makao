@@ -2,7 +2,9 @@
 
 namespace App\Livewire\AdminApp;
 
+use App\Livewire\Concerns\ExportsCsv;
 use App\Models\Invoice;
+use App\Models\MpesaTransaction;
 use App\Models\Payment;
 use App\Models\Tenant;
 use App\Support\StaffScope;
@@ -12,6 +14,7 @@ use Livewire\WithPagination;
 class Payments extends Component
 {
     use WithPagination;
+    use ExportsCsv;
 
     public bool $showForm = false;
     public $tenant_id = '';
@@ -22,9 +25,19 @@ class Payments extends Component
     public string $payment_date = '';
 
     public string $search = '';
+    public string $monthFilter = '';
+    public string $typeFilter = '';
 
     // Which payment's detail popup is open, if any.
     public ?int $selectedPaymentId = null;
+
+    // Editing an existing payment.
+    public ?int $editingId = null;
+    public $edit_amount_paid = '';
+    public string $edit_payment_reference = '';
+    public string $edit_payment_method = 'cash';
+    public string $edit_payment_date = '';
+    public string $edit_mpesa_transaction_id = '';
 
     public function mount(): void
     {
@@ -32,6 +45,16 @@ class Payments extends Component
     }
 
     public function updatingSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingMonthFilter(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingTypeFilter(): void
     {
         $this->resetPage();
     }
@@ -110,7 +133,100 @@ class Payments extends Component
             });
         }
 
+        if ($this->monthFilter) {
+            $date = \Carbon\Carbon::parse($this->monthFilter . '-01');
+            $query->whereMonth('payment_date', $date->month)->whereYear('payment_date', $date->year);
+        }
+
+        if ($this->typeFilter) {
+            $query->where('payment_type', $this->typeFilter);
+        }
+
         return $query;
+    }
+
+    public function startEdit(int $paymentId): void
+    {
+        $payment = StaffScope::onTenantChild(Payment::query())->findOrFail($paymentId);
+
+        $this->editingId = $payment->id;
+        $this->edit_amount_paid = $payment->amount_paid;
+        $this->edit_payment_reference = $payment->payment_reference ?? '';
+        $this->edit_payment_method = $payment->payment_method ?? 'cash';
+        $this->edit_payment_date = $payment->payment_date ? \Carbon\Carbon::parse($payment->payment_date)->format('Y-m-d') : now()->format('Y-m-d');
+        $this->edit_mpesa_transaction_id = '';
+    }
+
+    public function cancelEdit(): void
+    {
+        $this->reset(['editingId', 'edit_amount_paid', 'edit_payment_reference', 'edit_payment_method', 'edit_payment_date', 'edit_mpesa_transaction_id']);
+    }
+
+    public function updatedEditMpesaTransactionId(): void
+    {
+        if ($this->edit_mpesa_transaction_id && $transaction = MpesaTransaction::find($this->edit_mpesa_transaction_id)) {
+            $this->edit_payment_reference = $transaction->reference;
+        }
+    }
+
+    public function update(): void
+    {
+        $this->validate([
+            'edit_amount_paid' => 'required|numeric|min:1',
+            'edit_payment_reference' => 'required|string|max:255',
+            'edit_payment_method' => 'required|string',
+            'edit_payment_date' => 'required|date',
+        ]);
+
+        $payment = StaffScope::onTenantChild(Payment::query())->findOrFail($this->editingId);
+
+        // Payment::booted()'s `updated` listener recalculates the invoice's
+        // balance/status and the tenant's running balance whenever
+        // amount_paid actually changes - no manual recompute needed here.
+        $payment->update([
+            'amount_paid' => $this->edit_amount_paid,
+            'payment_reference' => $this->edit_payment_reference,
+            'payment_method' => $this->edit_payment_method,
+            'payment_date' => $this->edit_payment_date,
+        ]);
+
+        $this->cancelEdit();
+        session()->flash('payment-recorded', 'Payment updated.');
+    }
+
+    public function delete(int $paymentId): void
+    {
+        StaffScope::onTenantChild(Payment::query())->findOrFail($paymentId)->delete();
+
+        session()->flash('payment-recorded', 'Payment deleted.');
+    }
+
+    public function getUnmatchedMpesaOptionsProperty()
+    {
+        return MpesaTransaction::whereIn('status', ['completed', 'success'])
+            ->whereDoesntHave('payment', fn ($q) => $q->whereNotNull('id'))
+            ->orderByDesc('created_at')
+            ->limit(50)
+            ->get();
+    }
+
+    public function export()
+    {
+        $payments = $this->filteredQuery()->get();
+
+        return $this->streamCsv(
+            'payments.csv',
+            ['Tenant', 'Reference', 'Invoice', 'Amount Paid', 'Type', 'Balance', 'Payment Date'],
+            $payments->map(fn (Payment $payment) => [
+                $payment->tenant?->tenant_name,
+                $payment->payment_reference,
+                $payment->invoice?->invoice_number,
+                $payment->amount_paid,
+                $payment->payment_type,
+                $payment->balance,
+                $payment->payment_date ? \Carbon\Carbon::parse($payment->payment_date)->format('Y-m-d') : '',
+            ])
+        );
     }
 
     public function render()

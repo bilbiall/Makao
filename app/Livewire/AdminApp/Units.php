@@ -2,6 +2,7 @@
 
 namespace App\Livewire\AdminApp;
 
+use App\Livewire\Concerns\ExportsCsv;
 use App\Models\House;
 use App\Models\Landlord;
 use App\Models\Location;
@@ -17,6 +18,7 @@ class Units extends Component
 {
     use WithFileUploads;
     use WithPagination;
+    use ExportsCsv;
 
     #[Url]
     public string $search = '';
@@ -39,6 +41,7 @@ class Units extends Component
     public array $importErrors = [];
 
     public bool $showAddUnit = false;
+    public ?int $editingUnitId = null;
     public string $unit_property_id = '';
     public string $unit_name = '';
     public string $unit_display_name = '';
@@ -48,6 +51,13 @@ class Units extends Component
     public string $unit_bnb_nightly = '';
     public string $unit_bnb_weekly = '';
     public string $unit_bnb_monthly = '';
+    public string $unit_status = 'Vacant';
+    public bool $unit_is_published = true;
+    public string $unit_description = '';
+    public array $unit_amenities = [];
+    public array $unit_nearby = [];
+
+    public array $selectedUnitIds = [];
 
     protected const IMPORT_COLUMNS = [
         'property_name', 'area', 'unit_name', 'unit_type', 'listing_type',
@@ -136,6 +146,56 @@ class Units extends Component
         $house->delete();
         $this->resetPage();
         session()->flash('unit-success', 'Unit deleted.');
+    }
+
+    /**
+     * Occupied units are always skipped (same reasoning as deleteUnit()) rather
+     * than aborting the whole batch, so a mixed selection still deletes what it
+     * safely can.
+     */
+    public function bulkDeleteUnits(): void
+    {
+        $units = $this->unitsQuery()->whereIn('id', $this->selectedUnitIds)->get();
+        $deletable = $units->where('house_status', '!=', 'Occupied');
+        $blockedCount = $units->count() - $deletable->count();
+
+        foreach ($deletable as $unit) {
+            $unit->delete();
+        }
+
+        $this->selectedUnitIds = [];
+        $this->resetPage();
+
+        $message = $deletable->count() . ' unit(s) deleted.';
+        if ($blockedCount > 0) {
+            $message .= " {$blockedCount} occupied unit(s) were skipped.";
+        }
+        session()->flash('unit-success', $message);
+    }
+
+    public function exportUnits()
+    {
+        $units = $this->unitsQuery()->get();
+
+        return $this->streamCsv(
+            'units.csv',
+            ['Property', 'Unit', 'Type', 'Listing Mode', 'Rent/Prices', 'Status', 'Published'],
+            $units->map(function (House $unit) {
+                $price = $unit->listing_mode === 'short_term'
+                    ? $unit->pricePackages->map(fn ($p) => "{$p->billing_unit}:{$p->price}")->implode('; ')
+                    : $unit->rent_amount;
+
+                return [
+                    $unit->location?->location_name,
+                    $unit->house_name,
+                    $unit->house_type,
+                    $unit->listing_mode,
+                    $price,
+                    $unit->house_status,
+                    $unit->is_published ? 'Yes' : 'No',
+                ];
+            })
+        );
     }
 
     public function downloadTemplate()
@@ -300,7 +360,57 @@ class Units extends Component
         ];
     }
 
-    public function addUnit(): void
+    public function startAddUnit(): void
+    {
+        $this->resetUnitForm();
+        $this->showAddUnit = true;
+    }
+
+    public function startEditUnit(int $houseId): void
+    {
+        $house = $this->unitsQuery()->whereKey($houseId)->with('pricePackages')->firstOrFail();
+
+        $this->editingUnitId = $house->id;
+        $this->unit_property_id = (string) $house->location_id;
+        $this->unit_name = $house->house_name;
+        $this->unit_display_name = $house->display_name ?? '';
+        $this->unit_type = $house->house_type;
+        $this->unit_listing_mode = $house->listing_mode;
+        $this->unit_rent_amount = $house->rent_amount !== null ? (string) $house->rent_amount : '';
+        $this->unit_status = $house->house_status;
+        $this->unit_is_published = $house->is_published;
+        $this->unit_description = $house->description ?? '';
+        $this->unit_amenities = $house->amenities ?? [];
+        $this->unit_nearby = $house->nearby_places ?? [];
+
+        $nightly = $house->pricePackages->firstWhere('billing_unit', 'night');
+        $weekly = $house->pricePackages->firstWhere('billing_unit', 'week');
+        $monthly = $house->pricePackages->firstWhere('billing_unit', 'month');
+        $this->unit_bnb_nightly = $nightly ? (string) $nightly->price : '';
+        $this->unit_bnb_weekly = $weekly ? (string) $weekly->price : '';
+        $this->unit_bnb_monthly = $monthly ? (string) $monthly->price : '';
+
+        $this->showAddUnit = true;
+    }
+
+    public function cancelUnitForm(): void
+    {
+        $this->resetUnitForm();
+    }
+
+    protected function resetUnitForm(): void
+    {
+        $this->reset([
+            'unit_property_id', 'unit_name', 'unit_display_name', 'unit_type', 'unit_rent_amount',
+            'unit_bnb_nightly', 'unit_bnb_weekly', 'unit_bnb_monthly', 'showAddUnit', 'editingUnitId',
+            'unit_description', 'unit_amenities', 'unit_nearby',
+        ]);
+        $this->unit_listing_mode = 'long_term';
+        $this->unit_status = 'Vacant';
+        $this->unit_is_published = true;
+    }
+
+    public function saveUnit(): void
     {
         $this->validate($this->addUnitRules());
 
@@ -327,6 +437,38 @@ class Units extends Component
             return;
         }
 
+        $attributes = [
+            'house_name' => $this->unit_name,
+            'display_name' => $this->unit_display_name ?: null,
+            'house_type' => $this->unit_type,
+            'rent_amount' => $this->unit_listing_mode === 'long_term' ? $this->unit_rent_amount : null,
+            'location_id' => $location->id,
+            'listing_mode' => $this->unit_listing_mode,
+        ];
+
+        if ($this->editingUnitId) {
+            $house = $this->unitsQuery()->whereKey($this->editingUnitId)->firstOrFail();
+            $house->update($attributes + [
+                'house_status' => $this->unit_status,
+                'is_published' => $this->unit_is_published,
+                'description' => $this->unit_description ?: null,
+                'amenities' => $this->unit_amenities,
+                'nearby_places' => array_filter($this->unit_nearby, fn ($v) => $v !== '' && $v !== null),
+            ]);
+
+            // Wholesale replace, same as HouseResource::EditHouse - simpler than
+            // diffing which tiers changed, and there are at most 3 rows.
+            $house->pricePackages()->delete();
+            foreach ($bnbPrices as $sortOrder => $price) {
+                $house->pricePackages()->create($price + ['sort_order' => $sortOrder]);
+            }
+
+            $this->resetUnitForm();
+            session()->flash('unit-success', 'Unit updated.');
+
+            return;
+        }
+
         $landlordId = Auth::user()->landlord_id;
         $landlord = $landlordId ? Landlord::find($landlordId) : null;
         $limitService = app(PackageLimitService::class);
@@ -335,25 +477,13 @@ class Units extends Component
             return;
         }
 
-        $house = House::create([
-            'house_name' => $this->unit_name,
-            'display_name' => $this->unit_display_name ?: null,
-            'house_type' => $this->unit_type,
-            'rent_amount' => $this->unit_listing_mode === 'long_term' ? $this->unit_rent_amount : null,
-            'location_id' => $location->id,
-            'house_status' => 'Vacant',
-            'listing_mode' => $this->unit_listing_mode,
-        ]);
+        $house = House::create($attributes + ['house_status' => 'Vacant']);
 
         foreach ($bnbPrices as $sortOrder => $price) {
             $house->pricePackages()->create($price + ['sort_order' => $sortOrder]);
         }
 
-        $this->reset([
-            'unit_property_id', 'unit_name', 'unit_display_name', 'unit_type', 'unit_rent_amount',
-            'unit_bnb_nightly', 'unit_bnb_weekly', 'unit_bnb_monthly', 'showAddUnit',
-        ]);
-        $this->unit_listing_mode = 'long_term';
+        $this->resetUnitForm();
         $this->resetPage();
         session()->flash('unit-success', 'Unit added successfully.');
     }
@@ -364,6 +494,8 @@ class Units extends Component
             'units' => $this->unitsQuery()->paginate(15),
             'properties' => $this->propertiesForFilter(),
             'unitTypes' => House::UNIT_TYPES,
+            'amenityOptions' => House::AMENITIES,
+            'nearbyCategories' => House::NEARBY_CATEGORIES,
         ])->layout('components.layouts.app', ['title' => 'Units', 'hideHeading' => true]);
     }
 }

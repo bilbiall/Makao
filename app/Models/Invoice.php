@@ -42,6 +42,32 @@ class Invoice extends Model
         return $this->hasMany(Payment::class);
     }
 
+    /**
+     * Recompute this invoice's balance/status from its actual payments, and
+     * mirror the result onto the tenant's running balance. This is the single
+     * source of truth Payment::booted() uses on create - it must also be
+     * called whenever a payment is edited or deleted, since neither of those
+     * paths previously re-synced the invoice/tenant balance at all.
+     */
+    public function recalculateBalance(): void
+    {
+        $totalPaid = $this->payments()->sum('amount_paid');
+        $this->balance = $this->amount - $totalPaid;
+
+        $this->status = match (true) {
+            $this->balance <= 0 => 'paid',
+            $this->balance < $this->amount => 'partial',
+            default => 'unpaid',
+        };
+
+        $this->save();
+
+        if ($tenant = $this->tenant) {
+            $tenant->balance = $this->balance;
+            $tenant->save();
+        }
+    }
+
     //to send sms
     protected static function booted()
     {

@@ -28,9 +28,12 @@
                 <option value="revoked">Revoked</option>
             </select>
         </div>
-        <div class="col-span-1 rounded-2xl bg-white border border-slate-200 p-3 dark:bg-slate-900 dark:border-slate-800">
+        <div class="col-span-1 rounded-2xl bg-white border border-slate-200 p-3 dark:bg-slate-900 dark:border-slate-800 flex items-center gap-2">
             <input type="text" wire:model.live.debounce.400ms="search" placeholder="Search name, phone, house"
-                class="w-full h-full bg-transparent text-xs text-slate-600 dark:text-slate-300 placeholder:text-slate-400 focus:outline-none">
+                class="flex-1 h-full bg-transparent text-xs text-slate-600 dark:text-slate-300 placeholder:text-slate-400 focus:outline-none">
+            <button type="button" wire:click="export" class="text-slate-400 hover:text-slate-700 dark:hover:text-slate-300" title="Export CSV">
+                @svg('heroicon-o-arrow-down-tray', 'w-4 h-4')
+            </button>
         </div>
     </div>
 

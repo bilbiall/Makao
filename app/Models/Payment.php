@@ -51,34 +51,14 @@ class Payment extends Model
         $invoice = $payment->invoice;
         $tenant = $payment->tenant;
 
-        // 🔸 Sum all payments for this invoice
-        $totalPaid = $invoice->payments()->sum('amount_paid');
-
-        // 🔸 Calculate new balance for the invoice
-        $invoiceBalance = $invoice->amount - $totalPaid;
-
-        // 🔸 Update the invoice's balance field
-        $invoice->balance = $invoiceBalance;
+        // Recompute the invoice's balance/status from its actual payments,
+        // and mirror it onto the tenant's running balance.
+        $invoice->recalculateBalance();
+        $invoiceBalance = $invoice->balance;
 
         // 🔸 Save the current payment's balance too
         $payment->balance = $invoiceBalance;
         $payment->save(); // Important to persist it
-
-        // 🔸 Update the invoice status based on new balance
-        if ($invoiceBalance <= 0) {
-            $invoice->status = 'paid';
-        } elseif ($invoiceBalance < $invoice->amount) {
-            $invoice->status = 'partial';
-        } else {
-            $invoice->status = 'unpaid';
-        }
-
-        $invoice->save();
-
-        // 🔸 Update tenant balance (overpaid = negative, underpaid = positive)
-        // This value will affect the next invoice's expected amount
-        $tenant->balance = $invoiceBalance;
-        $tenant->save();
 
         // Confirmation SMS/notifications are only for a real new payment - skipped
         // during a bulk data import of historical payment history, see ImportContext
@@ -175,12 +155,30 @@ class Payment extends Model
         SmsHelper::sendSms($tenant->phone_number, $message);
     });*/
     
+    // Editing a payment's amount previously left the invoice/tenant balance
+    // stale (only the create path resynced it) - recompute on every update
+    // too, but only when the amount actually changed, to avoid recursing
+    // into the ->save() this same listener triggers via recalculateBalance().
+    static::updated(function ($payment) {
+        if ($payment->wasChanged('amount_paid') && $invoice = $payment->invoice) {
+            $invoice->recalculateBalance();
+
+            if ($payment->balance != $invoice->balance) {
+                $payment->updateQuietly(['balance' => $invoice->balance]);
+            }
+        }
+    });
+
     static::deleted(function ($payment) {
+        $invoice = $payment->invoice;
+        if ($invoice) {
+            $invoice->recalculateBalance();
+        }
+
         try {
             $actor = auth()->id() ?? null;
             $tenant = $payment->tenant;
-            $invoice = $payment->invoice;
-            $detail = "Payment deleted: KES {$payment->amount_paid} for Invoice {$invoice->invoice_number} (Tenant: {$tenant->tenant_name}, Ref: {$payment->payment_reference})";
+            $detail = "Payment deleted: KES {$payment->amount_paid} for Invoice " . ($invoice->invoice_number ?? 'N/A') . " (Tenant: {$tenant?->tenant_name}, Ref: {$payment->payment_reference})";
             \App\Helpers\ActivityLogger::log('delete_payment', $actor, $detail);
         } catch (\Throwable $e) {
             // ignore

@@ -11,12 +11,18 @@
         </div>
     @endif
 
-    <button wire:click="$set('showAddUnit', true)" class="w-full rounded-xl bg-emerald-600 text-white text-sm font-semibold py-3 hover:bg-emerald-700 transition">
-        + Add unit
-    </button>
+    <div class="flex gap-2">
+        <button wire:click="startAddUnit" class="flex-1 rounded-xl bg-emerald-600 text-white text-sm font-semibold py-3 hover:bg-emerald-700 transition">
+            + Add unit
+        </button>
+        <button type="button" wire:click="exportUnits" class="flex items-center justify-center rounded-xl border border-slate-300 dark:border-slate-700 px-4 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800" title="Export CSV">
+            @svg('heroicon-o-arrow-down-tray', 'w-5 h-5')
+        </button>
+    </div>
 
     @if ($showAddUnit)
         <div class="rounded-2xl bg-white border border-slate-200 shadow-sm p-4 space-y-3 dark:bg-slate-900 dark:border-slate-800">
+            <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ $editingUnitId ? 'Edit unit' : 'New unit' }}</p>
             <div>
                 <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Property</label>
                 <select wire:model="unit_property_id" class="{{ $fieldClass }}">
@@ -82,9 +88,50 @@
                 <p class="text-xs text-slate-500 dark:text-slate-400">Set at least one BnB price.</p>
             @endif
 
+            @if ($editingUnitId)
+                <div>
+                    <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Status</label>
+                    <select wire:model="unit_status" class="{{ $fieldClass }}">
+                        <option value="Vacant">Vacant</option>
+                        <option value="Occupied">Occupied</option>
+                        <option value="Unavailable">Unavailable (e.g. renovating)</option>
+                    </select>
+                </div>
+                <label class="flex items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-400">
+                    <input type="checkbox" wire:model="unit_is_published" class="rounded border-slate-300 dark:border-slate-700">
+                    Listed on the public site
+                </label>
+                <div>
+                    <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Description</label>
+                    <textarea wire:model="unit_description" rows="3" class="{{ $fieldClass }}"></textarea>
+                </div>
+                <div>
+                    <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Amenities</label>
+                    <div class="mt-1 grid grid-cols-2 gap-1.5 max-h-40 overflow-y-auto">
+                        @foreach ($amenityOptions as $amenity)
+                            <label class="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
+                                <input type="checkbox" wire:model="unit_amenities" value="{{ $amenity }}" class="rounded border-slate-300 dark:border-slate-700">
+                                {{ $amenity }}
+                            </label>
+                        @endforeach
+                    </div>
+                </div>
+                <div>
+                    <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Nearby places (minutes away)</label>
+                    <div class="mt-1 grid grid-cols-2 gap-2">
+                        @foreach ($nearbyCategories as $slug => $label)
+                            <div>
+                                <label class="text-[11px] text-slate-500 dark:text-slate-400">{{ $label }}</label>
+                                <input type="number" min="0" wire:model="unit_nearby.{{ $slug }}" placeholder="mins" class="{{ $fieldClass }} mt-0.5">
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
             <div class="flex gap-3">
-                <button wire:click="$set('showAddUnit', false)" class="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300">Cancel</button>
-                <button wire:click="addUnit" wire:loading.attr="disabled" wire:target="addUnit" class="flex-1 rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">Add unit</button>
+                <button wire:click="cancelUnitForm" class="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300">Cancel</button>
+                <button wire:click="saveUnit" wire:loading.attr="disabled" wire:target="saveUnit" class="flex-1 rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">{{ $editingUnitId ? 'Save changes' : 'Add unit' }}</button>
             </div>
         </div>
     @endif
@@ -229,10 +276,23 @@
         </div>
     </div>
 
+    @if (count($selectedUnitIds))
+        <div class="flex items-center justify-between rounded-xl bg-slate-100 border border-slate-200 px-4 py-2 dark:bg-slate-800 dark:border-slate-700">
+            <span class="text-xs font-medium text-slate-600 dark:text-slate-300">{{ count($selectedUnitIds) }} selected</span>
+            <button type="button" wire:click="bulkDeleteUnits" wire:confirm="Delete the selected units? Occupied units will be skipped. This can't be undone." class="text-xs font-semibold text-rose-600 dark:text-rose-400 hover:underline">
+                Delete selected
+            </button>
+        </div>
+    @endif
+
     {{-- Unit list --}}
     <div class="rounded-2xl bg-white border border-slate-200 shadow-sm divide-y divide-slate-50 dark:bg-slate-900 dark:border-slate-800 dark:divide-slate-800">
         @forelse ($units as $unit)
             <div class="flex items-center justify-between px-4 py-3 text-sm">
+                <div class="flex items-center gap-3 min-w-0">
+                    @if ($unit->house_status !== 'Occupied')
+                        <input type="checkbox" wire:model="selectedUnitIds" value="{{ $unit->id }}" class="rounded border-slate-300 dark:border-slate-700 shrink-0">
+                    @endif
                 <div class="min-w-0">
                     <p class="text-slate-900 dark:text-slate-100 font-medium truncate">
                         {{ $unit->house_name }}
@@ -241,6 +301,7 @@
                         @endif
                     </p>
                     <p class="text-xs text-slate-500 dark:text-slate-400 truncate">{{ $unit->house_type }} · {{ $unit->location?->location_name ?? '—' }}</p>
+                </div>
                 </div>
                 <div class="flex items-center gap-3 shrink-0">
                     @if ($unit->listing_mode === 'short_term')
@@ -272,6 +333,13 @@
                             'bg-slate-50 text-slate-400 border-slate-200 dark:bg-slate-800 dark:text-slate-500 dark:border-slate-700' => !$unit->is_published,
                         ])
                     >{{ $unit->is_published ? 'Listed' : 'Unlisted' }}</button>
+                    <button
+                        wire:click="startEditUnit({{ $unit->id }})"
+                        title="Edit unit"
+                        class="text-slate-400 hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-300"
+                    >
+                        @svg('heroicon-o-pencil-square', 'w-4 h-4')
+                    </button>
                     @if ($unit->house_status !== 'Occupied')
                         <button
                             wire:click="deleteUnit({{ $unit->id }})"

@@ -4,6 +4,11 @@
             {{ session('tenant-admitted') }}
         </div>
     @endif
+    @if (session('tenant-updated'))
+        <div class="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-700 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-400">
+            {{ session('tenant-updated') }}
+        </div>
+    @endif
 
     <div class="grid grid-cols-2 gap-3">
         <div class="rounded-2xl bg-white border border-slate-200 shadow-sm p-4 flex items-center gap-4 dark:bg-slate-900 dark:border-slate-800">
@@ -29,9 +34,25 @@
         </div>
     </div>
 
-    <button wire:click="$set('showForm', true)" class="w-full rounded-xl bg-emerald-600 text-white text-sm font-semibold py-3 hover:bg-emerald-700 transition">
-        + Admit a tenant
-    </button>
+    <div class="flex gap-2">
+        <button wire:click="$set('showForm', true)" class="flex-1 rounded-xl bg-emerald-600 text-white text-sm font-semibold py-3 hover:bg-emerald-700 transition">
+            + Admit a tenant
+        </button>
+        <button type="button" wire:click="export" class="flex items-center justify-center rounded-xl border border-slate-300 dark:border-slate-700 px-4 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800" title="Export CSV">
+            @svg('heroicon-o-arrow-down-tray', 'w-5 h-5')
+        </button>
+    </div>
+
+    <div class="flex gap-2 text-xs font-medium">
+        <button type="button" wire:click="$set('showDeleted', false)"
+            @class(['flex-1 rounded-full px-3 py-1.5', 'bg-emerald-600 text-white' => !$showDeleted, 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300' => $showDeleted])>
+            Active tenants
+        </button>
+        <button type="button" wire:click="$set('showDeleted', true)"
+            @class(['flex-1 rounded-full px-3 py-1.5', 'bg-emerald-600 text-white' => $showDeleted, 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300' => !$showDeleted])>
+            Vacated / deleted
+        </button>
+    </div>
 
     @if ($showForm)
         <div class="rounded-2xl bg-white border border-slate-200 shadow-sm p-4 space-y-3 dark:bg-slate-900 dark:border-slate-800">
@@ -81,27 +102,134 @@
         </a>
     </div>
 
-    <div class="space-y-3">
-        @forelse ($tenants as $tenant)
-            <button type="button" wire:click="viewTenant({{ $tenant->id }})"
-                class="w-full text-left rounded-2xl bg-white border border-slate-200 shadow-sm p-4 flex items-center justify-between hover:border-emerald-300 hover:bg-emerald-50/40 transition dark:bg-slate-900 dark:border-slate-800 dark:hover:border-emerald-500/40 dark:hover:bg-emerald-500/10">
-                <div>
-                    <p class="font-semibold text-slate-900 dark:text-slate-100">{{ $tenant->tenant_name }}</p>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{{ $tenant->house?->house_name ?? 'No house' }}</p>
-                    <p class="text-xs text-slate-400 dark:text-slate-500">{{ $tenant->phone_number }}</p>
+    @if (!$showDeleted)
+        <div class="space-y-3">
+            @forelse ($tenants as $tenant)
+                <div class="rounded-2xl bg-white border border-slate-200 shadow-sm p-4 hover:border-emerald-300 dark:bg-slate-900 dark:border-slate-800 dark:hover:border-emerald-500/40">
+                    <button type="button" wire:click="viewTenant({{ $tenant->id }})" class="w-full text-left flex items-center justify-between">
+                        <div>
+                            <p class="font-semibold text-slate-900 dark:text-slate-100">{{ $tenant->tenant_name }}</p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{{ $tenant->house?->house_name ?? 'No house' }}</p>
+                            <p class="text-xs text-slate-400 dark:text-slate-500">{{ $tenant->phone_number }}</p>
+                        </div>
+                        <div class="text-right text-xs text-slate-500 dark:text-slate-400">
+                            Admitted<br>{{ \Carbon\Carbon::parse($tenant->date_admitted)->format('d M Y') }}
+                        </div>
+                    </button>
+                    <div class="mt-3 flex gap-2">
+                        @if ($tenant->phone_number)
+                            <a href="{{ $this->whatsappUrl($tenant->phone_number) }}" target="_blank"
+                                class="flex-1 text-center rounded-lg border border-emerald-200 dark:border-emerald-500/30 py-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                                WhatsApp
+                            </a>
+                        @endif
+                        <button type="button" wire:click="editTenant({{ $tenant->id }})" class="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300">
+                            Edit
+                        </button>
+                        <button type="button" wire:click="vacate({{ $tenant->id }})" wire:confirm="Vacate {{ $tenant->tenant_name }}? This ends the tenancy, frees the unit, and archives their history."
+                            class="flex-1 rounded-lg border border-rose-200 dark:border-rose-500/30 py-1.5 text-xs font-medium text-rose-600 dark:text-rose-400">
+                            Vacate
+                        </button>
+                    </div>
                 </div>
-                <div class="text-right text-xs text-slate-500 dark:text-slate-400">
-                    Admitted<br>{{ \Carbon\Carbon::parse($tenant->date_admitted)->format('d M Y') }}
+            @empty
+                <div class="rounded-2xl bg-white border border-slate-200 p-8 text-center text-sm text-slate-500 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400">
+                    No tenants yet.
                 </div>
-            </button>
-        @empty
-            <div class="rounded-2xl bg-white border border-slate-200 p-8 text-center text-sm text-slate-500 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400">
-                No tenants yet.
-            </div>
-        @endforelse
+            @endforelse
 
-        <div>{{ $tenants->links() }}</div>
-    </div>
+            <div>{{ $tenants->links() }}</div>
+        </div>
+    @else
+        <div class="space-y-3">
+            @forelse ($deletedTenants as $dt)
+                <div class="rounded-2xl bg-white border border-slate-200 shadow-sm p-4 dark:bg-slate-900 dark:border-slate-800">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <p class="font-semibold text-slate-900 dark:text-slate-100">{{ $dt->tenant_name }}</p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{{ $dt->previous_house ?? 'Unknown unit' }} &middot; {{ $dt->phone_number }}</p>
+                        </div>
+                        <div class="text-right text-xs text-slate-400 dark:text-slate-500">
+                            Vacated {{ optional($dt->deleted_at)->format('d M Y') }}
+                        </div>
+                    </div>
+                    <div class="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
+                        <div class="rounded-lg bg-slate-50 dark:bg-slate-800 py-2">
+                            <p class="font-semibold text-slate-800 dark:text-slate-200">{{ number_format($dt->total_invoiced) }}</p>
+                            <p class="text-slate-500 dark:text-slate-400">Invoiced</p>
+                        </div>
+                        <div class="rounded-lg bg-slate-50 dark:bg-slate-800 py-2">
+                            <p class="font-semibold text-slate-800 dark:text-slate-200">{{ number_format($dt->total_paid) }}</p>
+                            <p class="text-slate-500 dark:text-slate-400">Paid</p>
+                        </div>
+                        <div class="rounded-lg bg-slate-50 dark:bg-slate-800 py-2">
+                            <p @class([
+                                'font-semibold',
+                                'text-rose-600 dark:text-rose-400' => $dt->outstanding_balance > 0,
+                                'text-slate-800 dark:text-slate-200' => $dt->outstanding_balance <= 0,
+                            ])>{{ number_format($dt->outstanding_balance) }}</p>
+                            <p class="text-slate-500 dark:text-slate-400">Outstanding</p>
+                        </div>
+                    </div>
+                    <p class="mt-2 text-xs text-slate-400 dark:text-slate-500">Auto-deletes {{ optional($dt->auto_delete_at)->format('d M Y') }}</p>
+                </div>
+            @empty
+                <div class="rounded-2xl bg-white border border-slate-200 p-8 text-center text-sm text-slate-500 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400">
+                    No vacated tenants.
+                </div>
+            @endforelse
+
+            <div>{{ $deletedTenants?->links() }}</div>
+        </div>
+    @endif
+
+    <!-- Edit tenant popup -->
+    @if ($editingTenantId)
+        <div class="fixed inset-0 z-50">
+            <div class="absolute inset-0 bg-slate-900/40" wire:click="cancelEdit"></div>
+            <div class="absolute inset-x-0 bottom-0 sm:inset-0 sm:flex sm:items-center sm:justify-center">
+                <div class="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg max-h-[85vh] overflow-y-auto shadow-xl dark:bg-slate-900 p-4 space-y-3">
+                    <p class="font-semibold text-slate-900 dark:text-slate-100">Edit tenant</p>
+                    <div>
+                        <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Full name</label>
+                        <input type="text" wire:model="edit_name" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+                        @error('edit_name') <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Email</label>
+                        <input type="email" wire:model="edit_email" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+                        @error('edit_email') <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Phone number</label>
+                        <input type="text" wire:model="edit_phone_number" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+                        @error('edit_phone_number') <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium text-slate-600 dark:text-slate-400">House</label>
+                        <select wire:model="edit_house_id" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+                            @foreach ($editHouses as $house)
+                                <option value="{{ $house->id }}">{{ $house->house_name }}</option>
+                            @endforeach
+                        </select>
+                        @error('edit_house_id') <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium text-slate-600 dark:text-slate-400">M-Pesa account number</label>
+                        <input type="text" wire:model="edit_payment_account_code" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Date admitted</label>
+                        <input type="date" wire:model="edit_date_admitted" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+                    </div>
+                    <div class="flex gap-3 pt-1">
+                        <button type="button" wire:click="cancelEdit" class="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300">Cancel</button>
+                        <button type="button" wire:click="saveTenant" class="flex-1 rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
 
     <!-- Tenant history & payments popup -->
     @if ($this->selectedTenant)
@@ -172,6 +300,14 @@
                                 <p class="text-xs text-slate-400 dark:text-slate-500 py-2">No payments yet.</p>
                             @endforelse
                         </div>
+                    </div>
+
+                    <div class="px-4 pb-4">
+                        <button type="button" wire:click="vacate({{ $t->id }})"
+                            wire:confirm="Vacate {{ $t->tenant_name }}? This ends the tenancy, frees the unit, and archives their history."
+                            class="w-full rounded-lg border border-rose-200 dark:border-rose-500/30 py-2 text-sm font-medium text-rose-600 dark:text-rose-400">
+                            Vacate tenant
+                        </button>
                     </div>
                 </div>
             </div>

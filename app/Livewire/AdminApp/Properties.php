@@ -2,6 +2,7 @@
 
 namespace App\Livewire\AdminApp;
 
+use App\Livewire\Concerns\ExportsCsv;
 use App\Models\Area;
 use App\Models\City;
 use App\Models\House;
@@ -10,10 +11,15 @@ use App\Models\Location;
 use App\Services\PackageLimitService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 class Properties extends Component
 {
+    use WithPagination;
+    use ExportsCsv;
+
     public bool $showPropertyForm = false;
+    public ?int $editingLocationId = null;
     public string $location_name = '';
     public string $geo_id = '';
     public ?float $latitude = null;
@@ -53,7 +59,24 @@ class Properties extends Component
         return in_array(Auth::user()->role, ['admin', 'landlord']);
     }
 
-    public function createProperty(): void
+    public function startEditLocation(int $locationId): void
+    {
+        abort_unless($this->canManageProperties(), 403);
+
+        $location = $this->baseQuery()->whereKey($locationId)->firstOrFail();
+
+        $this->editingLocationId = $location->id;
+        $this->location_name = $location->location_name;
+        $this->geo_id = $location->geo_id ?? '';
+        $this->showPropertyForm = true;
+    }
+
+    public function cancelPropertyForm(): void
+    {
+        $this->reset(['location_name', 'geo_id', 'latitude', 'longitude', 'showPropertyForm', 'editingLocationId']);
+    }
+
+    public function saveProperty(): void
     {
         abort_unless($this->canManageProperties(), 403);
 
@@ -62,18 +85,35 @@ class Properties extends Component
             'geo_id' => 'nullable|string|max:255',
         ]);
 
-        $landlord = Landlord::find(Auth::user()->landlord_id);
-        if (!app(PackageLimitService::class)->canAdd('locations', $landlord)) {
-            session()->flash('properties-error', app(PackageLimitService::class)->limitMessage('locations', $landlord));
-            return;
-        }
-
         // Only linked to a canonical Area when the typed value actually matches
         // one already seeded (case-insensitive) - anything else (a city/area
         // combo we haven't seeded yet) still just saves as a plain geo_id string.
         $area = $this->geo_id !== ''
             ? Area::whereRaw('LOWER(name) = ?', [strtolower($this->geo_id)])->first()
             : null;
+
+        if ($this->editingLocationId) {
+            $location = $this->baseQuery()->whereKey($this->editingLocationId)->firstOrFail();
+
+            // Deliberately leaves latitude/longitude untouched - this form never
+            // captured/edits a pin, only the free-text area/geo_id.
+            $location->update([
+                'location_name' => $this->location_name,
+                'geo_id' => $this->geo_id ?: null,
+                'area_id' => $area?->id,
+            ]);
+
+            $this->cancelPropertyForm();
+            session()->flash('properties-status', 'Property updated.');
+
+            return;
+        }
+
+        $landlord = Landlord::find(Auth::user()->landlord_id);
+        if (!app(PackageLimitService::class)->canAdd('locations', $landlord)) {
+            session()->flash('properties-error', app(PackageLimitService::class)->limitMessage('locations', $landlord));
+            return;
+        }
 
         Location::create([
             'location_name' => $this->location_name,
@@ -83,8 +123,23 @@ class Properties extends Component
             'longitude' => $this->longitude,
         ]);
 
-        $this->reset(['location_name', 'geo_id', 'latitude', 'longitude', 'showPropertyForm']);
+        $this->cancelPropertyForm();
         session()->flash('properties-status', 'Property added.');
+    }
+
+    public function exportProperties()
+    {
+        $locations = $this->baseQuery()->withCount('houses')->get();
+
+        return $this->streamCsv(
+            'properties.csv',
+            ['Property', 'Area', 'Units'],
+            $locations->map(fn (Location $location) => [
+                $location->location_name,
+                $location->geo_id,
+                $location->houses_count,
+            ])
+        );
     }
 
     /**
@@ -178,7 +233,7 @@ class Properties extends Component
 
     public function render()
     {
-        $locations = $this->baseQuery()->get();
+        $locations = $this->baseQuery()->paginate(15);
 
         return view('livewire.admin-app.properties', [
             'locations' => $locations,

@@ -13,13 +13,20 @@
 
     @if ($this->canManageProperties())
         @if (!$showPropertyForm)
-            <button wire:click="$set('showPropertyForm', true)" class="w-full rounded-xl bg-emerald-600 text-white text-sm font-semibold py-3 hover:bg-emerald-700 transition">
-                + Add property
-            </button>
+            <div class="flex gap-2">
+                <button wire:click="$set('showPropertyForm', true)" class="flex-1 rounded-xl bg-emerald-600 text-white text-sm font-semibold py-3 hover:bg-emerald-700 transition">
+                    + Add property
+                </button>
+                <button type="button" wire:click="exportProperties" class="flex items-center justify-center rounded-xl border border-slate-300 dark:border-slate-700 px-4 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800" title="Export CSV">
+                    @svg('heroicon-o-arrow-down-tray', 'w-5 h-5')
+                </button>
+            </div>
         @else
             <div class="rounded-2xl bg-white border border-slate-200 shadow-sm p-4 space-y-3 dark:bg-slate-900 dark:border-slate-800">
-                <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">New property</p>
-                <p class="text-xs text-slate-500 dark:text-slate-400">A property is a building or compound - you'll add individual units to it next.</p>
+                <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ $editingLocationId ? 'Edit property' : 'New property' }}</p>
+                @if (!$editingLocationId)
+                    <p class="text-xs text-slate-500 dark:text-slate-400">A property is a building or compound - you'll add individual units to it next.</p>
+                @endif
                 <div>
                     <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Property name</label>
                     <input type="text" wire:model="location_name" placeholder="e.g. Greenview Apartments" class="{{ $fieldClass }}">
@@ -47,8 +54,8 @@
                     </div>
                 </div>
                 <div class="flex gap-3">
-                    <button wire:click="$set('showPropertyForm', false)" class="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300">Cancel</button>
-                    <button wire:click="createProperty" class="flex-1 rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">Save</button>
+                    <button wire:click="cancelPropertyForm" class="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300">Cancel</button>
+                    <button wire:click="saveProperty" class="flex-1 rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">Save</button>
                 </div>
             </div>
         @endif
@@ -68,6 +75,11 @@
                     <button wire:click="startAddingHouse({{ $location->id }})" class="text-xs font-semibold text-emerald-700 hover:underline whitespace-nowrap">
                         + Add unit
                     </button>
+                    @if ($this->canManageProperties())
+                        <button wire:click="startEditLocation({{ $location->id }})" class="text-xs font-semibold text-slate-600 dark:text-slate-300 hover:underline whitespace-nowrap">
+                            Edit
+                        </button>
+                    @endif
                     @if ($this->canManageProperties() && $location->houses->count() === 0)
                         <button
                             wire:click="deleteLocation({{ $location->id }})"
@@ -150,4 +162,6 @@
             No properties yet.
         </div>
     @endforelse
+
+    <div>{{ $locations->links() }}</div>
 </div>

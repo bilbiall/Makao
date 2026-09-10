@@ -2,6 +2,7 @@
 
 namespace App\Livewire\AdminApp;
 
+use App\Livewire\Concerns\ExportsCsv;
 use App\Models\Tenant;
 use App\Models\ViewingRequest;
 use App\Notifications\DatabaseNotification;
@@ -21,6 +22,7 @@ use Livewire\WithPagination;
 class ViewingRequests extends Component
 {
     use WithPagination;
+    use ExportsCsv;
 
     public string $statusFilter = '';
 
@@ -139,7 +141,7 @@ class ViewingRequests extends Component
             ->findOrFail($id);
     }
 
-    public function render()
+    protected function filteredQuery()
     {
         $query = StaffScope::onTenant(ViewingRequest::query())
             ->with(['user', 'house.location'])
@@ -157,10 +159,33 @@ class ViewingRequests extends Component
             });
         }
 
+        return $query;
+    }
+
+    public function export()
+    {
+        $requests = $this->filteredQuery()->get();
+
+        return $this->streamCsv(
+            'viewing-requests.csv',
+            ['Requester', 'Phone', 'House', 'Status', 'Requested At', 'Notes'],
+            $requests->map(fn (ViewingRequest $request) => [
+                $request->user?->name,
+                $request->user?->phone_number,
+                $request->house?->house_name,
+                $request->status,
+                optional($request->requested_at)->format('Y-m-d H:i'),
+                $request->admin_notes,
+            ])
+        );
+    }
+
+    public function render()
+    {
         $pendingCount = (clone StaffScope::onTenant(ViewingRequest::query()))->where('status', 'pending')->count();
 
         return view('livewire.admin-app.viewing-requests', [
-            'requests' => $query->paginate(10),
+            'requests' => $this->filteredQuery()->paginate(10),
             'pendingCount' => $pendingCount,
         ])->layout('components.layouts.app', ['title' => 'Viewing Requests']);
     }

@@ -11,9 +11,14 @@
 
     @if ($this->canManageExpenses())
         @if (!$showForm)
-            <button wire:click="startCreate" class="w-full rounded-xl bg-emerald-600 text-white text-sm font-semibold py-3 hover:bg-emerald-700 transition">
-                + Record expense
-            </button>
+            <div class="flex gap-2">
+                <button wire:click="startCreate" class="flex-1 rounded-xl bg-emerald-600 text-white text-sm font-semibold py-3 hover:bg-emerald-700 transition">
+                    + Record expense
+                </button>
+                <button type="button" wire:click="export" class="flex items-center justify-center rounded-xl border border-slate-300 dark:border-slate-700 px-4 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800" title="Export CSV">
+                    @svg('heroicon-o-arrow-down-tray', 'w-5 h-5')
+                </button>
+            </div>
         @else
             <div class="rounded-2xl bg-white border border-slate-200 shadow-sm p-4 space-y-3 dark:bg-slate-900 dark:border-slate-800">
                 <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ $editingId ? 'Edit expense' : 'New expense' }}</p>
@@ -111,4 +116,6 @@
             </div>
         @endforelse
     </div>
+
+    <div>{{ $expenses->links() }}</div>
 </div>

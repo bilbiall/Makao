@@ -1,18 +1,91 @@
 <div class="space-y-4">
-    <div class="grid grid-cols-3 gap-3">
-        <div class="rounded-2xl bg-emerald-50 border border-emerald-100 p-3 dark:bg-emerald-500/10 dark:border-emerald-500/20">
-            <p class="text-[11px] text-emerald-700 dark:text-emerald-400">Invoiced</p>
-            <p class="mt-1 text-sm font-bold text-emerald-800 dark:text-emerald-300">KES {{ number_format($totalInvoiced) }}</p>
+    @if (session('invoice-saved'))
+        <div class="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-700 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-400">
+            {{ session('invoice-saved') }}
         </div>
-        <div class="rounded-2xl bg-amber-50 border border-amber-100 p-3 dark:bg-amber-500/10 dark:border-amber-500/20">
-            <p class="text-[11px] text-amber-700 dark:text-amber-400">Paid</p>
-            <p class="mt-1 text-sm font-bold text-amber-800 dark:text-amber-300">KES {{ number_format($totalPaid) }}</p>
-        </div>
-        <div class="rounded-2xl bg-rose-50 border border-rose-100 p-3 dark:bg-rose-500/10 dark:border-rose-500/20">
-            <p class="text-[11px] text-rose-700 dark:text-rose-400">Outstanding</p>
-            <p class="mt-1 text-sm font-bold text-rose-800 dark:text-rose-300">KES {{ number_format($totalOutstanding) }}</p>
+    @endif
+
+    <div class="grid grid-cols-2 gap-2">
+        <x-admin.stat-tile label="Invoiced" value="KES {{ number_format($totalInvoiced) }}" color="emerald" />
+        <x-admin.stat-tile label="Paid" value="KES {{ number_format($totalPaid) }}" color="amber" />
+        <x-admin.stat-tile label="Outstanding" value="KES {{ number_format($totalOutstanding) }}" color="rose" class="col-span-2" />
+    </div>
+
+    <div class="grid grid-cols-2 gap-2">
+        <button type="button" wire:click="startCreate" class="rounded-xl bg-emerald-600 text-white text-sm font-semibold py-2.5 hover:bg-emerald-700 transition">
+            + New invoice
+        </button>
+        <div class="grid grid-cols-2 gap-2">
+            <button type="button" wire:click="sendMassInvoices" wire:confirm="Generate this month's invoices for every tenant who doesn't have one yet?"
+                class="rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800">
+                Mass invoices
+            </button>
+            <button type="button" wire:click="sendMassReminders" wire:confirm="Send an SMS reminder to every tenant with an outstanding balance?"
+                class="rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800">
+                Mass reminders
+            </button>
         </div>
     </div>
+
+    @if ($showForm)
+        <div class="rounded-2xl bg-white border border-slate-200 shadow-sm p-4 space-y-3 dark:bg-slate-900 dark:border-slate-800">
+            <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ $editingId ? 'Edit invoice' : 'New invoice' }}</p>
+
+            @if (!$editingId)
+                <div>
+                    <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Tenant</label>
+                    <select wire:model.live="tenant_id" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+                        <option value="">Select tenant</option>
+                        @foreach ($tenants as $tenant)
+                            <option value="{{ $tenant->id }}">{{ $tenant->tenant_name }}</option>
+                        @endforeach
+                    </select>
+                    @error('tenant_id') <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p> @enderror
+                </div>
+
+                @if ($tenant_id)
+                    <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                        <div class="rounded-lg bg-slate-50 dark:bg-slate-800 py-2">
+                            <p class="font-semibold text-slate-800 dark:text-slate-200">{{ number_format($rent_only) }}</p>
+                            <p class="text-slate-500 dark:text-slate-400">Rent</p>
+                        </div>
+                        <div class="rounded-lg bg-slate-50 dark:bg-slate-800 py-2">
+                            <p class="font-semibold text-slate-800 dark:text-slate-200">{{ number_format($bill_only) }}</p>
+                            <p class="text-slate-500 dark:text-slate-400">Bills</p>
+                        </div>
+                        <div class="rounded-lg bg-slate-50 dark:bg-slate-800 py-2">
+                            <p class="font-semibold text-slate-800 dark:text-slate-200">{{ number_format($previous_balance) }}</p>
+                            <p class="text-slate-500 dark:text-slate-400">Prev. balance</p>
+                        </div>
+                    </div>
+                @endif
+            @endif
+
+            <div>
+                <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Amount (KES)</label>
+                <input type="number" step="0.01" wire:model="amount" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+                @error('amount') <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p> @enderror
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Invoice date</label>
+                    <input type="date" wire:model="invoice_date" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+                </div>
+                <div>
+                    <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Due date</label>
+                    <input type="date" wire:model="due_date" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+                </div>
+            </div>
+            <div>
+                <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Comment (optional)</label>
+                <textarea wire:model="comment" rows="2" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"></textarea>
+            </div>
+            <div class="flex gap-3">
+                <button type="button" wire:click="cancelForm" class="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300">Cancel</button>
+                <button type="button" wire:click="save" class="flex-1 rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">Save</button>
+            </div>
+        </div>
+    @endif
 
     <div class="flex gap-2 text-xs font-medium">
         <span class="rounded-full bg-emerald-100 text-emerald-700 px-2.5 py-1 dark:bg-emerald-500/10 dark:text-emerald-400">{{ $paidCount }} paid</span>
@@ -59,6 +132,18 @@
         </select>
         <input type="text" wire:model.live.debounce.400ms="search" placeholder="Search invoice # or tenant"
             class="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 placeholder:text-slate-400">
+    </div>
+    <div class="flex gap-2">
+        <input type="month" wire:model.live="monthFilter" class="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+        <select wire:model.live="locationFilter" class="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+            <option value="">All properties</option>
+            @foreach ($locations as $location)
+                <option value="{{ $location->id }}">{{ $location->location_name }}</option>
+            @endforeach
+        </select>
+        <button type="button" wire:click="export" class="flex items-center justify-center rounded-lg border border-slate-300 dark:border-slate-700 px-3 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800" title="Export CSV">
+            @svg('heroicon-o-arrow-down-tray', 'w-5 h-5')
+        </button>
         <a href="{{ route('app.admin.invoices.print', ['status' => $statusFilter, 'search' => $search]) }}" target="_blank"
             class="flex items-center justify-center rounded-lg border border-slate-300 dark:border-slate-700 px-3 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800" title="Print">
             @svg('heroicon-o-printer', 'w-5 h-5')
@@ -66,31 +151,40 @@
     </div>
 
     @forelse ($invoices as $invoice)
-        <button type="button" wire:click="viewInvoice({{ $invoice->id }})"
-            class="w-full text-left rounded-2xl bg-white border border-slate-200 shadow-sm p-4 hover:border-emerald-300 hover:bg-emerald-50/40 transition dark:bg-slate-900 dark:border-slate-800 dark:hover:border-emerald-500/40 dark:hover:bg-emerald-500/10">
-            <div class="flex items-start justify-between">
-                <div>
-                    <p class="font-semibold text-slate-900 dark:text-slate-100">{{ $invoice->invoice_number }}</p>
-                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{{ $invoice->tenant?->tenant_name ?? 'Unknown tenant' }}</p>
+        <div class="rounded-2xl bg-white border border-slate-200 shadow-sm p-4 hover:border-emerald-300 transition dark:bg-slate-900 dark:border-slate-800 dark:hover:border-emerald-500/40">
+            <button type="button" wire:click="viewInvoice({{ $invoice->id }})" class="w-full text-left">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="font-semibold text-slate-900 dark:text-slate-100">{{ $invoice->invoice_number }}</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{{ $invoice->tenant?->tenant_name ?? 'Unknown tenant' }}</p>
+                    </div>
+                    <span @class([
+                        'rounded-full px-2.5 py-0.5 text-xs font-medium flex-shrink-0',
+                        'bg-emerald-100 text-emerald-700' => $invoice->status === 'paid',
+                        'bg-amber-100 text-amber-700' => $invoice->status === 'partial',
+                        'bg-rose-100 text-rose-700' => $invoice->status === 'unpaid',
+                    ])>{{ ucfirst($invoice->status) }}</span>
                 </div>
-                <span @class([
-                    'rounded-full px-2.5 py-0.5 text-xs font-medium flex-shrink-0',
-                    'bg-emerald-100 text-emerald-700' => $invoice->status === 'paid',
-                    'bg-amber-100 text-amber-700' => $invoice->status === 'partial',
-                    'bg-rose-100 text-rose-700' => $invoice->status === 'unpaid',
-                ])>{{ ucfirst($invoice->status) }}</span>
+                <div class="mt-3 grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                        <p class="text-slate-500 dark:text-slate-400 text-xs">Amount</p>
+                        <p class="font-semibold text-slate-800 dark:text-slate-200">KES {{ number_format($invoice->amount) }}</p>
+                    </div>
+                    <div>
+                        <p class="text-slate-500 dark:text-slate-400 text-xs">Balance</p>
+                        <p class="font-semibold text-slate-800 dark:text-slate-200">KES {{ number_format($invoice->balance) }}</p>
+                    </div>
+                </div>
+            </button>
+            <div class="mt-3 flex gap-2">
+                <button type="button" wire:click="startEdit({{ $invoice->id }})" class="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 py-2 text-xs font-medium text-slate-700 dark:text-slate-300">
+                    Edit
+                </button>
+                <button type="button" wire:click="delete({{ $invoice->id }})" wire:confirm="Delete this invoice? This can't be undone." class="flex-1 rounded-lg border border-rose-200 dark:border-rose-500/30 py-2 text-xs font-medium text-rose-600 dark:text-rose-400">
+                    Delete
+                </button>
             </div>
-            <div class="mt-3 grid grid-cols-2 gap-3 text-sm">
-                <div>
-                    <p class="text-slate-500 dark:text-slate-400 text-xs">Amount</p>
-                    <p class="font-semibold text-slate-800 dark:text-slate-200">KES {{ number_format($invoice->amount) }}</p>
-                </div>
-                <div>
-                    <p class="text-slate-500 dark:text-slate-400 text-xs">Balance</p>
-                    <p class="font-semibold text-slate-800 dark:text-slate-200">KES {{ number_format($invoice->balance) }}</p>
-                </div>
-            </div>
-        </button>
+        </div>
     @empty
         <div class="rounded-2xl bg-white border border-slate-200 p-8 text-center text-sm text-slate-500 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400">
             No invoices found.

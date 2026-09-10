@@ -28,19 +28,10 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-3 gap-3">
-        <div class="rounded-2xl bg-emerald-50 border border-emerald-100 p-3">
-            <p class="text-[11px] text-emerald-700">Invoiced</p>
-            <p class="mt-1 text-sm font-bold text-emerald-800">KES {{ number_format($summary['total_invoiced'] ?? 0) }}</p>
-        </div>
-        <div class="rounded-2xl bg-amber-50 border border-amber-100 p-3">
-            <p class="text-[11px] text-amber-700">Paid</p>
-            <p class="mt-1 text-sm font-bold text-amber-800">KES {{ number_format($summary['total_paid'] ?? 0) }}</p>
-        </div>
-        <div class="rounded-2xl bg-rose-50 border border-rose-100 p-3">
-            <p class="text-[11px] text-rose-700">Outstanding</p>
-            <p class="mt-1 text-sm font-bold text-rose-800">KES {{ number_format($summary['outstanding'] ?? 0) }}</p>
-        </div>
+    <div class="grid grid-cols-2 gap-2">
+        <x-admin.stat-tile label="Invoiced" value="KES {{ number_format($summary['total_invoiced'] ?? 0) }}" color="emerald" />
+        <x-admin.stat-tile label="Paid" value="KES {{ number_format($summary['total_paid'] ?? 0) }}" color="amber" />
+        <x-admin.stat-tile label="Outstanding" value="KES {{ number_format($summary['outstanding'] ?? 0) }}" color="rose" class="col-span-2" />
     </div>
 
     <div class="rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden dark:bg-slate-900 dark:border-slate-800">

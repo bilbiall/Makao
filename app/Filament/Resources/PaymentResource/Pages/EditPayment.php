@@ -24,9 +24,12 @@ class EditPayment extends EditRecord
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
-        $currentBalance = isset($data['balance']) ? (float) str_replace(',', '', $data['balance']) : 0;
-        $amountPaid = isset($data['amount_paid']) ? (float) $data['amount_paid'] : 0;
-        $data['balance'] = $currentBalance - $amountPaid;
+        // The payment's own `balance` snapshot column, and the parent invoice/
+        // tenant balances, are recomputed authoritatively by
+        // Payment::booted()'s `updated` listener (Invoice::recalculateBalance())
+        // once amount_paid actually changes - don't set it here.
+        unset($data['balance']);
+
         return $data;
     }
 }

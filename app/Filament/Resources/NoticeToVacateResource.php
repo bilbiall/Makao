@@ -4,15 +4,12 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\NoticeToVacateResource\Pages;
 use App\Models\NoticeToVacate;
-use App\Models\Setting;
-use App\Helpers\SmsHelper;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Str;
 
 class NoticeToVacateResource extends Resource
 {
@@ -119,79 +116,7 @@ class NoticeToVacateResource extends Resource
                             ->label('Approval Notes'),
                     ])
                     ->action(function (NoticeToVacate $record, array $data) {
-                        if ($record->status !== 'pending') {
-                            return;
-                        }
-                        $record->status = 'approved';
-                        $record->approved_at = now();
-                        $record->approved_by = auth()->id();
-                        $record->admin_notes = $data['admin_notes'] ?? null;
-                        $record->save();
-
-                        $tenant = $record->tenant;
-                        if ($tenant) {
-                            // Build SMS
-                            $settings = Setting::forLandlord($record->landlord_id);
-                            $payload = $settings->payload ?? [];
-                            $template = $payload['template_notice_approved'] ?? (
-                                "Hi {tenant_name}, your vacate notice has been approved. Balance: KES {balance}. Approval date: {approval_date}. Vacate date: {vacate_date}."
-                            );
-
-                            $balance = optional($tenant->latestPayment)->balance ?? 0;
-                            $message = str_replace(
-                                ['{tenant_name}', '{balance}', '{approval_date}', '{vacate_date}', '{property_name}'],
-                                [
-                                    $tenant->tenant_name,
-                                    number_format($balance, 2),
-                                    now()->format('d M Y'),
-                                    $record->vacate_date->format('d M Y'),
-                                    $tenant->house?->location?->location_name ?? '',
-                                ],
-                                $template
-                            );
-
-                            $phone = preg_replace('/\D/', '', $tenant->phone_number);
-                            if (!Str::startsWith($phone, '254')) {
-                                $phone = '254' . ltrim($phone, '0');
-                            }
-                            try {
-                                SmsHelper::sendSms($phone, $message, $record->landlord_id);
-                            } catch (\Throwable $e) {
-                                // ignore SMS errors
-                            }
-
-                            // Send database notification to tenant user
-                            if ($tenantUser = $tenant->user ?? null) {
-                                $tenantUser->notify(new \App\Notifications\DatabaseNotification(
-                                    'Notice to Vacate Approved',
-                                    "Your notice to vacate {$tenant->house->house_name} on " . $record->vacate_date->format('M j, Y') . " has been approved.",
-                                    null
-                                ));
-                            }
-
-                            // Log notice approval
-                            try {
-                                \App\Helpers\ActivityLogger::log('approve_notice', auth()->id(), "Notice to vacate approved for {$tenant->tenant_name} from {$tenant->house->house_name} (Vacate date: {$record->vacate_date->format('M j, Y')})");
-                            } catch (\Throwable $e) {
-                                // ignore
-                            }
-
-                            // Capture the linked User before delete - TenantObserver
-                            // archives the tenancy itself to DeletedTenant, so this is
-                            // only about returning the User to a clean browsing state.
-                            $tenantUserToDemote = $tenant->user;
-
-                            // Delete tenant (observer will archive to Vacated/Deleted tenants)
-                            $tenant->delete();
-
-                            // Demote User back to a self-registered "looking for a house"
-                            // account now that the tenancy has ended - only if that's how
-                            // they originally registered (never touch admin/landlord/staff
-                            // accounts that happen to also be linked as a tenant record).
-                            if ($tenantUserToDemote && $tenantUserToDemote->role === 'tenant') {
-                                $tenantUserToDemote->update(['role' => 'user', 'landlord_id' => null]);
-                            }
-                        }
+                        $record->approve($data['admin_notes'] ?? null);
                     })
                     ->visible(fn (NoticeToVacate $record) => $record->status === 'pending'),
 
@@ -205,60 +130,7 @@ class NoticeToVacateResource extends Resource
                             ->label('Denial Notes'),
                     ])
                     ->action(function (NoticeToVacate $record, array $data) {
-                        if ($record->status !== 'pending') {
-                            return;
-                        }
-                        $record->status = 'denied';
-                        $record->denied_at = now();
-                        $record->approved_by = auth()->id();
-                        $record->admin_notes = $data['admin_notes'] ?? null;
-                        $record->save();
-
-                        $tenant = $record->tenant;
-                        if ($tenant) {
-                            $settings = Setting::forLandlord($record->landlord_id);
-                            $payload = $settings->payload ?? [];
-                            $template = $payload['template_notice_denied'] ?? (
-                                "Hi {tenant_name}, your vacate notice has been denied. Balance: KES {balance}. Date requested: {vacate_date}."
-                            );
-                            $balance = optional($tenant->latestPayment)->balance ?? 0;
-                            $message = str_replace(
-                                ['{tenant_name}', '{balance}', '{vacate_date}', '{property_name}'],
-                                [
-                                    $tenant->tenant_name,
-                                    number_format($balance, 2),
-                                    $record->vacate_date->format('d M Y'),
-                                    $tenant->house?->location?->location_name ?? '',
-                                ],
-                                $template
-                            );
-                            $phone = preg_replace('/\D/', '', $tenant->phone_number);
-                            if (!Str::startsWith($phone, '254')) {
-                                $phone = '254' . ltrim($phone, '0');
-                            }
-                            try {
-                                SmsHelper::sendSms($phone, $message, $record->landlord_id);
-                            } catch (\Throwable $e) {
-                                // ignore SMS errors
-                            }
-
-                            // Send database notification to tenant user
-                            if ($tenantUser = $tenant->user ?? null) {
-                                $tenantUser->notify(new \App\Notifications\DatabaseNotification(
-                                    'Notice to Vacate Denied',
-                                    "Your notice to vacate {$tenant->house->house_name} on " . $record->vacate_date->format('M j, Y') . " has been denied. " . ($data['admin_notes'] ? "Reason: {$data['admin_notes']}" : ''),
-                                    null
-                                ));
-                            }
-                            
-                            // Log notice denial
-                            try {
-                                $reason = $data['admin_notes'] ? " Reason: {$data['admin_notes']}" : '';
-                                \App\Helpers\ActivityLogger::log('deny_notice', auth()->id(), "Notice to vacate denied for {$tenant->tenant_name} from {$tenant->house->house_name}.{$reason}");
-                            } catch (\Throwable $e) {
-                                // ignore
-                            }
-                        }
+                        $record->deny($data['admin_notes'] ?? null);
                     })
                     ->visible(fn (NoticeToVacate $record) => $record->status === 'pending'),
             ])
