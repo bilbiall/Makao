@@ -7,6 +7,7 @@ use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Navigation\MenuItem;
+use Filament\Navigation\NavigationItem;
 use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
@@ -48,6 +49,22 @@ class SuperadminPanelProvider extends PanelProvider
             ])
             ->widgets([
                 Widgets\AccountWidget::class,
+            ])
+            ->navigationItems([
+                // Founder-only planning/pitch pages - published as private Artifacts (unlisted,
+                // reachable only with the exact link), not app routes, since they're business
+                // content, not product functionality. Superadmin-only nav, same as everything
+                // else in this panel (see EnsureSuperadminRole below).
+                NavigationItem::make('Rollout Plan')
+                    ->url('https://claude.ai/code/artifact/725ffb09-ec66-4303-87c7-694b91e012ec', shouldOpenInNewTab: true)
+                    ->icon('heroicon-o-map')
+                    ->group('Business')
+                    ->sort(1),
+                NavigationItem::make('Pitch Deck')
+                    ->url('https://claude.ai/code/artifact/391e01a1-07b0-4fa1-89af-98d0110fda7f', shouldOpenInNewTab: true)
+                    ->icon('heroicon-o-presentation-chart-line')
+                    ->group('Business')
+                    ->sort(2),
             ])
             ->userMenuItems([
                 MenuItem::make()
