@@ -110,6 +110,18 @@ class Settings extends Component
         return ($request && ($request['status'] ?? null) === 'pending') ? $request : null;
     }
 
+    public function getLandlordProperty(): ?\App\Models\Landlord
+    {
+        return \App\Models\Landlord::find(Auth::user()->landlord_id);
+    }
+
+    public function requestVerification(): void
+    {
+        $this->landlord?->requestVerification();
+
+        session()->flash('settings-saved', 'Verification requested - our team will review your business.');
+    }
+
     public function requestAutomaticPaymentSetup(): void
     {
         $this->validate([

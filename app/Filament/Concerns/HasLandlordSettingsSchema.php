@@ -5,6 +5,7 @@ namespace App\Filament\Concerns;
 use App\Helpers\EmailHelper;
 use App\Helpers\PaymentGatewayRequestHelper;
 use App\Helpers\SmsHelper;
+use App\Models\Landlord;
 use App\Models\Setting;
 use Filament\Forms;
 use Filament\Notifications\Notification;
@@ -99,6 +100,43 @@ trait HasLandlordSettingsSchema
                         ->helperText('Terms and conditions for tenants (optional)')
                         ->rows(5)
                         ->maxLength(5000),
+
+                    Forms\Components\Section::make('Verification')
+                        ->description('A "Verified" badge shown on your public listings once our team has reviewed your business.')
+                        ->columnSpanFull()
+                        ->schema([
+                            Forms\Components\Placeholder::make('verification_status_display')
+                                ->label('Status')
+                                ->content(function () use ($landlordId) {
+                                    $landlord = Landlord::find($landlordId);
+
+                                    return match ($landlord?->verification_status) {
+                                        'verified' => 'Verified on ' . $landlord->verified_at?->format('d M Y'),
+                                        'pending' => 'Request sent on ' . $landlord->verification_requested_at?->format('d M Y') . ' - awaiting review.',
+                                        'rejected' => 'Not approved' . ($landlord->verification_notes ? ": {$landlord->verification_notes}" : '') . '. You can request again below.',
+                                        default => 'Not yet requested.',
+                                    };
+                                }),
+
+                            Forms\Components\Actions::make([
+                                Forms\Components\Actions\Action::make('request_verification')
+                                    ->label('Request verification')
+                                    ->color('gray')
+                                    ->visible(function () use ($landlordId) {
+                                        $status = Landlord::find($landlordId)?->verification_status;
+
+                                        return !in_array($status, ['pending', 'verified'], true);
+                                    })
+                                    ->action(function () use ($landlordId) {
+                                        Landlord::find($landlordId)?->requestVerification();
+
+                                        Notification::make()
+                                            ->success()
+                                            ->title('Verification requested - our team will review your business.')
+                                            ->send();
+                                    }),
+                            ]),
+                        ]),
                 ])
                 ->columns(2),
 

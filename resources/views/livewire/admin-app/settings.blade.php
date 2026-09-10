@@ -77,6 +77,28 @@
                 <label class="{{ $labelClass }}">Terms &amp; Conditions</label>
                 <textarea wire:model="data.terms_conditions" rows="5" class="{{ $inputClass }}"></textarea>
             </div>
+
+            <div class="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">Verification</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400">A "Verified" badge shown on your public listings once our team has reviewed your business.</p>
+                @php $verificationStatus = $this->landlord?->verification_status; @endphp
+                <p class="text-sm text-slate-700 dark:text-slate-300">
+                    @if ($verificationStatus === 'verified')
+                        Verified on {{ optional($this->landlord->verified_at)->format('d M Y') }}
+                    @elseif ($verificationStatus === 'pending')
+                        Request sent on {{ optional($this->landlord->verification_requested_at)->format('d M Y') }} - awaiting review.
+                    @elseif ($verificationStatus === 'rejected')
+                        Not approved{{ $this->landlord->verification_notes ? ': ' . $this->landlord->verification_notes : '' }}. You can request again below.
+                    @else
+                        Not yet requested.
+                    @endif
+                </p>
+                @if (!in_array($verificationStatus, ['pending', 'verified'], true))
+                    <button type="button" wire:click="requestVerification" wire:loading.attr="disabled" wire:target="requestVerification" class="rounded-lg border border-slate-300 dark:border-slate-700 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60">
+                        Request verification
+                    </button>
+                @endif
+            </div>
         @elseif ($activeTab === 'sms' && $this->isAdminRole())
             <div>
                 <label class="{{ $labelClass }}">SMS API URL</label>

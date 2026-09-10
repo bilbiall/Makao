@@ -18,6 +18,11 @@ class Landlord extends Model
         'status',
         'onboarded_at',
         'c2b_enabled',
+        'verification_status',
+        'verification_requested_at',
+        'verified_at',
+        'verified_by',
+        'verification_notes',
     ];
 
     protected function casts(): array
@@ -25,6 +30,8 @@ class Landlord extends Model
         return [
             'onboarded_at' => 'datetime',
             'c2b_enabled' => 'boolean',
+            'verification_requested_at' => 'datetime',
+            'verified_at' => 'datetime',
         ];
     }
 
@@ -81,5 +88,43 @@ class Landlord extends Model
     public function isOnboarded(): bool
     {
         return $this->onboarded_at !== null || $this->locations()->exists();
+    }
+
+    public function verifiedBy(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(User::class, 'verified_by');
+    }
+
+    public function isVerified(): bool
+    {
+        return $this->verification_status === 'verified';
+    }
+
+    public function requestVerification(): void
+    {
+        $this->update([
+            'verification_status' => 'pending',
+            'verification_requested_at' => now(),
+            'verification_notes' => null,
+        ]);
+    }
+
+    public function approveVerification(int $adminUserId): void
+    {
+        $this->update([
+            'verification_status' => 'verified',
+            'verified_at' => now(),
+            'verified_by' => $adminUserId,
+        ]);
+    }
+
+    public function rejectVerification(int $adminUserId, ?string $notes = null): void
+    {
+        $this->update([
+            'verification_status' => 'rejected',
+            'verified_at' => null,
+            'verified_by' => $adminUserId,
+            'verification_notes' => $notes,
+        ]);
     }
 }

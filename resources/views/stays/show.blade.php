@@ -25,7 +25,15 @@
 
             <div class="mt-6 grid gap-8 lg:grid-cols-[1fr_360px]">
                 <div class="min-w-0">
-                    <x-listings.kind-tag :mode="$house->listing_mode" />
+                    <div class="flex items-center gap-2">
+                        <x-listings.kind-tag :mode="$house->listing_mode" />
+                        @if ($house->location?->landlord?->isVerified())
+                            <span title="This landlord has been reviewed and verified by our team" class="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-700 dark:bg-sky-500/10 dark:text-sky-400">
+                                @svg('heroicon-s-check-badge', 'w-3.5 h-3.5')
+                                Verified
+                            </span>
+                        @endif
+                    </div>
                     <h1 class="mt-3 text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">{{ $house->publicName() }}</h1>
                     <p class="mt-1 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
                         @svg('heroicon-o-map-pin', 'w-4 h-4 shrink-0')

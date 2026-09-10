@@ -3,6 +3,7 @@
 namespace App\Livewire\SuperadminApp;
 
 use App\Models\Landlord;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
@@ -14,6 +15,9 @@ class Landlords extends Component
 
     public bool $showForm = false;
     public ?int $editingId = null;
+
+    public ?int $decidingVerificationId = null;
+    public string $rejectionNotes = '';
 
     public string $name = '';
     public string $contact_email = '';
@@ -110,6 +114,31 @@ class Landlords extends Component
 
         $this->cancelForm();
         session()->flash('landlord-saved', 'Landlord updated.');
+    }
+
+    public function approveVerification(int $landlordId): void
+    {
+        Landlord::findOrFail($landlordId)->approveVerification(Auth::id());
+        session()->flash('landlord-saved', 'Landlord verified.');
+    }
+
+    public function startReject(int $landlordId): void
+    {
+        $this->decidingVerificationId = $landlordId;
+        $this->rejectionNotes = '';
+    }
+
+    public function cancelReject(): void
+    {
+        $this->decidingVerificationId = null;
+        $this->rejectionNotes = '';
+    }
+
+    public function confirmReject(): void
+    {
+        Landlord::findOrFail($this->decidingVerificationId)->rejectVerification(Auth::id(), $this->rejectionNotes ?: null);
+        $this->cancelReject();
+        session()->flash('landlord-saved', 'Verification rejected.');
     }
 
     public function render()

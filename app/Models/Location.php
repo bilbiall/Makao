@@ -56,6 +56,11 @@ class Location extends Model
         return $this->belongsTo(Area::class);
     }
 
+    public function landlord()
+    {
+        return $this->belongsTo(Landlord::class);
+    }
+
     protected static function booted()
     {
         // geo_id (a plain string) is what every existing query filters/groups

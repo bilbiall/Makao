@@ -10,8 +10,14 @@
         @if ($photo)
             <img src="{{ $photo->url() }}" alt="{{ $house->publicName() }}" loading="lazy" class="h-full w-full object-cover">
         @endif
-        <div class="absolute left-3 top-3">
+        <div class="absolute left-3 top-3 flex items-center gap-1.5">
             <x-listings.kind-tag :mode="$house->listing_mode" />
+            @if ($house->location?->landlord?->isVerified())
+                <span title="This landlord has been reviewed and verified by our team" class="inline-flex items-center gap-1 rounded-full bg-sky-600/90 px-2 py-0.5 text-xs font-medium text-white">
+                    @svg('heroicon-s-check-badge', 'w-3.5 h-3.5')
+                    Verified
+                </span>
+            @endif
         </div>
         @auth
             @if (auth()->user()->isUser())

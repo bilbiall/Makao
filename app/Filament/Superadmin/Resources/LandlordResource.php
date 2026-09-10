@@ -102,11 +102,28 @@ class LandlordResource extends Resource
                     ->label('C2B')
                     ->boolean()
                     ->toggleable(),
+                Tables\Columns\TextColumn::make('verification_status')
+                    ->label('Verification')
+                    ->badge()
+                    ->color(fn (string $state) => match ($state) {
+                        'verified' => 'success',
+                        'pending' => 'warning',
+                        'rejected' => 'danger',
+                        default => 'gray',
+                    }),
                 Tables\Columns\TextColumn::make('created_at')->label('Joined')->date()->sortable(),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
                     ->options(['active' => 'Active', 'suspended' => 'Suspended']),
+                Tables\Filters\SelectFilter::make('verification_status')
+                    ->label('Verification')
+                    ->options([
+                        'unverified' => 'Unverified',
+                        'pending' => 'Pending review',
+                        'verified' => 'Verified',
+                        'rejected' => 'Rejected',
+                    ]),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
@@ -123,6 +140,25 @@ class LandlordResource extends Resource
                         'tableFilters' => ['landlord' => ['value' => $record->id]],
                         'landlord_id' => $record->id,
                     ])),
+                Tables\Actions\Action::make('approve_verification')
+                    ->label('Approve')
+                    ->icon('heroicon-s-check-badge')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->visible(fn (Landlord $record) => in_array($record->verification_status, ['pending', 'rejected'], true))
+                    ->action(fn (Landlord $record) => $record->approveVerification(auth()->id())),
+                Tables\Actions\Action::make('reject_verification')
+                    ->label('Reject')
+                    ->icon('heroicon-s-x-circle')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->visible(fn (Landlord $record) => in_array($record->verification_status, ['pending', 'verified'], true))
+                    ->form([
+                        Forms\Components\Textarea::make('notes')
+                            ->label('Reason (shown to the landlord)')
+                            ->maxLength(500),
+                    ])
+                    ->action(fn (Landlord $record, array $data) => $record->rejectVerification(auth()->id(), $data['notes'] ?? null)),
             ])
             ->defaultSort('created_at', 'desc');
     }

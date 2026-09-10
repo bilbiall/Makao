@@ -33,6 +33,15 @@
                     <span class="capitalize">{{ $landlord->currentSubscription->status }}</span>
                 </p>
             @endif
+            <div class="mt-2">
+                <span @class([
+                    'rounded-full px-2.5 py-0.5 text-xs font-medium',
+                    'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400' => $landlord->verification_status === 'verified',
+                    'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400' => $landlord->verification_status === 'pending',
+                    'bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400' => $landlord->verification_status === 'rejected',
+                    'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400' => in_array($landlord->verification_status, ['unverified', null], true),
+                ])>{{ ucfirst($landlord->verification_status ?? 'unverified') }}</span>
+            </div>
             <div class="mt-3 grid grid-cols-2 gap-2">
                 <button type="button" wire:click="startEdit({{ $landlord->id }})" class="rounded-lg border border-slate-300 dark:border-slate-700 py-2 text-xs font-medium text-slate-700 dark:text-slate-300">
                     Edit
@@ -41,6 +50,20 @@
                     Manage settings
                 </a>
             </div>
+            @if (in_array($landlord->verification_status, ['pending', 'rejected'], true))
+                <div class="mt-2 grid grid-cols-2 gap-2">
+                    <button type="button" wire:click="approveVerification({{ $landlord->id }})" wire:confirm="Mark {{ $landlord->name }} as verified?" class="rounded-lg bg-emerald-600 py-2 text-xs font-semibold text-white hover:bg-emerald-700">
+                        Approve verification
+                    </button>
+                    <button type="button" wire:click="startReject({{ $landlord->id }})" class="rounded-lg border border-rose-200 dark:border-rose-500/30 py-2 text-xs font-medium text-rose-600 dark:text-rose-400">
+                        Reject
+                    </button>
+                </div>
+            @elseif ($landlord->verification_status === 'verified')
+                <button type="button" wire:click="startReject({{ $landlord->id }})" class="mt-2 w-full rounded-lg border border-rose-200 dark:border-rose-500/30 py-2 text-xs font-medium text-rose-600 dark:text-rose-400">
+                    Revoke verification
+                </button>
+            @endif
         </div>
     @empty
         <div class="rounded-2xl bg-white border border-slate-200 p-8 text-center text-sm text-slate-500 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400">
@@ -112,6 +135,25 @@
                     <div class="flex gap-3 pt-2">
                         <button type="button" wire:click="cancelForm" class="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300">Cancel</button>
                         <button type="button" wire:click="save" class="flex-1 rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- Reject/revoke verification modal --}}
+    @if ($decidingVerificationId)
+        <div class="fixed inset-0 z-50">
+            <div class="absolute inset-0 bg-slate-900/40" wire:click="cancelReject"></div>
+            <div class="absolute inset-x-0 bottom-0 sm:inset-0 sm:flex sm:items-center sm:justify-center">
+                <div class="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md p-4 shadow-xl dark:bg-slate-900">
+                    <p class="font-semibold text-slate-900 dark:text-slate-100">Reject / revoke verification</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">This reason is shown to the landlord.</p>
+                    <textarea wire:model="rejectionNotes" rows="3" placeholder="Reason (optional)"
+                        class="mt-3 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 placeholder:text-slate-400"></textarea>
+                    <div class="mt-3 flex gap-2">
+                        <button type="button" wire:click="cancelReject" class="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-sm font-medium py-2">Cancel</button>
+                        <button type="button" wire:click="confirmReject" class="flex-1 rounded-lg bg-rose-600 text-white text-sm font-semibold py-2">Confirm</button>
                     </div>
                 </div>
             </div>

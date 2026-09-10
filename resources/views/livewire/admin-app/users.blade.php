@@ -55,7 +55,7 @@
                 <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Role</label>
                 <select wire:model.live="role" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
                     @if ($canAssignAdmin)
-                        <option value="admin">Admin</option>
+                        <option value="admin">Admin (full access to your account)</option>
                     @endif
                     <option value="manager">Manager</option>
                     <option value="caretaker">Caretaker</option>

@@ -77,7 +77,11 @@ class UserResource extends Resource
                         ];
 
                         if (auth()->user()?->role === 'landlord' || $record?->role === 'admin') {
-                            $options = ['admin' => 'Admin'] + $options;
+                            // "Admin" here means full access to YOUR business only - it has
+                            // nothing to do with the separate platform-wide "superadmin"
+                            // role, which a landlord can never grant. Spelled out in the
+                            // label since that distinction isn't obvious at a glance.
+                            $options = ['admin' => 'Admin (full access to your account)'] + $options;
                         }
 
                         // Landlord-defined custom roles (see StaffRole/StaffPermissions) -
