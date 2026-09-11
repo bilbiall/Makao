@@ -22,21 +22,35 @@
         },
     }"
 >
-    {{-- One-time nudge for first-time visitors - dismisses (and remembers) on
-         its own close button, or automatically once the chat is opened. --}}
+    {{-- One-time nudge for first-time visitors, tawk.to-style: an avatar +
+         short message card floating above the launcher - dismisses (and
+         remembers) on its own close button, or automatically once the chat
+         is opened. --}}
     <div
         x-show="showTooltip"
         x-transition:enter="transition ease-out duration-200"
-        x-transition:enter-start="opacity-0 translate-y-1"
+        x-transition:enter-start="opacity-0 translate-y-2"
         x-transition:enter-end="opacity-100 translate-y-0"
         style="display: none;"
-        class="absolute bottom-[4.25rem] right-0 w-56 rounded-2xl border border-slate-200 bg-white p-3 pr-7 text-sm text-slate-700 shadow-xl dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+        class="absolute bottom-16 right-0 mb-2 flex w-72 max-w-xs items-start gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl dark:border-slate-800 dark:bg-slate-900"
     >
-        <button type="button" @click="acknowledge()" aria-label="Dismiss" class="absolute top-2 right-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+        <div class="relative shrink-0">
+            @if ($avatarUrl)
+                <img src="{{ $avatarUrl }}" alt="" class="h-10 w-10 rounded-full object-cover">
+            @else
+                <div class="grid h-10 w-10 place-items-center rounded-full bg-emerald-100 dark:bg-emerald-900">
+                    @svg('heroicon-o-sparkles', 'w-5 h-5 text-emerald-700 dark:text-emerald-300')
+                </div>
+            @endif
+            <span class="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900"></span>
+        </div>
+        <div class="min-w-0 flex-1 pt-0.5">
+            <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">Renty Assistant</p>
+            <p class="mt-0.5 text-sm leading-snug text-slate-600 dark:text-slate-300">What type of house are you looking for? Tell me the area &amp; budget too 👋</p>
+        </div>
+        <button type="button" @click="acknowledge()" aria-label="Dismiss" class="-mr-1 -mt-1 shrink-0 rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300">
             @svg('heroicon-o-x-mark', 'w-4 h-4')
         </button>
-        👋 What type of house are you looking for? Tell me the area &amp; budget too - e.g. "1 bedroom in Kasarani under 20k".
-        <div class="absolute -bottom-1.5 right-6 h-3 w-3 rotate-45 border-b border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"></div>
     </div>
 
     {{-- Launcher --}}

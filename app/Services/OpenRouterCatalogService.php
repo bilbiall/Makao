@@ -48,7 +48,11 @@ class OpenRouterCatalogService
                         && ($model['pricing']['completion'] ?? null) === '0'
                         && ! str_starts_with($model['id'], self::EXCLUDED_PREFIX)
                         && in_array('text', $model['architecture']['output_modalities'] ?? [], true))
-                    ->sortBy(fn (array $model) => $model['name'] ?? $model['id'])
+                    // A model with JSON mode and no default "thinking" overhead is the
+                    // safe pick for this app - list those first so firstFreeModel()'s
+                    // automatic fallback, and whatever's first in the dropdown, is
+                    // actually a good choice rather than whichever sorts first alphabetically.
+                    ->sortBy(fn (array $model) => (($this->hasJsonMode($model) && ! $this->reasonsByDefault($model)) ? '0_' : '1_') . ($model['name'] ?? $model['id']))
                     ->mapWithKeys(fn (array $model) => [$model['id'] => $this->label($model)])
                     ->all();
             } catch (\Throwable $e) {

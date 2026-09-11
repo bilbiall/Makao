@@ -325,12 +325,21 @@ class PlatformSettings extends Component
                     'messages' => [
                         ['role' => 'user', 'content' => 'Reply with exactly one word: OK'],
                     ],
-                    'max_tokens' => 5,
+                    'max_tokens' => 30,
                 ]);
 
             if ($response->successful()) {
                 $reply = trim((string) ($response->json('choices.0.message.content') ?? ''));
-                session()->flash('platform-settings-saved', "Connection works - model \"{$model}\" replied: \"{$reply}\"");
+
+                if ($reply === '') {
+                    // A 2xx with empty content almost always means this model has
+                    // "reasoning" turned on by default - it spends the token budget
+                    // on hidden thinking and never reaches a visible answer, and
+                    // will behave the same way for every real extraction/reply call.
+                    session()->flash('platform-settings-error', "Connected, but \"{$model}\" replied with nothing - it's likely a reasoning model that spends its token budget on hidden \"thinking\" before answering. Pick a non-reasoning model instead (Google's Gemma models are known not to reason by default).");
+                } else {
+                    session()->flash('platform-settings-saved', "Connection works - model \"{$model}\" replied: \"{$reply}\"");
+                }
             } else {
                 $error = $response->json('error.message') ?? $response->body();
                 session()->flash('platform-settings-error', 'Connection failed (HTTP ' . $response->status() . '): ' . $error);

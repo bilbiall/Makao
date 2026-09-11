@@ -359,16 +359,31 @@ class PlatformSettings extends Page implements HasForms
                                                                 'messages' => [
                                                                     ['role' => 'user', 'content' => 'Reply with exactly one word: OK'],
                                                                 ],
-                                                                'max_tokens' => 5,
+                                                                'max_tokens' => 30,
                                                             ]);
 
                                                         if ($response->successful()) {
                                                             $reply = trim((string) ($response->json('choices.0.message.content') ?? ''));
-                                                            Notification::make()
-                                                                ->success()
-                                                                ->title('Connection works')
-                                                                ->body("Model \"{$model}\" replied: \"{$reply}\"")
-                                                                ->send();
+
+                                                            if ($reply === '') {
+                                                                // A 2xx with empty content almost always means this model has
+                                                                // "reasoning" turned on by default - it spends the token budget
+                                                                // on hidden thinking and never reaches a visible answer. That's
+                                                                // not a fluke here - it'll behave the same way for every real
+                                                                // extraction/reply call this app makes.
+                                                                Notification::make()
+                                                                    ->warning()
+                                                                    ->title('Connected, but the model replied with nothing')
+                                                                    ->body("\"{$model}\" is likely a reasoning model that spends its token budget on hidden \"thinking\" before answering, leaving no room for a real reply. Pick a non-reasoning model from the suggestions above instead (they're flagged \"(no JSON mode)\" when they lack it, but reasoning behavior isn't shown there - Google's Gemma models are known not to reason by default).")
+                                                                    ->persistent()
+                                                                    ->send();
+                                                            } else {
+                                                                Notification::make()
+                                                                    ->success()
+                                                                    ->title('Connection works')
+                                                                    ->body("Model \"{$model}\" replied: \"{$reply}\"")
+                                                                    ->send();
+                                                            }
                                                         } else {
                                                             $error = $response->json('error.message') ?? $response->body();
                                                             Notification::make()
