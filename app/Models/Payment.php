@@ -98,6 +98,24 @@ class Payment extends Model
             } catch (\Throwable $e) {
                 // ignore SMS failures (e.g. gateway not configured)
             }
+
+            // Email is best-effort and skipped entirely when the tenant has no
+            // email on file - unlike phone_number, it's optional at admission.
+            if ($tenant->email) {
+                try {
+                    $emailBody = \App\Helpers\EmailTemplateHelper::render('payment', [
+                        'tenant_name' => $tenant->tenant_name,
+                        'amount_paid' => number_format($payment->amount_paid),
+                        'invoice_number' => $invoice->invoice_number,
+                        'balance' => number_format($invoiceBalance),
+                    ], $payment->landlord_id);
+
+                    \App\Helpers\EmailHelper::send($tenant->email, "Payment received - Invoice {$invoice->invoice_number}", $emailBody, $payment->landlord_id);
+                } catch (\Throwable $e) {
+                    // ignore email failures (e.g. SMTP not configured)
+                }
+            }
+
             // Also create database notification for admins and tenant user
             $admins = \App\Models\User::where('role', 'admin')->where('landlord_id', $payment->landlord_id)->get();
             foreach ($admins as $admin) {

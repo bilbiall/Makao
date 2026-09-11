@@ -49,6 +49,8 @@ Route::get('/houses/{house}', [\App\Http\Controllers\PropertyListingController::
 Route::middleware(['auth'])->group(function () {
     Route::post('/houses/{house}/watchlist', [\App\Http\Controllers\PropertyListingController::class, 'toggleWatchlist'])
         ->name('listings.watchlist');
+    Route::post('/houses/{house}/notify-me', [\App\Http\Controllers\PropertyListingController::class, 'notifyWhenAvailable'])
+        ->name('listings.notify-me');
     // Verified only - unlike watchlisting (harmless) or a guest booking a stay (no
     // account to gate at all), this is the one unauthenticated-feeling, no-other-
     // friction action a bot account could spam landlords with.
@@ -197,6 +199,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureUserRole::class])->prefix(
     Route::get('/dashboard', \App\Livewire\UserApp\Dashboard::class)->name('app.user.dashboard');
     Route::get('/watchlist', \App\Livewire\UserApp\Watchlist::class)->name('app.user.watchlist');
     Route::get('/applications', \App\Livewire\UserApp\Applications::class)->name('app.user.applications');
+    Route::get('/alerts', \App\Livewire\UserApp\Alerts::class)->name('app.user.alerts');
     Route::get('/profile', \App\Livewire\Profile::class)->name('app.user.profile');
     Route::get('/connect', \App\Livewire\UserApp\ConnectApartment::class)->name('app.user.connect');
 });

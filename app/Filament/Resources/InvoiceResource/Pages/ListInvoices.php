@@ -42,12 +42,7 @@ class ListInvoices extends ListRecords
 
                     foreach ($tenants as $tenant) {
                         // Skip if already invoiced this month
-                        $alreadyInvoiced = Invoice::where('tenant_id', $tenant->id)
-                            ->whereMonth('invoice_date', $month)
-                            ->whereYear('invoice_date', $year)
-                            ->exists();
-
-                        if ($alreadyInvoiced) continue;
+                        if (Invoice::existsForTenantInMonth($tenant->id, $today)) continue;
 
                         $house = $tenant->house;
                         if (!$house) continue;
@@ -100,12 +95,20 @@ class ListInvoices extends ListRecords
                 ->label('Mass Reminder')
                 ->visible(fn () => auth()->user()->hasPermission(\App\Support\StaffPermissions::SEND_MASS_REMINDERS))
                 ->action(function () {
+                    $today = now();
                     $invoices = Invoice::where('balance', '>', 0)->get();
                     $count = 0;
 
                     foreach ($invoices as $invoice) {
                         $tenant = $invoice->tenant;
                         if (!$tenant) {
+                            continue;
+                        }
+
+                        // A reminder already went out for this invoice this calendar
+                        // month - skip it instead of re-sending on every click of
+                        // this button.
+                        if ($invoice->last_reminded_at && $invoice->last_reminded_at->isSameMonth($today)) {
                             continue;
                         }
 
@@ -119,9 +122,27 @@ class ListInvoices extends ListRecords
 
                         try {
                             SmsHelper::sendSms($tenant->phone_number, $message, $invoice->landlord_id);
+                            $invoice->update(['last_reminded_at' => $today]);
                             $count++;
                         } catch (\Throwable $e) {
                             // silently skip failed sends
+                        }
+
+                        if ($tenant->email) {
+                            try {
+                                $emailBody = \App\Helpers\EmailTemplateHelper::render('mass_reminder', [
+                                    'tenant_name' => $tenant->tenant_name,
+                                    'invoice_number' => $invoice->invoice_number,
+                                    'amount' => number_format($invoice->balance),
+                                    'due_date' => $invoice->due_date ? Carbon::parse($invoice->due_date)->format('d M Y') : 'N/A',
+                                    'property_name' => $tenant->house?->location?->location_name ?? '',
+                                ], $invoice->landlord_id);
+
+                                \App\Helpers\EmailHelper::send($tenant->email, "Payment reminder - Invoice {$invoice->invoice_number}", $emailBody, $invoice->landlord_id);
+                                $invoice->update(['last_reminded_at' => $today]);
+                            } catch (\Throwable $e) {
+                                // ignore email failures (e.g. SMTP not configured)
+                            }
                         }
                     }
 

@@ -268,9 +268,10 @@
                     </div>
 
                     <div class="p-4 grid grid-cols-2 gap-3">
+                        @php $accountBalance = $t->accountBalance(); @endphp
                         <div class="rounded-xl bg-slate-50 border border-slate-200 p-3 dark:bg-slate-800 dark:border-slate-700">
-                            <p class="text-xs text-slate-500 dark:text-slate-400">Balance</p>
-                            <p class="text-lg font-semibold {{ $t->balance > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400' }}">KES {{ number_format($t->balance) }}</p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">{{ $accountBalance > 0 ? 'Owed' : 'Credit' }}</p>
+                            <p class="text-lg font-semibold {{ $accountBalance > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400' }}">KES {{ number_format(abs($accountBalance)) }}</p>
                         </div>
                         <div class="rounded-xl bg-slate-50 border border-slate-200 p-3 dark:bg-slate-800 dark:border-slate-700">
                             <p class="text-xs text-slate-500 dark:text-slate-400">Rent</p>

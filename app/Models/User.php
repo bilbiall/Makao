@@ -218,6 +218,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(ViewingRequest::class);
     }
 
+    public function houseAlerts()
+    {
+        return $this->hasMany(HouseAlert::class);
+    }
+
     // The landlord account this user belongs to (null for superadmin accounts).
     public function landlord()
     {

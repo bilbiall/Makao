@@ -27,6 +27,8 @@ class EmailTemplateHelper
             'new_user' => "Hi {user_name},\n\nYour {role} account has been successfully created!\n\nLogin Details:\nEmail: {email}\nPassword: {password}\n\nYou can login at: {site_url}\n\nPlease change your password after first login.\n\nRegards,\n{app_name}",
             'issue_update' => "Hi {tenant_name}, your issue '{issue_title}' status changed to {issue_status}.\n\nRegards, {app_name}",
             'landlord_welcome' => "Hi {contact_name},\n\nWelcome to {app_name}! Your account for {business_name} is ready, and your {package_name} trial has started ({trial_days}-day trial).\n\nLog in at {site_url} to add your first property.\n\nRegards, {app_name}",
+            'house_alert_match' => "Hi {user_name},\n\nA place matching your alert just became available: {house_name} in {area} - KES {price}.\n\nTake a look: {url}\n\nRegards, {app_name}",
+            'mass_reminder' => "Hi {tenant_name}, this is a reminder that invoice {invoice_number} of KES {amount} was due on {due_date}. Please make your payment as soon as possible.\n\nRegards, {app_name}",
         ];
 
         $template = $payload["email_template_{$key}"] ?? $defaults[$key] ?? '';

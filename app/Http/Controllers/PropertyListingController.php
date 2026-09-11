@@ -65,14 +65,21 @@ class PropertyListingController extends Controller
 
     public function show(House $house)
     {
-        abort_unless(
-            House::publiclyVisible()->whereKey($house->id)->exists()
-                // Still let a user view a listing they've already requested a viewing on,
-                // even if it's since gone vacant->occupied again, so their application
-                // history doesn't 404.
-                || (Auth::check() && $house->viewingRequests()->where('user_id', Auth::id())->exists()),
-            404
-        );
+        $isPubliclyVisible = House::publiclyVisible()->whereKey($house->id)->exists();
+
+        // A house that exists but is no longer publicly visible (occupied, unpublished,
+        // etc) gets an "unavailable, notify me" page instead of a dead-end 404 - the
+        // house might be sitting in someone's watchlist or bookmarks. Still let a user
+        // view the full listing they've already requested a viewing on, even if it's
+        // since gone vacant->occupied again, so their application history doesn't 404.
+        if (! $isPubliclyVisible && ! (Auth::check() && $house->viewingRequests()->where('user_id', Auth::id())->exists())) {
+            $house->load(['location', 'photos']);
+
+            $hasAlert = Auth::check()
+                && \App\Models\HouseAlert::where('user_id', Auth::id())->where('house_id', $house->id)->exists();
+
+            return view('listings.unavailable', compact('house', 'hasAlert'));
+        }
 
         $house->load(['location', 'photos']);
 
@@ -84,6 +91,20 @@ class PropertyListingController extends Controller
             : false;
 
         return view('listings.show', compact('house', 'isWatchlisted', 'pendingRequest'));
+    }
+
+    /** "Notify me when this specific listing is available again" - from the unavailable-listing page. */
+    public function notifyWhenAvailable(House $house)
+    {
+        $user = Auth::user();
+        abort_unless($user && $user->isUser(), 403, 'Only "looking for a house" accounts can request alerts.');
+
+        \App\Models\HouseAlert::firstOrCreate([
+            'user_id' => $user->id,
+            'house_id' => $house->id,
+        ]);
+
+        return back()->with('status', "You'll get an email as soon as this listing is available again.");
     }
 
     public function toggleWatchlist(House $house)

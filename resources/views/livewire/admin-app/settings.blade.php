@@ -199,6 +199,9 @@
             <p class="text-sm font-semibold text-slate-900 dark:text-slate-100 pt-2 border-t border-slate-100 dark:border-slate-800">Email Templates</p>
             @php
                 $emailFields = [
+                    'email_template_invoice' => ['New Invoice Email Template', 'Variables: {tenant_name}, {invoice_number}, {amount}, {due_date}, {property_name}, {app_name}'],
+                    'email_template_payment' => ['Payment Confirmation Email Template', 'Variables: {tenant_name}, {amount_paid}, {invoice_number}, {balance}, {app_name}'],
+                    'email_template_mass_reminder' => ['Payment Reminder Email Template', 'Variables: {tenant_name}, {invoice_number}, {amount}, {due_date}, {property_name}, {app_name}'],
                     'email_template_message' => ['Chat Message Email Template', 'Variables: {tenant_name}, {sender_name}, {message_body}, {app_name}'],
                     'email_template_notice_approved' => ['Notice Approved Email Template', 'Variables: {tenant_name}, {house_name}, {vacate_date}, {balance}, {app_name}'],
                     'email_template_notice_denied' => ['Notice Denied Email Template', 'Variables: {tenant_name}, {house_name}, {vacate_date}, {reason}, {app_name}'],

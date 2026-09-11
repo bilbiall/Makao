@@ -68,11 +68,13 @@ class InvoiceResource extends Resource
                                 ? ($bills->water ?? 0) + ($bills->trash ?? 0) + ($bills->electricity ?? 0) + ($bills->internet ?? 0)
                                 : 0;
 
-                            // 🟣 New: Get tenant's running balance (owed/overpaid)
-                            $previousBalance = $tenant->balance ?? 0;
+                            // Informational only - shown next to the total but not folded into
+                            // it, since that would double count against
+                            // TenantObserver's sum(invoices)-sum(payments) math (this old balance
+                            // already lives on whichever invoice it came from).
+                            $previousBalance = $tenant->accountBalance();
 
-                            // 🟣 Compute total amount to be paid this month
-                            $total = ($rent + $billTotal) - $previousBalance;
+                            $total = $rent + $billTotal;
 
                             $set('rent_only', $rent);
                             $set('bill_only', $billTotal);

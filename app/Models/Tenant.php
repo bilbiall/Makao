@@ -72,6 +72,20 @@ class Tenant extends Model
         return $this->hasMany(Payment::class);
     }
 
+    /**
+     * The tenant's true running balance across every invoice they've ever had -
+     * positive means they still owe money overall, negative means they're
+     * carrying a credit from overpaying. Same formula as
+     * TenantObserver::deleting()'s archival snapshot. Unlike the `balance`
+     * column (which just mirrors whichever single invoice was last recalculated),
+     * this sums every invoice/payment so it can't be thrown off by which invoice
+     * happened to be touched most recently.
+     */
+    public function accountBalance(): float
+    {
+        return $this->invoices()->sum('amount') - $this->payments()->sum('amount_paid');
+    }
+
     //relationship with user for tenant panel
     public function user()
     {

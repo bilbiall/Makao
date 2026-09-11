@@ -83,12 +83,7 @@ class SendAutoInvoices extends Command
 
         foreach ($tenants as $tenant) {
             try {
-                $alreadyInvoiced = Invoice::where('tenant_id', $tenant->id)
-                    ->whereMonth('invoice_date', $month)
-                    ->whereYear('invoice_date', $year)
-                    ->exists();
-
-                if ($alreadyInvoiced) {
+                if (Invoice::existsForTenantInMonth($tenant->id, $today)) {
                     continue;
                 }
 

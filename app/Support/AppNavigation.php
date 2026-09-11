@@ -93,6 +93,7 @@ class AppNavigation
                 ['label' => 'Home', 'icon' => 'heroicon-o-home', 'route' => 'app.user.dashboard', 'tab' => true],
                 ['label' => 'Watchlist', 'icon' => 'heroicon-o-heart', 'route' => 'app.user.watchlist', 'tab' => true],
                 ['label' => 'Applications', 'icon' => 'heroicon-o-clipboard-document-list', 'route' => 'app.user.applications', 'tab' => true],
+                ['label' => 'Alerts', 'icon' => 'heroicon-o-bell-alert', 'route' => 'app.user.alerts', 'tab' => false],
                 ['label' => 'Profile', 'icon' => 'heroicon-o-user-circle', 'route' => 'app.user.profile', 'tab' => false],
             ],
             'superadmin' => [

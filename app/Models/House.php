@@ -199,6 +199,49 @@ class House extends Model
         return $this->hasMany(Booking::class);
     }
 
+    public function alerts()
+    {
+        return $this->hasMany(HouseAlert::class);
+    }
+
+    /**
+     * Word-based, SEO-friendly URLs (/houses/2-bedroom-westlands-x7k2p9) instead
+     * of a bare id - generated once on creation and never changed afterward
+     * (a stable permalink), so a link someone bookmarked or shared keeps
+     * working even if the house's type/area is edited later.
+     */
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
+
+    /**
+     * Accepts either the real slug (the canonical URL) or a bare numeric id
+     * (an old link from before slugs existed, or one that was never re-shared
+     * with the new URL) - PropertyListingController/StayListingController
+     * redirect a non-canonical value to the real slug URL once resolved here,
+     * so old links keep working without staying the "real" URL forever.
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        return $this->where('slug', $value)->first()
+            ?? (ctype_digit((string) $value) ? $this->where('id', (int) $value)->first() : null);
+    }
+
+    /** Public so the one-off backfill migration for pre-existing rows can reuse it. */
+    public static function generateUniqueSlug(self $house): string
+    {
+        $type = $house->house_type ?: 'house';
+        $area = $house->location?->area?->name ?? $house->location?->geo_id ?? 'kenya';
+        $base = \Illuminate\Support\Str::slug($type . ' ' . $area);
+
+        do {
+            $slug = $base . '-' . \Illuminate\Support\Str::lower(\Illuminate\Support\Str::random(6));
+        } while (static::where('slug', $slug)->exists());
+
+        return $slug;
+    }
+
     /**
      * Powers the "area" search filter on /houses and /stays - $input can be either
      * a specific area name (e.g. "Nyali", exact match against Location.geo_id, same
@@ -275,6 +318,10 @@ class House extends Model
             if (!$house->landlord_id && $house->location_id) {
                 $house->landlord_id = \App\Models\Location::withoutGlobalScopes()->find($house->location_id)?->landlord_id;
             }
+
+            if (!$house->slug) {
+                $house->slug = static::generateUniqueSlug($house);
+            }
         });
 
         static::creating(function ($house) {
@@ -310,11 +357,15 @@ class House extends Model
                         ));
                     }
                 }
+
+                if (!\App\Support\ImportContext::active()) {
+                    app(\App\Services\HouseAlertMatchService::class)->notifyIfNewlyAvailable($house);
+                }
             } catch (\Throwable $e) {
                 // ignore logging errors
             }
         });
-        
+
         static::updated(function ($house) {
             try {
                 $actor = auth()->id() ?? null;
@@ -338,6 +389,13 @@ class House extends Model
                 if (!empty($changes)) {
                     $details = "Updated house {$house->house_name}: " . implode(', ', $changes);
                     \App\Helpers\ActivityLogger::log('update_house', $actor, $details);
+                }
+
+                // Only worth checking pending alerts when something that could
+                // actually flip public visibility changed - not on every edit
+                // (e.g. a description tweak shouldn't re-run this every time).
+                if ($house->wasChanged(['house_status', 'is_published', 'listing_mode', 'rent_amount'])) {
+                    app(\App\Services\HouseAlertMatchService::class)->notifyIfNewlyAvailable($house);
                 }
             } catch (\Throwable $e) {
                 // ignore

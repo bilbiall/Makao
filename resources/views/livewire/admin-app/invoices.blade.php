@@ -84,10 +84,11 @@
                             <p class="text-slate-500 dark:text-slate-400">Bills</p>
                         </div>
                         <div class="rounded-lg bg-slate-50 dark:bg-slate-800 py-2">
-                            <p class="font-semibold text-slate-800 dark:text-slate-200">{{ number_format($previous_balance) }}</p>
-                            <p class="text-slate-500 dark:text-slate-400">Prev. balance</p>
+                            <p class="font-semibold {{ $previous_balance > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400' }}">{{ number_format(abs($previous_balance)) }}</p>
+                            <p class="text-slate-500 dark:text-slate-400">{{ $previous_balance > 0 ? 'Owed already' : 'Credit already' }}</p>
                         </div>
                     </div>
+                    <p class="text-[11px] text-slate-400">The amount below is rent + bills only - it doesn't include the figure above. Adjust it by hand if you want this invoice to also collect an old balance or apply a credit.</p>
                 @endif
             @endif
 
@@ -240,7 +241,7 @@
                         <div>
                             <p class="font-semibold text-slate-900 dark:text-slate-100">{{ $inv->invoice_number }}</p>
                             <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{{ $inv->tenant?->tenant_name ?? 'Unknown tenant' }}</p>
-                            <p class="text-xs text-slate-400 dark:text-slate-500">Due {{ \Carbon\Carbon::parse($inv->due_date)->format('d M Y') }}</p>
+                            <p class="text-xs text-slate-400 dark:text-slate-500">For {{ \Carbon\Carbon::parse($inv->invoice_date)->format('F Y') }} &middot; Due {{ \Carbon\Carbon::parse($inv->due_date)->format('d M Y') }}</p>
                         </div>
                         <button type="button" wire:click="closeInvoiceModal" class="p-1 text-slate-400 hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-300 flex-shrink-0" aria-label="Close">
                             @svg('heroicon-o-x-mark', 'w-5 h-5')

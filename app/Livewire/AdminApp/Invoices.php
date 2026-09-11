@@ -180,9 +180,14 @@ class Invoices extends Component
             ->get()
             ->sum(fn (Bill $bill) => $bill->water + $bill->electricity + $bill->trash + $bill->internet);
 
-        $this->previous_balance = $tenant->balance ?? 0;
+        // Informational only, shown next to the amount below - NOT subtracted from
+        // it. Folding a carried balance into this invoice's own amount would double
+        // count it against TenantObserver's sum(invoices)-sum(payments) math (that
+        // old balance already lives on whichever invoice it came from). Staff can
+        // see this figure and judge for themselves whether to hand-adjust the amount.
+        $this->previous_balance = $tenant->accountBalance();
 
-        $this->amount = max(0, $this->rent_only + $this->bill_only - $this->previous_balance);
+        $this->amount = $this->rent_only + $this->bill_only;
     }
 
     /**
@@ -216,6 +221,14 @@ class Invoices extends Component
             ]);
             session()->flash('invoice-saved', 'Invoice updated.');
         } else {
+            $period = \Carbon\Carbon::parse($this->invoice_date);
+
+            if (Invoice::existsForTenantInMonth((int) $this->tenant_id, $period)) {
+                $this->addError('tenant_id', 'This tenant already has an invoice dated in ' . $period->format('F Y') . '.');
+
+                return;
+            }
+
             // Invoice::booted()'s `created` hook sends the SMS/notifications/
             // activity log automatically - don't duplicate that here.
             Invoice::create([
@@ -258,12 +271,7 @@ class Invoices extends Component
                 continue;
             }
 
-            $alreadyInvoiced = Invoice::where('tenant_id', $tenant->id)
-                ->whereMonth('invoice_date', $today->month)
-                ->whereYear('invoice_date', $today->year)
-                ->exists();
-
-            if ($alreadyInvoiced) {
+            if (Invoice::existsForTenantInMonth($tenant->id, $today)) {
                 continue;
             }
 
@@ -304,12 +312,19 @@ class Invoices extends Component
     {
         abort_unless(Auth::user()->hasPermission(StaffPermissions::SEND_MASS_REMINDERS), 403);
 
+        $today = now();
         $invoices = StaffScope::onTenantChild(Invoice::where('balance', '>', 0))->with('tenant.house.location')->get();
         $count = 0;
 
         foreach ($invoices as $invoice) {
             $tenant = $invoice->tenant;
             if (!$tenant) {
+                continue;
+            }
+
+            // Already reminded this calendar month - don't re-send just because
+            // the button was clicked again.
+            if ($invoice->last_reminded_at && $invoice->last_reminded_at->isSameMonth($today)) {
                 continue;
             }
 
@@ -323,9 +338,27 @@ class Invoices extends Component
 
             try {
                 \App\Helpers\SmsHelper::sendSms($tenant->phone_number, $message, $invoice->landlord_id);
+                $invoice->update(['last_reminded_at' => $today]);
                 $count++;
             } catch (\Throwable $e) {
                 // ignore SMS failures (e.g. gateway not configured)
+            }
+
+            if ($tenant->email) {
+                try {
+                    $emailBody = \App\Helpers\EmailTemplateHelper::render('mass_reminder', [
+                        'tenant_name' => $tenant->tenant_name,
+                        'invoice_number' => $invoice->invoice_number,
+                        'amount' => number_format($invoice->balance),
+                        'due_date' => optional($invoice->due_date)->format('d M Y'),
+                        'property_name' => $tenant->house?->location?->location_name ?? '',
+                    ], $invoice->landlord_id);
+
+                    \App\Helpers\EmailHelper::send($tenant->email, "Payment reminder - Invoice {$invoice->invoice_number}", $emailBody, $invoice->landlord_id);
+                    $invoice->update(['last_reminded_at' => $today]);
+                } catch (\Throwable $e) {
+                    // ignore email failures (e.g. SMTP not configured)
+                }
             }
         }
 

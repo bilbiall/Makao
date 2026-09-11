@@ -26,9 +26,17 @@ class Invoice extends Model
         'amount',
         'status',
         'balance',
+        'last_reminded_at',
         'comment',
         'landlord_id',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'last_reminded_at' => 'datetime',
+        ];
+    }
 
     // An invoice belongs to a tenant relationship
     public function tenant()
@@ -40,6 +48,20 @@ class Invoice extends Model
     public function payments()
     {
         return $this->hasMany(Payment::class);
+    }
+
+    /**
+     * One invoice per tenant per calendar month, full stop - the single guard every
+     * invoice-creation path (manual create, mass invoice, auto-invoice cron) checks
+     * before creating one, so a tenant already invoiced for a given month never gets
+     * a second one until the next calendar month starts.
+     */
+    public static function existsForTenantInMonth(int $tenantId, \Carbon\Carbon $period): bool
+    {
+        return static::where('tenant_id', $tenantId)
+            ->whereMonth('invoice_date', $period->month)
+            ->whereYear('invoice_date', $period->year)
+            ->exists();
     }
 
     /**
@@ -140,6 +162,24 @@ class Invoice extends Model
                     SmsHelper::sendSms($tenant->phone_number, $message, $invoice->landlord_id);
                 } catch (\Throwable $e) {
                     // ignore SMS failures (e.g. gateway not configured)
+                }
+
+                // Email is best-effort and skipped entirely when the tenant has no
+                // email on file - unlike phone_number, it's optional at admission.
+                if ($tenant->email) {
+                    try {
+                        $body = \App\Helpers\EmailTemplateHelper::render('invoice', [
+                            'tenant_name' => $tenant->tenant_name,
+                            'invoice_number' => $invoice->invoice_number,
+                            'amount' => number_format($invoice->amount),
+                            'due_date' => \Carbon\Carbon::parse($invoice->due_date)->format('d M Y'),
+                            'property_name' => $tenant->house?->location?->location_name ?? '',
+                        ], $invoice->landlord_id);
+
+                        \App\Helpers\EmailHelper::send($tenant->email, "New invoice {$invoice->invoice_number}", $body, $invoice->landlord_id);
+                    } catch (\Throwable $e) {
+                        // ignore email failures (e.g. SMTP not configured)
+                    }
                 }
 
                 // Send database notification to admins

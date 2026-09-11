@@ -362,6 +362,24 @@ trait HasLandlordSettingsSchema
 
                     Forms\Components\Section::make('Email Templates')
                         ->schema([
+                            Forms\Components\Textarea::make('email_template_invoice')
+                                ->label('New Invoice Email Template')
+                                ->helperText('Variables: {tenant_name}, {invoice_number}, {amount}, {due_date}, {property_name}, {app_name}')
+                                ->default("Hi {tenant_name}, invoice {invoice_number} of KES {amount} is due by {due_date}.\n\nRegards, {app_name}")
+                                ->rows(4),
+
+                            Forms\Components\Textarea::make('email_template_payment')
+                                ->label('Payment Confirmation Email Template')
+                                ->helperText('Variables: {tenant_name}, {amount_paid}, {invoice_number}, {balance}, {app_name}')
+                                ->default("Hi {tenant_name}, we received your payment of KES {amount_paid} for Invoice {invoice_number}. Remaining balance: KES {balance}.\n\nThank you, {app_name}")
+                                ->rows(4),
+
+                            Forms\Components\Textarea::make('email_template_mass_reminder')
+                                ->label('Payment Reminder Email Template')
+                                ->helperText('Variables: {tenant_name}, {invoice_number}, {amount}, {due_date}, {property_name}, {app_name}')
+                                ->default("Hi {tenant_name}, this is a reminder that invoice {invoice_number} of KES {amount} was due on {due_date}. Please make your payment as soon as possible.\n\nRegards, {app_name}")
+                                ->rows(4),
+
                             Forms\Components\Textarea::make('email_template_message')
                                 ->label('Chat Message Email Template')
                                 ->helperText('Variables: {tenant_name}, {sender_name}, {message_body}, {app_name}')

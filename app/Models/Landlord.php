@@ -13,6 +13,7 @@ class Landlord extends Model
 
     protected $fillable = [
         'name',
+        'slug',
         'contact_email',
         'phone_number',
         'status',
@@ -126,5 +127,47 @@ class Landlord extends Model
             'verified_by' => $adminUserId,
             'verification_notes' => $notes,
         ]);
+    }
+
+    /**
+     * Business-name-based URLs (/superadmin/landlords/acme-properties-x7k2p9)
+     * instead of a bare id, so one landlord's admin links don't look
+     * interchangeable with another's - generated once on creation and never
+     * changed afterward, same convention as House::getRouteKeyName().
+     */
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
+
+    /**
+     * Accepts either the real slug or a bare numeric id (an old link from
+     * before slugs existed) - same fallback convention as House::resolveRouteBinding().
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        return $this->where('slug', $value)->first()
+            ?? (ctype_digit((string) $value) ? $this->where('id', (int) $value)->first() : null);
+    }
+
+    /** Public so the one-off backfill migration for pre-existing rows can reuse it. */
+    public static function generateUniqueSlug(self $landlord): string
+    {
+        $base = \Illuminate\Support\Str::slug($landlord->name) ?: 'landlord';
+
+        do {
+            $slug = $base . '-' . \Illuminate\Support\Str::lower(\Illuminate\Support\Str::random(6));
+        } while (static::withTrashed()->where('slug', $slug)->exists());
+
+        return $slug;
+    }
+
+    protected static function booted()
+    {
+        static::creating(function (Landlord $landlord) {
+            if (!$landlord->slug) {
+                $landlord->slug = static::generateUniqueSlug($landlord);
+            }
+        });
     }
 }
