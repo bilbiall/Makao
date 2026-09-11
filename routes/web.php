@@ -173,6 +173,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureAdminRole::class])->prefix
     Route::get('/invoices/print', [\App\Http\Controllers\AdminPrintController::class, 'invoices'])->name('app.admin.invoices.print');
     Route::get('/payments', \App\Livewire\AdminApp\Payments::class)->name('app.admin.payments');
     Route::get('/mpesa-review', \App\Livewire\AdminApp\MpesaReview::class)->name('app.admin.mpesa-review');
+    Route::get('/mpesa-guide', \App\Livewire\AdminApp\MpesaGuide::class)->name('app.admin.mpesa-guide');
     Route::get('/payments/print', [\App\Http\Controllers\AdminPrintController::class, 'payments'])->name('app.admin.payments.print');
     Route::get('/tenants/print', [\App\Http\Controllers\AdminPrintController::class, 'tenants'])->name('app.admin.tenants.print');
     Route::get('/bills', \App\Livewire\AdminApp\Bills::class)->name('app.admin.bills');

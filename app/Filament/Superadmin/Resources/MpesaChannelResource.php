@@ -36,6 +36,17 @@ class MpesaChannelResource extends Resource
     {
         return $form
             ->schema([
+                Forms\Components\Placeholder::make('local_url_warning')
+                    ->hiddenLabel()
+                    ->visible(fn () => static::appUrlIsLocal())
+                    ->content(new \Illuminate\Support\HtmlString(
+                        '<div class="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">'
+                        . '<strong>This site is on ' . e(config('app.url')) . '</strong> - Safaricom cannot reach this to deliver an STK result or a C2B payment. '
+                        . 'For testing: run <code>ngrok http 80</code> (or the site\'s local port), then temporarily set <code>APP_URL</code> in <code>.env</code> to the <code>https://...ngrok-free.app</code> URL and run <code>php artisan config:clear</code> before testing Pay Now or Register C2B. '
+                        . 'See the "Local testing" section in <code>darajaapis.md</code>.'
+                        . '</div>'
+                    )),
+
                 Forms\Components\Section::make('Channel')
                     ->description('Which landlord/property this Paybill or Till belongs to.')
                     ->schema([
@@ -181,5 +192,13 @@ class MpesaChannelResource extends Resource
             'create' => Pages\CreateMpesaChannel::route('/create'),
             'edit' => Pages\EditMpesaChannel::route('/{record}/edit'),
         ];
+    }
+
+    /** Mirrors App\Filament\Resources\MpesaChannelResource::appUrlIsLocal(). */
+    public static function appUrlIsLocal(): bool
+    {
+        $url = config('app.url');
+
+        return str_contains($url, 'localhost') || str_contains($url, '127.0.0.1');
     }
 }

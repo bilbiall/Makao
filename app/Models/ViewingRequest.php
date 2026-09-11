@@ -23,12 +23,15 @@ class ViewingRequest extends Model
         'admin_notes',
         'handled_by',
         'landlord_id',
+        'contacted_at',
+        'contacted_by',
     ];
 
     protected function casts(): array
     {
         return [
             'requested_at' => 'datetime',
+            'contacted_at' => 'datetime',
         ];
     }
 
@@ -92,5 +95,10 @@ class ViewingRequest extends Model
     public function handledBy()
     {
         return $this->belongsTo(User::class, 'handled_by');
+    }
+
+    public function contactedBy()
+    {
+        return $this->belongsTo(User::class, 'contacted_by');
     }
 }

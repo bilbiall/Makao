@@ -40,14 +40,33 @@
             <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ $editingId ? 'Edit invoice' : 'New invoice' }}</p>
 
             @if (!$editingId)
-                <div>
+                <div class="relative"
+                    x-data="{
+                        open: false,
+                        query: '{{ $tenant_id ? addslashes(optional($tenants->firstWhere('id', (int) $tenant_id))->tenant_name) : '' }}',
+                        tenants: {{ $tenants->map(fn ($t) => ['id' => $t->id, 'name' => $t->tenant_name])->values()->toJson() }},
+                        get filtered() {
+                            const q = this.query.toLowerCase().trim();
+                            return q === '' ? this.tenants : this.tenants.filter(t => t.name.toLowerCase().includes(q));
+                        },
+                        select(t) {
+                            this.query = t.name;
+                            this.open = false;
+                            $wire.set('tenant_id', t.id);
+                        },
+                    }">
                     <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Tenant</label>
-                    <select wire:model.live="tenant_id" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
-                        <option value="">Select tenant</option>
-                        @foreach ($tenants as $tenant)
-                            <option value="{{ $tenant->id }}">{{ $tenant->tenant_name }}</option>
-                        @endforeach
-                    </select>
+                    <input type="text" x-model="query" @focus="open = true" @input="open = true; if ($event.target.value === '') $wire.set('tenant_id', '')"
+                        placeholder="Search tenant by name..." autocomplete="off"
+                        class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+                    <div x-show="open" @click.outside="open = false" style="display: none;"
+                        class="absolute z-10 mt-1 w-full max-h-56 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-800">
+                        <template x-for="t in filtered" :key="t.id">
+                            <button type="button" @click="select(t)"
+                                class="block w-full text-left px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 dark:text-slate-100" x-text="t.name"></button>
+                        </template>
+                        <p x-show="filtered.length === 0" class="px-3 py-2 text-xs text-slate-400">No tenant matches</p>
+                    </div>
                     @error('tenant_id') <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p> @enderror
                 </div>
 

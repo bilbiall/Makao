@@ -27,6 +27,10 @@ class ViewingRequests extends Component
 
     public string $statusFilter = '';
 
+    public string $contactedFilter = '';
+
+    public string $periodFilter = '';
+
     public string $search = '';
 
     // Which request's inline action panel is open, and which action it's for.
@@ -43,9 +47,30 @@ class ViewingRequests extends Component
         $this->resetPage();
     }
 
+    public function updatingContactedFilter(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingPeriodFilter(): void
+    {
+        $this->resetPage();
+    }
+
     public function updatingSearch(): void
     {
         $this->resetPage();
+    }
+
+    public function toggleContacted(int $id): void
+    {
+        abort_unless(Auth::user()->hasPermission(StaffPermissions::ADMIT_VIEWING_REQUESTS), 403);
+
+        $request = $this->scopedRequest($id);
+
+        $request->update($request->contacted_at
+            ? ['contacted_at' => null, 'contacted_by' => null]
+            : ['contacted_at' => now(), 'contacted_by' => Auth::id()]);
     }
 
     public function startAdmit(int $id): void
@@ -160,6 +185,19 @@ class ViewingRequests extends Component
             $query->where('status', $this->statusFilter);
         }
 
+        if ($this->contactedFilter === 'contacted') {
+            $query->whereNotNull('contacted_at');
+        } elseif ($this->contactedFilter === 'not_contacted') {
+            $query->whereNull('contacted_at');
+        }
+
+        match ($this->periodFilter) {
+            'today' => $query->whereDate('requested_at', today()),
+            'week' => $query->where('requested_at', '>=', now()->startOfWeek()),
+            'month' => $query->where('requested_at', '>=', now()->startOfMonth()),
+            default => null,
+        };
+
         if ($this->search) {
             $term = '%' . $this->search . '%';
             $query->where(function ($q) use ($term) {
@@ -177,13 +215,15 @@ class ViewingRequests extends Component
 
         return $this->streamCsv(
             'viewing-requests.csv',
-            ['Requester', 'Phone', 'House', 'Status', 'Requested At', 'Notes'],
+            ['Requester', 'Phone', 'Email', 'House', 'Status', 'Requested At', 'Contacted At', 'Notes'],
             $requests->map(fn (ViewingRequest $request) => [
                 $request->user?->name,
                 $request->user?->phone_number,
+                $request->user?->email,
                 $request->house?->house_name,
                 $request->status,
                 optional($request->requested_at)->format('Y-m-d H:i'),
+                optional($request->contacted_at)->format('Y-m-d H:i'),
                 $request->admin_notes,
             ])
         );

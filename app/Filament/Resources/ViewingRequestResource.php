@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\ViewingRequestResource\Pages;
 use App\Models\Tenant;
 use App\Models\ViewingRequest;
+use App\Support\PhoneNumber;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -41,7 +42,8 @@ class ViewingRequestResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('user.name')->label('Requested by')->searchable(),
-                Tables\Columns\TextColumn::make('user.phone_number')->label('Phone')->toggleable(),
+                Tables\Columns\TextColumn::make('user.phone_number')->label('Phone')->searchable()->toggleable(),
+                Tables\Columns\TextColumn::make('user.email')->label('Email')->searchable()->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('house.house_name')->label('House')->searchable(),
                 Tables\Columns\TextColumn::make('house.location.location_name')->label('Property')->toggleable(),
                 Tables\Columns\TextColumn::make('requested_at')->label('Requested')->dateTime()->sortable(),
@@ -53,12 +55,77 @@ class ViewingRequestResource extends Resource
                         default => 'warning',
                     })
                     ->sortable(),
+                Tables\Columns\IconColumn::make('contacted_at')
+                    ->label('Contacted')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-check-badge')
+                    ->falseIcon('heroicon-o-x-circle')
+                    ->tooltip(fn (ViewingRequest $record) => $record->contacted_at
+                        ? 'Contacted ' . $record->contacted_at->format('d M Y, H:i') . ($record->contactedBy?->name ? ' by ' . $record->contactedBy->name : '')
+                        : 'Not yet contacted')
+                    ->sortable(),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
                     ->options(['pending' => 'Pending', 'admitted' => 'Admitted', 'revoked' => 'Revoked']),
+                Tables\Filters\TernaryFilter::make('contacted')
+                    ->label('Contacted')
+                    ->placeholder('All requests')
+                    ->trueLabel('Contacted')
+                    ->falseLabel('Not contacted')
+                    ->queries(
+                        true: fn (Builder $query) => $query->whereNotNull('contacted_at'),
+                        false: fn (Builder $query) => $query->whereNull('contacted_at'),
+                    ),
+                Tables\Filters\SelectFilter::make('sent_period')
+                    ->label('Sent')
+                    ->options([
+                        'today' => 'Today',
+                        'week' => 'This week',
+                        'month' => 'This month',
+                    ])
+                    ->query(function (Builder $query, array $data) {
+                        return match ($data['value'] ?? null) {
+                            'today' => $query->whereDate('requested_at', today()),
+                            'week' => $query->where('requested_at', '>=', now()->startOfWeek()),
+                            'month' => $query->where('requested_at', '>=', now()->startOfMonth()),
+                            default => $query,
+                        };
+                    }),
             ])
             ->actions([
+                Tables\Actions\Action::make('whatsapp')
+                    ->label('WhatsApp')
+                    ->icon('heroicon-o-chat-bubble-left-right')
+                    ->color('success')
+                    ->url(fn (ViewingRequest $record) => PhoneNumber::toWhatsapp($record->user?->phone_number))
+                    ->openUrlInNewTab()
+                    ->visible(fn (ViewingRequest $record) => filled($record->user?->phone_number)),
+
+                Tables\Actions\Action::make('call')
+                    ->label('Call')
+                    ->icon('heroicon-o-phone')
+                    ->color('gray')
+                    ->url(fn (ViewingRequest $record) => PhoneNumber::toTel($record->user?->phone_number))
+                    ->visible(fn (ViewingRequest $record) => filled($record->user?->phone_number)),
+
+                Tables\Actions\Action::make('email')
+                    ->label('Email')
+                    ->icon('heroicon-o-envelope')
+                    ->color('gray')
+                    ->url(fn (ViewingRequest $record) => $record->user?->email ? "mailto:{$record->user->email}" : null)
+                    ->visible(fn (ViewingRequest $record) => filled($record->user?->email)),
+
+                Tables\Actions\Action::make('toggleContacted')
+                    ->label(fn (ViewingRequest $record) => $record->contacted_at ? 'Mark not contacted' : 'Mark contacted')
+                    ->icon(fn (ViewingRequest $record) => $record->contacted_at ? 'heroicon-o-x-circle' : 'heroicon-o-check-badge')
+                    ->color(fn (ViewingRequest $record) => $record->contacted_at ? 'gray' : 'success')
+                    ->action(function (ViewingRequest $record) {
+                        $record->update($record->contacted_at
+                            ? ['contacted_at' => null, 'contacted_by' => null]
+                            : ['contacted_at' => now(), 'contacted_by' => auth()->id()]);
+                    }),
+
                 Tables\Actions\Action::make('admit')
                     ->label('Admit')
                     ->color('success')

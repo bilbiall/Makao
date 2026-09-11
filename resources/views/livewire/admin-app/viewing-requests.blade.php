@@ -15,7 +15,7 @@
         </div>
     @endif
 
-    <div class="grid grid-cols-3 gap-3">
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div class="rounded-2xl bg-amber-50 border border-amber-100 p-3 dark:bg-amber-500/10 dark:border-amber-500/20">
             <p class="text-[11px] text-amber-700 dark:text-amber-400">Pending</p>
             <p class="mt-1 text-lg font-bold text-amber-800 dark:text-amber-300">{{ $pendingCount }}</p>
@@ -28,7 +28,22 @@
                 <option value="revoked">Revoked</option>
             </select>
         </div>
-        <div class="col-span-1 rounded-2xl bg-white border border-slate-200 p-3 dark:bg-slate-900 dark:border-slate-800 flex items-center gap-2">
+        <div class="rounded-2xl bg-white border border-slate-200 p-3 dark:bg-slate-900 dark:border-slate-800">
+            <select wire:model.live="contactedFilter" class="w-full h-full bg-transparent text-xs font-medium text-slate-600 dark:text-slate-300 focus:outline-none">
+                <option value="">Contacted: all</option>
+                <option value="contacted">Contacted</option>
+                <option value="not_contacted">Not contacted</option>
+            </select>
+        </div>
+        <div class="rounded-2xl bg-white border border-slate-200 p-3 dark:bg-slate-900 dark:border-slate-800">
+            <select wire:model.live="periodFilter" class="w-full h-full bg-transparent text-xs font-medium text-slate-600 dark:text-slate-300 focus:outline-none">
+                <option value="">Sent: any time</option>
+                <option value="today">Today</option>
+                <option value="week">This week</option>
+                <option value="month">This month</option>
+            </select>
+        </div>
+        <div class="col-span-2 sm:col-span-4 rounded-2xl bg-white border border-slate-200 p-3 dark:bg-slate-900 dark:border-slate-800 flex items-center gap-2">
             <input type="text" wire:model.live.debounce.400ms="search" placeholder="Search name, phone, house"
                 class="flex-1 h-full bg-transparent text-xs text-slate-600 dark:text-slate-300 placeholder:text-slate-400 focus:outline-none">
             <button type="button" wire:click="export" class="text-slate-400 hover:text-slate-700 dark:hover:text-slate-300" title="Export CSV">
@@ -47,12 +62,42 @@
                         <p class="text-xs text-slate-500 dark:text-slate-400">{{ $request->house?->house_name ?? 'Unknown house' }} &middot; {{ $request->house?->location?->location_name }}</p>
                         <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">Requested {{ $request->requested_at?->format('d M Y, H:i') }}</p>
                     </div>
-                    <span @class([
-                        'rounded-full px-2.5 py-0.5 text-xs font-medium flex-shrink-0',
-                        'bg-amber-100 text-amber-700' => $request->status === 'pending',
-                        'bg-emerald-100 text-emerald-700' => $request->status === 'admitted',
-                        'bg-rose-100 text-rose-700' => $request->status === 'revoked',
-                    ])>{{ ucfirst($request->status) }}</span>
+                    <div class="flex flex-col items-end gap-1 flex-shrink-0">
+                        <span @class([
+                            'rounded-full px-2.5 py-0.5 text-xs font-medium',
+                            'bg-amber-100 text-amber-700' => $request->status === 'pending',
+                            'bg-emerald-100 text-emerald-700' => $request->status === 'admitted',
+                            'bg-rose-100 text-rose-700' => $request->status === 'revoked',
+                        ])>{{ ucfirst($request->status) }}</span>
+                        @if ($request->contacted_at)
+                            <span class="text-[10px] text-emerald-600 dark:text-emerald-400" title="{{ $request->contacted_at->format('d M Y, H:i') }}">&check; Contacted</span>
+                        @endif
+                    </div>
+                </div>
+
+                <div class="mt-3 flex items-center gap-2">
+                    @if ($request->user?->phone_number)
+                        <a href="{{ \App\Support\PhoneNumber::toWhatsapp($request->user->phone_number) }}" target="_blank" rel="noopener"
+                            class="inline-flex items-center gap-1 rounded-lg bg-emerald-50 text-emerald-700 px-2.5 py-1.5 text-xs font-medium hover:bg-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400">
+                            @svg('heroicon-o-chat-bubble-left-right', 'w-3.5 h-3.5') WhatsApp
+                        </a>
+                        <a href="{{ \App\Support\PhoneNumber::toTel($request->user->phone_number) }}"
+                            class="inline-flex items-center gap-1 rounded-lg bg-slate-100 text-slate-700 px-2.5 py-1.5 text-xs font-medium hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300">
+                            @svg('heroicon-o-phone', 'w-3.5 h-3.5') Call
+                        </a>
+                    @endif
+                    @if ($request->user?->email)
+                        <a href="mailto:{{ $request->user->email }}"
+                            class="inline-flex items-center gap-1 rounded-lg bg-slate-100 text-slate-700 px-2.5 py-1.5 text-xs font-medium hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300">
+                            @svg('heroicon-o-envelope', 'w-3.5 h-3.5') Email
+                        </a>
+                    @endif
+                    @if ($canAdmitViewingRequests)
+                        <button wire:click="toggleContacted({{ $request->id }})"
+                            class="ml-auto inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium {{ $request->contacted_at ? 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800' : 'bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900' }}">
+                            {{ $request->contacted_at ? 'Mark not contacted' : 'Mark contacted' }}
+                        </button>
+                    @endif
                 </div>
 
                 @if ($request->status === 'pending')

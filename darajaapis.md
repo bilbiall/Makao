@@ -38,6 +38,43 @@ your whole portfolio" below).
   can go live (not `localhost`) - the app enforces this and will refuse to send a live
   STK push otherwise.
 
+## Local testing (XAMPP / `localhost`) - do this before Step 1
+
+Safaricom's servers call **your** app back to deliver results (the STK result, and every
+C2B payment) - they POST to a URL over the public internet. If your site is running at
+`http://localhost/renty/public` (the default XAMPP setup), Safaricom cannot reach it: the
+request will look "sent" from Daraja's side but nothing will ever arrive back, even with
+perfectly correct Consumer Key/Secret/Passkey. This is the single most common reason
+someone gets "stuck" testing C2B despite following every other step correctly - the app
+now also shows a warning banner on the M-Pesa Channel form when it detects this.
+
+Fix it with a tunnel (`ngrok` is the standard choice, free tier is enough):
+
+1. Download `ngrok` from [ngrok.com/download](https://ngrok.com/download), unzip it
+   anywhere, and run `ngrok config add-authtoken <your-token>` once (free account,
+   token shown on your ngrok dashboard).
+2. With XAMPP's Apache running as usual, open a terminal and run:
+   ```
+   ngrok http 80
+   ```
+   (use whatever port your XAMPP Apache actually listens on - 80 is the default).
+3. ngrok prints a `Forwarding` line like `https://a1b2-c3d4.ngrok-free.app -> http://localhost:80`.
+   Copy that `https://...ngrok-free.app` URL.
+4. In `.env`, temporarily set:
+   ```
+   APP_URL=https://a1b2-c3d4.ngrok-free.app/renty/public
+   ```
+   then run `php artisan config:clear` (Laravel caches `APP_URL` - editing `.env` alone
+   isn't enough if config is cached).
+5. Now proceed with the rest of this guide as normal - STK's callback URL and C2B's
+   register-URL step both read `APP_URL`, so they'll now point at your tunnel and
+   Safaricom's calls will actually reach your local app.
+6. **The ngrok URL changes every time you restart it** (on the free tier) - if you stop
+   and restart `ngrok`, repeat steps 3-4 with the new URL, and if C2B was already
+   registered, click **Register C2B** again so Safaricom has the new address.
+7. Once you go live with a real domain (see "Going live" below), switch `APP_URL` back
+   to that real HTTPS domain and stop using ngrok - the tunnel is a testing tool only.
+
 ## Step 1 - Create a Daraja app and get sandbox credentials
 
 1. Go to [developer.safaricom.co.ke](https://developer.safaricom.co.ke) and create an
