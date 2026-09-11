@@ -1,8 +1,49 @@
-<div class="fixed bottom-20 right-4 z-50 md:bottom-6 md:right-6" x-data="{ open: @entangle('open') }">
+<div
+    class="fixed bottom-20 right-4 z-50 md:bottom-6 md:right-6"
+    x-data="{
+        open: @entangle('open'),
+        showTooltip: false,
+        showBadge: false,
+        init() {
+            let seen = false;
+            try { seen = !!localStorage.getItem('renty_chat_seen'); } catch (e) {}
+
+            this.showBadge = ! seen;
+
+            if (! seen) {
+                setTimeout(() => { if (! this.open) this.showTooltip = true; }, 2500);
+                setTimeout(() => { this.showTooltip = false; }, 12000);
+            }
+        },
+        acknowledge() {
+            this.showTooltip = false;
+            this.showBadge = false;
+            try { localStorage.setItem('renty_chat_seen', '1'); } catch (e) {}
+        },
+    }"
+>
+    {{-- One-time nudge for first-time visitors - dismisses (and remembers) on
+         its own close button, or automatically once the chat is opened. --}}
+    <div
+        x-show="showTooltip"
+        x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0 translate-y-1"
+        x-transition:enter-end="opacity-100 translate-y-0"
+        style="display: none;"
+        class="absolute bottom-[4.25rem] right-0 w-56 rounded-2xl border border-slate-200 bg-white p-3 pr-7 text-sm text-slate-700 shadow-xl dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+    >
+        <button type="button" @click="acknowledge()" aria-label="Dismiss" class="absolute top-2 right-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+            @svg('heroicon-o-x-mark', 'w-4 h-4')
+        </button>
+        👋 Looking for a place? Just ask me - try "1 bedroom in Kasarani under 20k".
+        <div class="absolute -bottom-1.5 right-6 h-3 w-3 rotate-45 border-b border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"></div>
+    </div>
+
     {{-- Launcher --}}
     <button
         type="button"
         wire:click="toggle"
+        @click="acknowledge()"
         aria-label="{{ $open ? 'Close chat' : 'Find a home with chat' }}"
         class="relative grid h-14 w-14 place-items-center overflow-hidden rounded-full bg-emerald-600 text-white shadow-lg shadow-emerald-600/30 transition-transform hover:scale-105 hover:bg-emerald-700"
     >
@@ -14,6 +55,14 @@
         @else
             @svg('heroicon-o-chat-bubble-left-right', 'w-6 h-6')
         @endif
+
+        <span
+            x-show="showBadge && ! open"
+            style="display: none;"
+            class="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-950"
+        >
+            <span class="absolute h-full w-full animate-ping rounded-full bg-rose-400 opacity-75"></span>
+        </span>
     </button>
 
     {{-- Panel --}}

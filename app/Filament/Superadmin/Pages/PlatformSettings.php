@@ -5,6 +5,7 @@ namespace App\Filament\Superadmin\Pages;
 use App\Helpers\EmailHelper;
 use App\Helpers\SmsHelper;
 use App\Models\Setting;
+use App\Services\OpenRouterCatalogService;
 use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -277,7 +278,7 @@ class PlatformSettings extends Page implements HasForms
                             ->schema([
                                 Forms\Components\Placeholder::make('openrouter_note')
                                     ->label('')
-                                    ->content('Powers natural-language search (e.g. "1 bedroom around Kasarani under 20k"). Get a free API key at openrouter.ai/keys - pick a model ending in ":free" (e.g. the default below) to use this at zero cost.'),
+                                    ->content('Powers natural-language search (e.g. "1 bedroom around Kasarani under 20k"). Get a free API key at openrouter.ai/keys, then pick a model below.'),
 
                                 Forms\Components\TextInput::make('openrouter_api_key')
                                     ->label('OpenRouter API Key')
@@ -285,10 +286,29 @@ class PlatformSettings extends Page implements HasForms
                                     ->revealable()
                                     ->maxLength(255),
 
+                                Forms\Components\Select::make('suggested_free_model')
+                                    ->label('Suggested free models')
+                                    ->helperText('Live from openrouter.ai - pick one to fill in the Model field below. Router/meta ids like "openrouter/free" or "openrouter/auto" are deliberately left out: they pick a DIFFERENT underlying model every single call, which is why a chat can work fine one message and hallucinate or fail the next - pick one specific model here instead for consistent behavior.')
+                                    ->options(fn () => app(OpenRouterCatalogService::class)->freeModels())
+                                    ->searchable()
+                                    ->native(false)
+                                    ->placeholder('Loading from openrouter.ai...')
+                                    ->dehydrated(false)
+                                    ->afterStateUpdated(fn ($state, callable $set) => $state && $set('openrouter_model', $state))
+                                    ->live()
+                                    ->suffixAction(
+                                        Forms\Components\Actions\Action::make('refresh_free_models')
+                                            ->icon('heroicon-o-arrow-path')
+                                            ->tooltip('Refresh the list from openrouter.ai')
+                                            ->action(function () {
+                                                app(OpenRouterCatalogService::class)->forget();
+                                                Notification::make()->success()->title('Refreshed')->send();
+                                            })
+                                    ),
+
                                 Forms\Components\TextInput::make('openrouter_model')
                                     ->label('Model')
-                                    ->helperText('Must match a model slug from openrouter.ai/models exactly. Free models end in ":free".')
-                                    ->default('meta-llama/llama-3.1-8b-instruct:free')
+                                    ->helperText('Must match a model slug from openrouter.ai/models exactly - pick one from the suggestions above, or type your own (including a paid one) here.')
                                     ->maxLength(255),
 
                                 Forms\Components\Toggle::make('ai_search_enabled')
@@ -315,10 +335,15 @@ class PlatformSettings extends Page implements HasForms
                                                 ->color('gray')
                                                 ->action(function ($livewire) {
                                                     $apiKey = trim((string) ($livewire->data['openrouter_api_key'] ?? ''));
-                                                    $model = trim((string) ($livewire->data['openrouter_model'] ?? '')) ?: 'meta-llama/llama-3.1-8b-instruct:free';
+                                                    $model = trim((string) ($livewire->data['openrouter_model'] ?? ''));
 
                                                     if ($apiKey === '') {
                                                         Notification::make()->danger()->title('Enter an API key first')->send();
+                                                        return;
+                                                    }
+
+                                                    if ($model === '') {
+                                                        Notification::make()->danger()->title('Pick or enter a model first')->send();
                                                         return;
                                                     }
 

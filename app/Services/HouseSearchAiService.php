@@ -16,21 +16,40 @@ use Illuminate\Support\Facades\Log;
  */
 class HouseSearchAiService
 {
+    public function __construct(protected OpenRouterCatalogService $catalog)
+    {
+    }
+
     protected function apiKey(): ?string
     {
         return Setting::forLandlord(null)->payload['openrouter_api_key'] ?? null;
     }
 
+    /**
+     * Falls back to the live catalog's first free model rather than a hardcoded
+     * slug when the setting is blank - OpenRouter's free lineup rotates, and a
+     * fixed fallback string here previously went stale (the model it named was
+     * discontinued), causing every call to fail silently with no visible error.
+     */
     protected function model(): string
     {
-        return Setting::forLandlord(null)->payload['openrouter_model'] ?? 'meta-llama/llama-3.1-8b-instruct:free';
+        $configured = Setting::forLandlord(null)->payload['openrouter_model'] ?? null;
+
+        return $configured ?: ($this->catalog->firstFreeModel() ?? 'meta-llama/llama-3.1-8b-instruct:free');
     }
 
+    /**
+     * Requires a model to be set too, not just the API key - a blank model
+     * previously fell through to a hardcoded default that silently rotted (see
+     * model() above), so this now only reports "configured" when there's an
+     * actual slug on file to use.
+     */
     public function isConfigured(): bool
     {
-        $enabled = Setting::forLandlord(null)->payload['ai_search_enabled'] ?? true;
+        $payload = Setting::forLandlord(null)->payload ?? [];
+        $enabled = $payload['ai_search_enabled'] ?? true;
 
-        return $enabled && filled($this->apiKey());
+        return $enabled && filled($this->apiKey()) && filled($payload['openrouter_model'] ?? null);
     }
 
     protected function chat(array $messages, bool $json = false): ?string
@@ -308,24 +327,76 @@ class HouseSearchAiService
      * user's own current message is a stronger signal than whatever's already
      * carried forward from earlier turns.
      */
+    /**
+     * Word-number spellings for house_type ("two bedroom") - only up to four
+     * since "5 Bedroom" and beyond isn't a real House::UNIT_TYPES option.
+     */
+    protected const WORD_NUMBERS = ['one' => 1, 'two' => 2, 'three' => 3, 'four' => 4];
+
+    /**
+     * Keyword => canonical House::AMENITIES value. Deliberately not exhaustive -
+     * only the amenities visitors actually phrase as a short, unambiguous keyword
+     * in a chat message (a longer tail here just adds false-positive risk for
+     * little gain, since a missed amenity only means it isn't used as a filter -
+     * it never causes an invented fact).
+     */
+    protected const AMENITY_KEYWORDS = [
+        'borehole' => 'Borehole water',
+        'generator' => 'Backup generator',
+        'parking' => 'Secure parking',
+        'cctv' => 'CCTV',
+        'electric fence' => 'Electric fence',
+        'wifi' => 'Wi-Fi',
+        'wi-fi' => 'Wi-Fi',
+        'balcony' => 'Balcony',
+        'lift' => 'Lift',
+        'elevator' => 'Lift',
+        'ensuite' => 'Master ensuite',
+        'en-suite' => 'Master ensuite',
+        'gym' => 'Gym',
+        'swimming pool' => 'Swimming pool',
+        'dsq' => 'DSQ (servant quarter)',
+        'servant quarter' => 'DSQ (servant quarter)',
+        'garden' => 'Garden',
+        'pet friendly' => 'Pet friendly',
+        'furnished' => 'Furnished',
+        'air conditioning' => 'Air conditioning',
+        'aircon' => 'Air conditioning',
+        'dstv' => 'DSTV/Netflix ready',
+    ];
+
+    /**
+     * Keyword => House::NEARBY_CATEGORIES slug. Only fires when paired with an
+     * explicit proximity phrase (see extractFiltersFallback()) - the bare word
+     * "school"/"market" alone is too common in casual phrasing to safely imply
+     * "must be near one", since this becomes a hard database filter.
+     */
+    protected const NEARBY_KEYWORDS = [
+        'school' => 'school',
+        'hospital' => 'hospital',
+        'clinic' => 'hospital',
+        'mall' => 'mall',
+        'supermarket' => 'supermarket',
+        'market' => 'market',
+        'matatu' => 'bus_stage',
+        'bus stage' => 'bus_stage',
+        'highway' => 'main_road',
+        'main road' => 'main_road',
+        'tarmac' => 'main_road',
+        'church' => 'place_of_worship',
+        'mosque' => 'place_of_worship',
+        'bank' => 'bank_atm',
+        'atm' => 'bank_atm',
+        'police' => 'police_station',
+    ];
+
     public function extractFiltersFallback(string $text): ?array
     {
         $filters = [];
         $lower = mb_strtolower($text);
 
-        if (preg_match('/(\d+)\s*-?\s*bed/i', $text, $m)) {
-            $type = $m[1] . ' Bedroom';
-            if (in_array($type, House::UNIT_TYPES, true)) {
-                $filters['house_type'] = $type;
-            }
-        } elseif (str_contains($lower, 'bedsitter')) {
-            $filters['house_type'] = 'Bedsitter';
-        } elseif (str_contains($lower, 'studio')) {
-            $filters['house_type'] = 'Studio';
-        } elseif (str_contains($lower, 'single room')) {
-            $filters['house_type'] = 'Single Room';
-        } elseif (str_contains($lower, 'maisonette')) {
-            $filters['house_type'] = 'Maisonette';
+        if ($houseType = $this->extractHouseTypeFallback($text, $lower)) {
+            $filters['house_type'] = $houseType;
         }
 
         // Longest name first so "Kahawa Sukari" wins over a shorter partial
@@ -359,13 +430,88 @@ class HouseSearchAiService
             }
         }
 
-        if (preg_match('/(\d[\d,]*)\s*k\b/i', $text, $m)) {
+        // A named property or area already anchors the search - a landmark on
+        // top of one of those would just be redundant (or, worse, contradict
+        // it), so this generic "near <proper noun>" capture only fires when
+        // neither is already set. Deliberately conservative (a capitalized
+        // phrase right after the proximity word, cut at punctuation/a stop
+        // word) since an over-eager capture here would hand LandmarkGeocoder
+        // pure noise - harmless (it just fails to geocode), but pointless.
+        if (empty($filters['area']) && empty($filters['property_name'])
+            && preg_match('/\b(?:near|close to|next to|around)\s+([A-Z][\w\'-]*(?:\s+[A-Z]?[\w\'-]*){0,3})/', $text, $m)) {
+            $landmark = trim(preg_replace('/\s+(?:in|for|under|and|with)\b.*/i', '', $m[1]));
+            if ($landmark !== '' && mb_strlen($landmark) <= 40) {
+                $filters['landmark'] = $landmark;
+            }
+        }
+
+        if (preg_match('/\b(bnb|airbnb|air bnb|short.?stay|short.?term|nightly|per night|vacation rental)\b/i', $text)) {
+            $filters['listing_mode'] = 'short_term';
+        }
+
+        $amenities = [];
+        foreach (self::AMENITY_KEYWORDS as $keyword => $amenity) {
+            if (str_contains($lower, $keyword)) {
+                $amenities[] = $amenity;
+            }
+        }
+        if ($amenities) {
+            $filters['amenities'] = array_values(array_unique($amenities));
+        }
+
+        $isProximityPhrase = (bool) preg_match('/\b(near|close to|next to|walking distance|around)\b/i', $lower);
+        if ($isProximityPhrase) {
+            $nearby = [];
+            foreach (self::NEARBY_KEYWORDS as $keyword => $slug) {
+                if (str_contains($lower, $keyword)) {
+                    $nearby[] = $slug;
+                }
+            }
+            if ($nearby) {
+                $filters['nearby'] = array_values(array_unique($nearby));
+            }
+        }
+
+        if (preg_match('/\b(?:kshs?|kes)\.?\s?(\d[\d,]*)\b/i', $text, $m)) {
+            $filters['max_rent'] = (int) str_replace(',', '', $m[1]);
+        } elseif (preg_match('/(\d[\d,]*)\s*k\b/i', $text, $m)) {
             $filters['max_rent'] = (int) str_replace(',', '', $m[1]) * 1000;
         } elseif (preg_match('/\b(\d{4,6})\b/', str_replace(',', '', $text), $m)) {
             $filters['max_rent'] = (int) $m[1];
         }
 
         return $filters ?: null;
+    }
+
+    /**
+     * Recognizes far more phrasings of a unit type than a single regex could
+     * read cleanly: digit or spelled-out bedroom counts ("2 bed", "2br", "two
+     * bedroom"), plus every other House::UNIT_TYPES value that has a common
+     * one-or-two-word name.
+     */
+    protected function extractHouseTypeFallback(string $text, string $lower): ?string
+    {
+        if (preg_match('/(\d+)\s*-?\s*(?:bed(?:room)?s?|br)\b/i', $text, $m)) {
+            $type = $m[1] . ' Bedroom';
+
+            return in_array($type, House::UNIT_TYPES, true) ? $type : null;
+        }
+
+        foreach (self::WORD_NUMBERS as $word => $number) {
+            if (preg_match('/\b' . $word . '\s*-?\s*(?:bed(?:room)?s?|br)\b/i', $text)) {
+                return $number . ' Bedroom';
+            }
+        }
+
+        return match (true) {
+            str_contains($lower, 'bedsitter'), str_contains($lower, 'bed sitter') => 'Bedsitter',
+            str_contains($lower, 'studio') => 'Studio',
+            str_contains($lower, 'single room') => 'Single Room',
+            str_contains($lower, 'maisonette') => 'Maisonette',
+            str_contains($lower, 'town house'), str_contains($lower, 'townhouse') => 'Townhouse',
+            str_contains($lower, 'own compound') => 'Own Compound',
+            default => null,
+        };
     }
 
     protected function parseJson(string $raw): ?array

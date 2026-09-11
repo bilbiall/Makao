@@ -235,10 +235,18 @@ class ChatAssistant extends Component
             $this->filters['area_flexible'] = true;
         }
 
+        // A budget/amenity/nearby-only ask ("something with wifi under 15k") is
+        // still a real, answerable search - HouseMatchService just runs it
+        // unconstrained by type/area and lets the narrow/results branch handle
+        // however many that matches. Requiring a type or place here too would
+        // send it to "clarify" despite already having a real signal to search on.
         $hasEnoughToSearch = filled($this->filters['house_type'] ?? null)
             || filled($this->filters['area'] ?? null)
             || filled($this->filters['landmark'] ?? null)
             || filled($this->filters['property_name'] ?? null)
+            || filled($this->filters['max_rent'] ?? null)
+            || filled($this->filters['amenities'] ?? null)
+            || filled($this->filters['nearby'] ?? null)
             || (filled($this->filters['near_lat'] ?? null) && filled($this->filters['near_lng'] ?? null));
 
         $result = $hasEnoughToSearch

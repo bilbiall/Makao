@@ -5,6 +5,7 @@ namespace App\Livewire\SuperadminApp;
 use App\Helpers\EmailHelper;
 use App\Helpers\SmsHelper;
 use App\Models\Setting;
+use App\Services\OpenRouterCatalogService;
 use App\Support\FaviconGenerator;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -44,6 +45,8 @@ class PlatformSettings extends Component
     /** Temporary upload for a dedicated favicon image - moved to storage in save(). */
     public $faviconUpload = null;
 
+    public array $suggestedFreeModels = [];
+
     public function mount(): void
     {
         $payload = Setting::forLandlord(null)->payload ?? [];
@@ -58,6 +61,28 @@ class PlatformSettings extends Component
         ];
 
         $this->data = array_replace_recursive($defaults, $payload);
+        $this->suggestedFreeModels = app(OpenRouterCatalogService::class)->freeModels();
+    }
+
+    /**
+     * Applies one of the live-fetched free models to the actual saved field -
+     * a separate step from the dropdown itself so picking a suggestion never
+     * silently loses whatever custom slug was already typed until confirmed.
+     */
+    public function useSuggestedModel(string $modelId): void
+    {
+        if ($modelId === '') {
+            return;
+        }
+
+        $this->data['openrouter_model'] = $modelId;
+    }
+
+    public function refreshFreeModels(): void
+    {
+        app(OpenRouterCatalogService::class)->forget();
+        $this->suggestedFreeModels = app(OpenRouterCatalogService::class)->freeModels();
+        session()->flash('platform-settings-saved', 'Model list refreshed from openrouter.ai.');
     }
 
     public function save(): void
@@ -276,10 +301,15 @@ class PlatformSettings extends Component
     public function testOpenRouter(): void
     {
         $apiKey = trim((string) ($this->data['openrouter_api_key'] ?? ''));
-        $model = trim((string) ($this->data['openrouter_model'] ?? '')) ?: 'meta-llama/llama-3.1-8b-instruct:free';
+        $model = trim((string) ($this->data['openrouter_model'] ?? ''));
 
         if ($apiKey === '') {
             session()->flash('platform-settings-error', 'Enter an API key first.');
+            return;
+        }
+
+        if ($model === '') {
+            session()->flash('platform-settings-error', 'Pick or enter a model first.');
             return;
         }
 

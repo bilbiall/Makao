@@ -130,16 +130,37 @@
                 @error('data.platform_support_email') <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p> @enderror
             </div>
         @elseif ($activeTab === 'ai')
-            <p class="text-xs text-slate-500 dark:text-slate-400">Powers natural-language search and the site-wide chat assistant. Get a free API key at openrouter.ai/keys - pick a model ending in ":free" (e.g. the default below) to use this at zero cost.</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Powers natural-language search and the site-wide chat assistant. Get a free API key at openrouter.ai/keys, then pick a model below.</p>
 
             <div>
                 <label class="{{ $labelClass }}">OpenRouter API Key</label>
                 <input type="password" wire:model="data.openrouter_api_key" class="{{ $inputClass }}">
             </div>
+
+            <div>
+                <label class="{{ $labelClass }}">Suggested free models</label>
+                <div class="flex items-center gap-2">
+                    <select wire:change="useSuggestedModel($event.target.value)" class="{{ $inputClass }}">
+                        <option value="">
+                            {{ $suggestedFreeModels ? 'Choose a suggestion...' : 'Could not load list from openrouter.ai' }}
+                        </option>
+                        @foreach ($suggestedFreeModels as $modelId => $modelLabel)
+                            <option value="{{ $modelId }}" @selected(($data['openrouter_model'] ?? null) === $modelId)>{{ $modelLabel }}</option>
+                        @endforeach
+                    </select>
+                    <button type="button" wire:click="refreshFreeModels" wire:loading.attr="disabled" wire:target="refreshFreeModels"
+                        title="Refresh the list from openrouter.ai"
+                        class="shrink-0 rounded-lg border border-slate-300 dark:border-slate-700 p-2 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60">
+                        @svg('heroicon-o-arrow-path', 'w-4 h-4')
+                    </button>
+                </div>
+                <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Live from openrouter.ai. Router/meta ids like "openrouter/free" or "openrouter/auto" are deliberately left out - they pick a DIFFERENT underlying model every single call, which is why a chat can work fine one message and hallucinate or fail the next. Pick one specific model here for consistent behavior.</p>
+            </div>
+
             <div>
                 <label class="{{ $labelClass }}">Model</label>
-                <input type="text" wire:model="data.openrouter_model" placeholder="meta-llama/llama-3.1-8b-instruct:free" class="{{ $inputClass }}">
-                <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Must match a model slug from openrouter.ai/models exactly. Free models end in ":free".</p>
+                <input type="text" wire:model="data.openrouter_model" placeholder="e.g. a slug picked above, or your own" class="{{ $inputClass }}">
+                <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Must match a model slug from openrouter.ai/models exactly - pick one from the suggestions above, or type your own (including a paid one) here.</p>
             </div>
 
             <label class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 pt-1">
