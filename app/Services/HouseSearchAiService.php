@@ -257,7 +257,7 @@ class HouseSearchAiService
             'alternatives_shown' => "Nothing in that exact area, but here's what's available nearby.",
             'none' => $this->noneFallback($facts, $criteria),
             'property_not_found' => "I couldn't find a property called \"{$facts['requested_property_name']}\". Want me to search by area or budget instead?",
-            default => 'Tell me what you\'re looking for - e.g. "1 bedroom in Kasarani under 20k".',
+            default => 'What type of house are you looking for - bedsitter, 1 bedroom, 2 bedroom...? Tell me the area and your budget too, e.g. "1 bedroom in Kasarani under 20k".',
         };
     }
 
@@ -415,6 +415,16 @@ class HouseSearchAiService
             }
         }
 
+        // A misspelled area ("Westland" for "Westlands", "Kilimanii" for
+        // "Kilimani") would otherwise silently fail to match at all and drop
+        // the visitor straight into "clarify" - only tried once an exact
+        // substring match has already failed, so a correct spelling never
+        // gets second-guessed by a coincidentally-close name elsewhere in the
+        // same list.
+        if (! isset($filters['area']) && ($fuzzy = $this->fuzzyFindInList($text, $names))) {
+            $filters['area'] = $fuzzy;
+        }
+
         // Same idea, against real property names - lets a literal "is there
         // vacancy in Dakota Apartments" still trigger a real property-name
         // search even when the LLM call fails or misses it (see class docblock).
@@ -428,6 +438,10 @@ class HouseSearchAiService
                 $filters['property_name'] = $name;
                 break;
             }
+        }
+
+        if (! isset($filters['property_name']) && ($fuzzy = $this->fuzzyFindInList($text, $propertyNames))) {
+            $filters['property_name'] = $fuzzy;
         }
 
         // A named property or area already anchors the search - a landmark on
@@ -503,7 +517,7 @@ class HouseSearchAiService
             }
         }
 
-        return match (true) {
+        $exact = match (true) {
             str_contains($lower, 'bedsitter'), str_contains($lower, 'bed sitter') => 'Bedsitter',
             str_contains($lower, 'studio') => 'Studio',
             str_contains($lower, 'single room') => 'Single Room',
@@ -512,6 +526,92 @@ class HouseSearchAiService
             str_contains($lower, 'own compound') => 'Own Compound',
             default => null,
         };
+
+        // Tolerates a typo'd unit type ("bedsiter", "studoi", "maisonete") the
+        // same way area/property names do below.
+        return $exact ?? $this->fuzzyFindInList($text, ['Bedsitter', 'Studio', 'Single Room', 'Maisonette', 'Townhouse', 'Own Compound']);
+    }
+
+    /**
+     * Tolerates common typos by comparing each candidate against every
+     * same-word-count window of the message ("Westland" vs "Westlands",
+     * "Kilimanii" vs "Kilimani") - only meant as a second pass after an exact
+     * substring match has already failed. A missed typo just means the
+     * clarify fallback asks again (no invented fact); a wrongly-fuzzy-matched
+     * name would search the wrong thing, so the distance threshold stays
+     * tight (roughly one edit per four characters, minimum one).
+     */
+    protected function fuzzyFindInList(string $text, iterable $candidates): ?string
+    {
+        $words = preg_split('/\s+/', trim(preg_replace('/[^\p{L}\p{N}\s]/u', ' ', $text)));
+        $wordCount = count($words);
+
+        $best = null;
+        $bestDistance = PHP_INT_MAX;
+
+        foreach ($candidates as $candidate) {
+            $candidateWords = preg_split('/\s+/', trim($candidate));
+            $n = count($candidateWords);
+
+            if ($wordCount < $n) {
+                continue;
+            }
+
+            $threshold = max(1, (int) floor(mb_strlen($candidate) / 4));
+
+            for ($i = 0; $i <= $wordCount - $n; $i++) {
+                $window = implode(' ', array_slice($words, $i, $n));
+                $distance = $this->editDistance(mb_strtolower($window), mb_strtolower($candidate));
+
+                if ($distance > 0 && $distance <= $threshold && $distance < $bestDistance) {
+                    $bestDistance = $distance;
+                    $best = $candidate;
+                }
+            }
+        }
+
+        return $best;
+    }
+
+    /**
+     * Edit distance that also counts an adjacent-letter swap ("studoi" vs
+     * "studio") as a single edit, not two - plain levenshtein() treats a
+     * transposition as two substitutions, which is stricter than a typo this
+     * common deserves. Fine to run per-candidate here: every name involved is
+     * short (a Kenyan area/unit-type name, not a paragraph).
+     */
+    protected function editDistance(string $a, string $b): int
+    {
+        $a = preg_split('//u', $a, -1, PREG_SPLIT_NO_EMPTY);
+        $b = preg_split('//u', $b, -1, PREG_SPLIT_NO_EMPTY);
+        $lenA = count($a);
+        $lenB = count($b);
+
+        $d = [];
+        for ($i = 0; $i <= $lenA; $i++) {
+            $d[$i][0] = $i;
+        }
+        for ($j = 0; $j <= $lenB; $j++) {
+            $d[0][$j] = $j;
+        }
+
+        for ($i = 1; $i <= $lenA; $i++) {
+            for ($j = 1; $j <= $lenB; $j++) {
+                $cost = ($a[$i - 1] === $b[$j - 1]) ? 0 : 1;
+
+                $d[$i][$j] = min(
+                    $d[$i - 1][$j] + 1,
+                    $d[$i][$j - 1] + 1,
+                    $d[$i - 1][$j - 1] + $cost
+                );
+
+                if ($i > 1 && $j > 1 && $a[$i - 1] === $b[$j - 2] && $a[$i - 2] === $b[$j - 1]) {
+                    $d[$i][$j] = min($d[$i][$j], $d[$i - 2][$j - 2] + 1);
+                }
+            }
+        }
+
+        return $d[$lenA][$lenB];
     }
 
     protected function parseJson(string $raw): ?array

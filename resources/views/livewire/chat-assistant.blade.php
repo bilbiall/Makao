@@ -35,7 +35,7 @@
         <button type="button" @click="acknowledge()" aria-label="Dismiss" class="absolute top-2 right-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
             @svg('heroicon-o-x-mark', 'w-4 h-4')
         </button>
-        👋 Looking for a place? Just ask me - try "1 bedroom in Kasarani under 20k".
+        👋 What type of house are you looking for? Tell me the area &amp; budget too - e.g. "1 bedroom in Kasarani under 20k".
         <div class="absolute -bottom-1.5 right-6 h-3 w-3 rotate-45 border-b border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"></div>
     </div>
 
