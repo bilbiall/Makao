@@ -390,6 +390,17 @@ class HouseSearchAiService
         'police' => 'police_station',
     ];
 
+    /**
+     * Common suffix words Kenyan apartment/estate names are built from -
+     * anchors the "unknown property name" capture just below without needing
+     * capitalization (real chat messages are often typed all-lowercase).
+     */
+    protected const PROPERTY_NAME_SUFFIXES = [
+        'apartments', 'apartment', 'court', 'heights', 'towers', 'tower',
+        'plaza', 'residency', 'residences', 'gardens', 'villas', 'suites',
+        'arcade', 'complex', 'mansion', 'mansions', 'grove',
+    ];
+
     public function extractFiltersFallback(string $text): ?array
     {
         $filters = [];
@@ -442,6 +453,21 @@ class HouseSearchAiService
 
         if (! isset($filters['property_name']) && ($fuzzy = $this->fuzzyFindInList($text, $propertyNames))) {
             $filters['property_name'] = $fuzzy;
+        }
+
+        // A property that ISN'T in the database yet is exactly the case that
+        // must NOT fall through silently - without this, a question like "any
+        // house in Dakota Apartments" (a name that doesn't exist) would find
+        // no property_name match above, then run a search on whatever
+        // house_type/area happened to be left over from an earlier turn, and
+        // confidently answer a completely different question. Anchoring on a
+        // common Kenyan building-name suffix - not on the DB - deliberately
+        // catches names HouseMatchService::search() has never heard of, so
+        // its own "I couldn't find a property called X" branch actually gets
+        // a chance to fire instead of being silently bypassed.
+        if (empty($filters['property_name']) && empty($filters['area'])
+            && preg_match('/\b(?:in|at)\s+([\w\'-]+(?:\s+[\w\'-]+){0,3}\s+(?:' . implode('|', self::PROPERTY_NAME_SUFFIXES) . '))\b/i', $text, $m)) {
+            $filters['property_name'] = ucwords(trim($m[1]));
         }
 
         // A named property or area already anchors the search - a landmark on
