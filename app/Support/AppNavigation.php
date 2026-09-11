@@ -36,6 +36,7 @@ class AppNavigation
                 ['label' => 'Properties', 'icon' => 'heroicon-o-building-office-2', 'route' => 'app.admin.properties', 'tab' => true],
                 ['label' => 'Units', 'icon' => 'heroicon-o-home-modern', 'route' => 'app.admin.units', 'tab' => false],
                 ['label' => 'Viewing Requests', 'icon' => 'heroicon-o-calendar-days', 'route' => 'app.admin.viewing-requests', 'tab' => false],
+                ['label' => 'Users', 'icon' => 'heroicon-o-user-group', 'route' => 'app.admin.interested-users', 'tab' => false],
                 ['label' => 'Invoices', 'icon' => 'heroicon-o-credit-card', 'route' => 'app.admin.invoices', 'tab' => true],
                 ['label' => 'Payments', 'icon' => 'heroicon-o-banknotes', 'route' => 'app.admin.payments', 'tab' => false],
                 ['label' => 'M-Pesa Review', 'icon' => 'heroicon-o-device-phone-mobile', 'route' => 'app.admin.mpesa-review', 'tab' => false],
@@ -99,6 +100,7 @@ class AppNavigation
             'superadmin' => [
                 ['label' => 'Dashboard', 'icon' => 'heroicon-o-home', 'route' => 'app.superadmin.dashboard', 'tab' => true],
                 ['label' => 'Landlords', 'icon' => 'heroicon-o-building-office-2', 'route' => 'app.superadmin.landlords', 'tab' => true],
+                ['label' => 'Users', 'icon' => 'heroicon-o-user-group', 'route' => 'app.superadmin.users', 'tab' => false],
                 ['label' => 'Locations', 'icon' => 'heroicon-o-map-pin', 'route' => 'app.superadmin.locations', 'tab' => false],
                 ['label' => 'Packages', 'icon' => 'heroicon-o-cube', 'route' => 'app.superadmin.packages', 'tab' => false],
                 ['label' => 'Subscriptions', 'icon' => 'heroicon-o-arrow-path', 'route' => 'app.superadmin.subscriptions', 'tab' => true],

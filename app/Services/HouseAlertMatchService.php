@@ -42,7 +42,8 @@ class HouseAlertMatchService
         return $query->whereKey($house->id)->exists();
     }
 
-    protected function matchesCriteria(HouseAlert $alert, House $house): bool
+    /** Public so InterestedUsers can also check a general alert against a landlord's own houses. */
+    public function matchesCriteria(HouseAlert $alert, House $house): bool
     {
         if ($alert->listing_mode && $alert->listing_mode !== $house->listing_mode) {
             return false;

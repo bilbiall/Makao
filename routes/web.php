@@ -169,6 +169,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureAdminRole::class])->prefix
     Route::get('/dashboard', \App\Livewire\AdminApp\Dashboard::class)->name('app.admin.dashboard');
     Route::get('/tenants', \App\Livewire\AdminApp\Tenants::class)->name('app.admin.tenants');
     Route::get('/viewing-requests', \App\Livewire\AdminApp\ViewingRequests::class)->name('app.admin.viewing-requests');
+    Route::get('/users-interested', \App\Livewire\AdminApp\InterestedUsers::class)->name('app.admin.interested-users');
     Route::get('/properties', \App\Livewire\AdminApp\Properties::class)->name('app.admin.properties');
     Route::get('/units', \App\Livewire\AdminApp\Units::class)->name('app.admin.units');
     Route::get('/invoices', \App\Livewire\AdminApp\Invoices::class)->name('app.admin.invoices');
@@ -214,6 +215,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureAdminRole::class])->group(
 Route::middleware(['auth', \App\Http\Middleware\EnsureSuperadminRole::class])->prefix('app/superadmin')->group(function () {
     Route::get('/dashboard', \App\Livewire\SuperadminApp\Dashboard::class)->name('app.superadmin.dashboard');
     Route::get('/landlords', \App\Livewire\SuperadminApp\Landlords::class)->name('app.superadmin.landlords');
+    Route::get('/users', \App\Livewire\SuperadminApp\Users::class)->name('app.superadmin.users');
     Route::get('/locations', \App\Livewire\SuperadminApp\Locations::class)->name('app.superadmin.locations');
     Route::get('/packages', \App\Livewire\SuperadminApp\Packages::class)->name('app.superadmin.packages');
     Route::get('/subscriptions', \App\Livewire\SuperadminApp\Subscriptions::class)->name('app.superadmin.subscriptions');

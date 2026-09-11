@@ -62,6 +62,7 @@
                     <option value="manager">Manager</option>
                     <option value="caretaker">Caretaker</option>
                     <option value="agent">Agent (BnB bookings)</option>
+                    <option value="user">House seeker (browses listings, no property access)</option>
                     @if ($customRoles->isNotEmpty())
                         <optgroup label="Custom roles">
                             @foreach ($customRoles as $customRole)
@@ -127,6 +128,7 @@
                         'bg-amber-100 text-amber-700' => $member->role === 'caretaker',
                         'bg-emerald-100 text-emerald-700' => $member->role === 'agent',
                         'bg-sky-100 text-sky-700' => $member->role === 'staff',
+                        'bg-slate-200 text-slate-700' => $member->role === 'user',
                     ])>{{ $member->staffRole?->name ?? ucfirst($member->role) }}</span>
                 </div>
                 <div class="mt-3 flex gap-2">

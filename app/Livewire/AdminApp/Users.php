@@ -47,8 +47,8 @@ class Users extends Component
         // enforced server-side, since the client-side rule alone doesn't stop a
         // tampered request).
         $allowedRoles = Auth::user()->role === 'landlord'
-            ? 'admin,manager,caretaker,agent,tenant'
-            : 'manager,caretaker,agent,tenant';
+            ? 'admin,manager,caretaker,agent,tenant,user'
+            : 'manager,caretaker,agent,tenant,user';
 
         // A landlord-defined custom role is submitted as "custom:{id}" (see the
         // role <select> in the blade) - validate it against this landlord's own
@@ -124,7 +124,7 @@ class Users extends Component
     public function startEdit(int $userId): void
     {
         $user = User::where('landlord_id', Auth::user()->landlord_id)
-            ->whereIn('role', ['admin', 'manager', 'caretaker', 'agent', 'staff'])
+            ->whereIn('role', ['admin', 'manager', 'caretaker', 'agent', 'staff', 'user'])
             ->findOrFail($userId);
 
         $this->editingId = $user->id;
@@ -176,7 +176,7 @@ class Users extends Component
     public function delete(int $userId): void
     {
         $user = User::where('landlord_id', Auth::user()->landlord_id)
-            ->whereIn('role', ['admin', 'manager', 'caretaker', 'agent', 'staff'])
+            ->whereIn('role', ['admin', 'manager', 'caretaker', 'agent', 'staff', 'user'])
             ->findOrFail($userId);
 
         abort_if($user->id === Auth::id(), 403);
@@ -224,7 +224,7 @@ class Users extends Component
     {
         $landlordId = Auth::user()->landlord_id;
 
-        $staff = User::whereIn('role', ['admin', 'manager', 'caretaker', 'agent', 'staff'])
+        $staff = User::whereIn('role', ['admin', 'manager', 'caretaker', 'agent', 'staff', 'user'])
             ->where('landlord_id', $landlordId)
             ->with(['assignedLocations', 'staffRole'])
             ->orderBy('name')
@@ -246,7 +246,7 @@ class Users extends Component
     {
         $landlordId = Auth::user()->landlord_id;
 
-        $staff = User::whereIn('role', ['admin', 'manager', 'caretaker', 'agent', 'staff'])
+        $staff = User::whereIn('role', ['admin', 'manager', 'caretaker', 'agent', 'staff', 'user'])
             ->where('landlord_id', $landlordId)
             ->with(['assignedLocations', 'staffRole'])
             ->orderBy('name')
