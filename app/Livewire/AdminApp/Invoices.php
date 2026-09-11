@@ -131,7 +131,7 @@ class Invoices extends Component
      * select: auto-fills the expected amount from the tenant's rent + this
      * month's bills, less whatever balance they're already carrying.
      */
-    public function updatedTenantId($value): void
+    public function updatedTenantId(): void
     {
         if ($this->editingId) {
             // Editing an existing invoice never re-derives the amount from the
@@ -139,7 +139,28 @@ class Invoices extends Component
             return;
         }
 
-        $tenant = StaffScope::onTenant(Tenant::query())->with('house')->find($value);
+        $this->recomputeAmounts();
+    }
+
+    /**
+     * Bills are month-specific (see recomputeAmounts()), so changing the
+     * invoice date after a tenant is already picked - backdating it, or
+     * moving it into next month - must re-pull that month's bill total too,
+     * not leave the breakdown silently describing whatever month it was
+     * originally computed for.
+     */
+    public function updatedInvoiceDate(): void
+    {
+        if ($this->editingId || !$this->tenant_id) {
+            return;
+        }
+
+        $this->recomputeAmounts();
+    }
+
+    protected function recomputeAmounts(): void
+    {
+        $tenant = StaffScope::onTenant(Tenant::query())->with('house')->find($this->tenant_id);
 
         if (!$tenant) {
             $this->rent_only = 0;
@@ -162,6 +183,21 @@ class Invoices extends Component
         $this->previous_balance = $tenant->balance ?? 0;
 
         $this->amount = max(0, $this->rent_only + $this->bill_only - $this->previous_balance);
+    }
+
+    /**
+     * "September 2026" style label shown next to the Rent/Bills breakdown, so
+     * it's obvious at a glance which month this invoice (and its auto-filled
+     * bill total) actually covers - especially important when backdating or
+     * postdating an invoice, where that's easy to lose track of otherwise.
+     */
+    public function getInvoicePeriodLabelProperty(): string
+    {
+        try {
+            return \Carbon\Carbon::parse($this->invoice_date ?: now())->format('F Y');
+        } catch (\Throwable $e) {
+            return now()->format('F Y');
+        }
     }
 
     public function save(): void

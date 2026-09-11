@@ -71,6 +71,9 @@
                 </div>
 
                 @if ($tenant_id)
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                        Rent &amp; bills below are for <span class="font-medium text-slate-700 dark:text-slate-300">{{ $this->invoicePeriodLabel }}</span> - change the invoice date to bill a different month.
+                    </p>
                     <div class="grid grid-cols-3 gap-2 text-center text-xs">
                         <div class="rounded-lg bg-slate-50 dark:bg-slate-800 py-2">
                             <p class="font-semibold text-slate-800 dark:text-slate-200">{{ number_format($rent_only) }}</p>
@@ -96,7 +99,7 @@
             <div class="grid grid-cols-2 gap-3">
                 <div>
                     <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Invoice date</label>
-                    <input type="date" wire:model="invoice_date" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+                    <input type="date" wire:model.live="invoice_date" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
                 </div>
                 <div>
                     <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Due date</label>
