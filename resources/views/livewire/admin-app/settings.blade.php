@@ -9,6 +9,11 @@
     $labelClass = 'text-xs font-medium text-slate-600 dark:text-slate-400';
 @endphp
 <div class="space-y-5">
+    @if ($viewingLandlordId)
+        <div class="rounded-xl bg-sky-50 border border-sky-200 px-4 py-3 text-sm text-sky-700 dark:bg-sky-500/10 dark:border-sky-500/20 dark:text-sky-400">
+            Viewing settings for <strong>{{ $this->landlord?->name }}</strong> as superadmin - changes save to their account, not yours.
+        </div>
+    @endif
     @if (session('settings-saved'))
         <div class="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-700 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-400">
             {{ session('settings-saved') }}

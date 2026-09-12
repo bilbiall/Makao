@@ -46,7 +46,7 @@
                 <button type="button" wire:click="startEdit({{ $landlord->id }})" class="rounded-lg border border-slate-300 dark:border-slate-700 py-2 text-xs font-medium text-slate-700 dark:text-slate-300">
                     Edit
                 </button>
-                <a href="{{ url('/superadmin/landlords/' . $landlord->slug . '/settings') }}" class="block text-center rounded-lg border border-slate-300 py-2 text-xs font-medium text-slate-700 dark:border-slate-700 dark:text-slate-300">
+                <a href="{{ route('app.superadmin.landlord-settings', $landlord) }}" class="block text-center rounded-lg border border-slate-300 py-2 text-xs font-medium text-slate-700 dark:border-slate-700 dark:text-slate-300">
                     Manage settings
                 </a>
             </div>

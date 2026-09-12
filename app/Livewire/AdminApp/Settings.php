@@ -38,11 +38,30 @@ class Settings extends Component
 
     public string $testEmailAddress = '';
 
-    public function mount(): void
-    {
-        abort_unless(in_array(Auth::user()->role, ['admin', 'landlord']), 403);
+    // Set only when reached via the superadmin route (with a {landlord} segment) -
+    // a superadmin viewing/editing a landlord OTHER than themselves. Null (the
+    // normal case) means "my own settings", read off Auth::user()->landlord_id
+    // via targetLandlordId() everywhere below instead of that directly, so this
+    // one component serves both routes without duplicating the whole form.
+    public ?int $viewingLandlordId = null;
 
-        $payload = Setting::forLandlord(Auth::user()->landlord_id)->payload ?? [];
+    /**
+     * $landlord is only ever non-null when this component is reached via the
+     * superadmin route (routes/web.php binds {landlord} by its slug) - the
+     * plain /app/admin/settings route has no such segment, so it's always null
+     * there and every existing behaviour for a landlord/admin viewing their own
+     * settings is untouched.
+     */
+    public function mount(?\App\Models\Landlord $landlord = null): void
+    {
+        if ($landlord) {
+            abort_unless(Auth::user()->role === 'superadmin', 403);
+            $this->viewingLandlordId = $landlord->id;
+        } else {
+            abort_unless(in_array(Auth::user()->role, ['admin', 'landlord']), 403);
+        }
+
+        $payload = Setting::forLandlord($this->targetLandlordId())->payload ?? [];
 
         // Same defaults as HasLandlordSettingsSchema, applied only where not already set.
         $defaults = [
@@ -90,11 +109,17 @@ class Settings extends Component
         }
     }
 
-    /** The 'admin' staff role (and, via the Filament mirror of this page,
-     *  'superadmin') - as opposed to 'landlord', the property owner themselves. */
+    /** The 'admin' staff role, or a superadmin viewing/editing any landlord - as
+     *  opposed to 'landlord', the property owner themselves. */
     public function isAdminRole(): bool
     {
-        return Auth::user()->isAdmin();
+        return Auth::user()->isAdmin() || Auth::user()->role === 'superadmin';
+    }
+
+    /** Auth::user()->landlord_id normally - the landlord being viewed when a superadmin reached this via the other route. */
+    protected function targetLandlordId(): int
+    {
+        return $this->viewingLandlordId ?? Auth::user()->landlord_id;
     }
 
     public function hasPaymentGatewayCredentials(): bool
@@ -112,7 +137,7 @@ class Settings extends Component
 
     public function getLandlordProperty(): ?\App\Models\Landlord
     {
-        return \App\Models\Landlord::find(Auth::user()->landlord_id);
+        return \App\Models\Landlord::find($this->targetLandlordId());
     }
 
     public function requestVerification(): void
@@ -130,13 +155,13 @@ class Settings extends Component
         ]);
 
         PaymentGatewayRequestHelper::submit(
-            Auth::user()->landlord_id,
+            $this->targetLandlordId(),
             $this->gatewayRequestMethod,
             $this->gatewayRequestNote ?: null,
             Auth::id(),
         );
 
-        $this->data['payment_gateway_request'] = Setting::forLandlord(Auth::user()->landlord_id)->payload['payment_gateway_request'];
+        $this->data['payment_gateway_request'] = Setting::forLandlord($this->targetLandlordId())->payload['payment_gateway_request'];
         $this->gatewayRequestNote = '';
         session()->flash('settings-saved', 'Request sent - our team will set this up and notify you.');
     }
@@ -205,7 +230,7 @@ class Settings extends Component
 
     public function save(): void
     {
-        $settings = Setting::forLandlord(Auth::user()->landlord_id);
+        $settings = Setting::forLandlord($this->targetLandlordId());
 
         // A landlord can't touch admin-only fields even via a tampered request -
         // merge onto the existing payload instead of trusting $this->data wholesale

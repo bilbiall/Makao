@@ -227,6 +227,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureAdminRole::class])->group(
 Route::middleware(['auth', \App\Http\Middleware\EnsureSuperadminRole::class])->prefix('app/superadmin')->group(function () {
     Route::get('/dashboard', \App\Livewire\SuperadminApp\Dashboard::class)->name('app.superadmin.dashboard');
     Route::get('/landlords', \App\Livewire\SuperadminApp\Landlords::class)->name('app.superadmin.landlords');
+    Route::get('/landlords/{landlord}/settings', \App\Livewire\AdminApp\Settings::class)->name('app.superadmin.landlord-settings');
     Route::get('/users', \App\Livewire\SuperadminApp\Users::class)->name('app.superadmin.users');
     Route::get('/locations', \App\Livewire\SuperadminApp\Locations::class)->name('app.superadmin.locations');
     Route::get('/packages', \App\Livewire\SuperadminApp\Packages::class)->name('app.superadmin.packages');
