@@ -1,4 +1,10 @@
-<x-layouts.marketing :title="$house->publicName()">
+@php
+    $cheapestPackage = $house->pricePackages->sortBy('price')->first();
+    $shareDescription = trim(($house->house_type ?? '') . ' in ' . ($house->location?->geo_id ?? $house->location?->location_name ?? 'Kenya')
+        . ($cheapestPackage ? ' - from KES ' . number_format($cheapestPackage->price) . '/' . $cheapestPackage->billing_unit : '')
+        . ($house->reviewsCount() > 0 ? ' - ' . $house->averageRating() . '★ (' . $house->reviewsCount() . ' reviews)' : ''));
+@endphp
+<x-layouts.marketing :title="$house->publicName()" :description="$shareDescription" :image="$house->photos->first()?->url()">
     <div class="pb-14">
         <div class="mx-auto max-w-5xl px-4 py-6 sm:px-6">
             @if ($errors->any())
@@ -25,14 +31,17 @@
 
             <div class="mt-6 grid gap-8 lg:grid-cols-[1fr_360px]">
                 <div class="min-w-0">
-                    <div class="flex items-center gap-2">
-                        <x-listings.kind-tag :mode="$house->listing_mode" />
-                        @if ($house->location?->landlord?->isVerified())
-                            <span title="This landlord has been reviewed and verified by our team" class="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-700 dark:bg-sky-500/10 dark:text-sky-400">
-                                @svg('heroicon-s-check-badge', 'w-3.5 h-3.5')
-                                Verified
-                            </span>
-                        @endif
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <x-listings.kind-tag :mode="$house->listing_mode" />
+                            @if ($house->location?->landlord?->isVerified())
+                                <span title="This landlord has been reviewed and verified by our team" class="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-700 dark:bg-sky-500/10 dark:text-sky-400">
+                                    @svg('heroicon-s-check-badge', 'w-3.5 h-3.5')
+                                    Verified
+                                </span>
+                            @endif
+                        </div>
+                        <x-share-buttons :url="url()->current()" :text="'Check out ' . $house->publicName() . ' on Renty'" />
                     </div>
                     <h1 class="mt-3 text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">{{ $house->publicName() }}</h1>
                     <p class="mt-1 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">

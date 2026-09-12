@@ -8,8 +8,27 @@
     @include('partials.favicon')
     <link rel="manifest" href="{{ asset('manifest.json') }}">
     <meta name="theme-color" content="#047857">
-    <title>{{ $title ?? config('app.name', 'Renty') }} - Renty</title>
-    <meta name="description" content="{{ $description ?? 'Renty is an all-in-one rental management platform for Kenyan landlords and property managers - M-Pesa rent collection, tenant portal, maintenance tracking, and more.' }}">
+    @php
+        $pageTitle = ($title ?? config('app.name', 'Renty')) . ' - Renty';
+        $pageDescription = $description ?? 'Renty is an all-in-one rental management platform for Kenyan landlords and property managers - M-Pesa rent collection, tenant portal, maintenance tracking, and more.';
+        $fallbackLogoPath = \App\Models\Setting::forLandlord(null)->payload['logo_path'] ?? null;
+        $pageImage = $image ?? ($fallbackLogoPath ? \Illuminate\Support\Facades\Storage::disk('public')->url($fallbackLogoPath) : asset('images/rentylogo.png'));
+    @endphp
+    <title>{{ $pageTitle }}</title>
+    <meta name="description" content="{{ $pageDescription }}">
+
+    {{-- Rich link previews (WhatsApp/Facebook/Twitter/etc) - $image is the only prop
+         a page needs to pass beyond the existing :title/:description to get one; falls
+         back to the site's own logo everywhere else so a share is never a bare link. --}}
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="{{ $pageTitle }}">
+    <meta property="og:description" content="{{ $pageDescription }}">
+    <meta property="og:url" content="{{ request()->url() }}">
+    <meta property="og:image" content="{{ $pageImage }}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ $pageTitle }}">
+    <meta name="twitter:description" content="{{ $pageDescription }}">
+    <meta name="twitter:image" content="{{ $pageImage }}">
 
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700" rel="stylesheet" />

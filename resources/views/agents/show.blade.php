@@ -1,4 +1,8 @@
-<x-layouts.marketing :title="$user->name . ' - Renty Agent'">
+@php
+    $shareDescription = trim(($user->bio ?: 'Managing ' . $houses->count() . ' short-stay ' . ($houses->count() === 1 ? 'property' : 'properties') . ' on Renty')
+        . ($averageRating ? ' - ' . $averageRating . '★ (' . $reviewsCount . ' reviews)' : ''));
+@endphp
+<x-layouts.marketing :title="$user->name . ' - Renty Agent'" :description="$shareDescription" :image="$user->avatarUrl()">
     <div class="pb-24 md:pb-14">
         {{-- Hero --}}
         <div class="bg-gradient-to-br from-emerald-600 to-emerald-800 dark:from-emerald-800 dark:to-slate-900">
@@ -35,6 +39,10 @@
                 @if ($user->bio)
                     <p class="mt-4 max-w-xl mx-auto text-sm text-emerald-50 leading-relaxed">{{ $user->bio }}</p>
                 @endif
+
+                <div class="mt-4 flex justify-center">
+                    <x-share-buttons :url="url()->current()" :text="'Check out ' . $user->name . '\'s stays on Renty'" :on-dark="true" />
+                </div>
             </div>
         </div>
 
