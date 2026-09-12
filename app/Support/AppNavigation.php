@@ -44,7 +44,7 @@ class AppNavigation
                 // straight into the Filament panel rather than leaving it unreachable from
                 // the main nav, which is where a landlord actually lands by default.
                 ['label' => 'M-Pesa Setup Guide', 'icon' => 'heroicon-o-book-open', 'route' => 'app.admin.mpesa-guide', 'tab' => false],
-                ['label' => 'M-Pesa Setup (Advanced)', 'icon' => 'heroicon-o-key', 'route' => 'filament.admin.resources.mpesa-channels.index', 'tab' => false],
+                ['label' => 'M-Pesa Channels', 'icon' => 'heroicon-o-key', 'route' => 'app.admin.mpesa-channels', 'tab' => false],
                 ['label' => 'Bills', 'icon' => 'heroicon-o-receipt-percent', 'route' => 'app.admin.bills', 'tab' => false],
                 ['label' => 'Bill Types', 'icon' => 'heroicon-o-adjustments-horizontal', 'route' => 'app.admin.bill-types', 'tab' => false],
                 ['label' => 'Announcements', 'icon' => 'heroicon-o-megaphone', 'route' => 'app.admin.announcements', 'tab' => false],

@@ -80,4 +80,13 @@ class MpesaChannel extends Model
     {
         return static::withoutGlobalScopes()->where('business_shortcode', $shortcode)->first();
     }
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $channel) {
+            if (!$channel->landlord_id) {
+                $channel->landlord_id = auth()->user()?->landlord_id;
+            }
+        });
+    }
 }

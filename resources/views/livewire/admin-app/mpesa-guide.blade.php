@@ -2,7 +2,7 @@
     <div class="rounded-2xl bg-emerald-50 border border-emerald-100 p-3 text-xs text-emerald-800 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-400">
         Full setup walkthrough for M-Pesa STK push and C2B - where to get your keys, what to enter, and how to test.
         Keys themselves are entered on the
-        <a href="{{ route('filament.admin.resources.mpesa-channels.index') }}" class="font-semibold underline">M-Pesa Channels</a>
+        <a href="{{ route('app.admin.mpesa-channels') }}" class="font-semibold underline">M-Pesa Channels</a>
         page, not here.
     </div>
 
