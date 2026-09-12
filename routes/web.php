@@ -65,6 +65,9 @@ Route::middleware(['auth'])->group(function () {
 Route::get('/stays', [\App\Http\Controllers\StayListingController::class, 'index'])->name('stays.index');
 Route::get('/stays/{house}', [\App\Http\Controllers\StayListingController::class, 'show'])->name('stays.show');
 Route::post('/stays/{house}/book', [\App\Http\Controllers\BookingController::class, 'store'])->name('bookings.store');
+Route::post('/stays/{house}/inquire', [\App\Http\Controllers\StayListingController::class, 'inquire'])
+    ->middleware('throttle:10,1')
+    ->name('stays.inquire');
 
 // Public agent profile - photo/bio/rating + every stay they manage, shareable by
 // the agent themselves (see Profile's "Your public profile" section).
@@ -202,6 +205,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureAdminRole::class])->prefix
     Route::get('/import-data', \App\Livewire\AdminApp\ImportData::class)->name('app.admin.import-data');
     Route::get('/bookings', \App\Livewire\AdminApp\Bookings::class)->name('app.admin.bookings');
     Route::get('/promotions', \App\Livewire\AdminApp\Promotions::class)->name('app.admin.promotions');
+    Route::get('/inquiries', \App\Livewire\AdminApp\Inquiries::class)->name('app.admin.inquiries');
     Route::get('/users', \App\Livewire\AdminApp\Users::class)->name('app.admin.users');
     Route::get('/staff-roles', \App\Livewire\AdminApp\StaffRoles::class)->name('app.admin.staff-roles');
     Route::get('/chat', fn () => view('admin-app.chat'))->name('app.admin.chat');

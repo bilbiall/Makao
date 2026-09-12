@@ -69,4 +69,24 @@ class StayListingController extends Controller
 
         return view('stays.show', compact('house', 'agent'));
     }
+
+    /** Lightweight "ask a question" lead - see HouseInquiry's docblock for why this is separate from a booking. */
+    public function inquire(Request $request, House $house)
+    {
+        abort_unless($house->isShortTerm(), 404);
+
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'phone' => 'required|string|max:30',
+            'email' => 'nullable|email|max:255',
+            'message' => 'nullable|string|max:1000',
+        ]);
+
+        \App\Models\HouseInquiry::create([
+            'house_id' => $house->id,
+            ...$data,
+        ]);
+
+        return back()->with('status', "Thanks {$data['name']} - the host will get back to you shortly.");
+    }
 }

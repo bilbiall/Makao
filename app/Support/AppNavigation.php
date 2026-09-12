@@ -53,6 +53,7 @@ class AppNavigation
                 ['label' => 'Notices', 'icon' => 'heroicon-o-flag', 'route' => 'app.admin.notices', 'tab' => false],
                 ['label' => 'Bookings', 'icon' => 'heroicon-o-calendar-days', 'route' => 'app.admin.bookings', 'tab' => false],
                 ['label' => 'Promotions', 'icon' => 'heroicon-o-tag', 'route' => 'app.admin.promotions', 'tab' => false],
+                ['label' => 'Inquiries', 'icon' => 'heroicon-o-question-mark-circle', 'route' => 'app.admin.inquiries', 'tab' => false],
                 ['label' => 'Reports', 'icon' => 'heroicon-o-chart-bar', 'route' => 'app.admin.reports', 'tab' => false],
                 ['label' => 'Staff', 'icon' => 'heroicon-o-identification', 'route' => 'app.admin.users', 'tab' => false],
                 ['label' => 'Staff Roles', 'icon' => 'heroicon-o-shield-check', 'route' => 'app.admin.staff-roles', 'tab' => false],
@@ -91,6 +92,7 @@ class AppNavigation
             'agent' => [
                 ['label' => 'Bookings', 'icon' => 'heroicon-o-calendar-days', 'route' => 'app.admin.bookings', 'tab' => true],
                 ['label' => 'Promotions', 'icon' => 'heroicon-o-tag', 'route' => 'app.admin.promotions', 'tab' => true],
+                ['label' => 'Inquiries', 'icon' => 'heroicon-o-question-mark-circle', 'route' => 'app.admin.inquiries', 'tab' => true],
                 ['label' => 'Chat', 'icon' => 'heroicon-o-chat-bubble-left-right', 'route' => 'app.admin.chat', 'tab' => true],
             ],
             'user' => [

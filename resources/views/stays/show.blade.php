@@ -7,6 +7,11 @@
 <x-layouts.marketing :title="$house->publicName()" :description="$shareDescription" :image="$house->photos->first()?->url()">
     <div class="pb-14">
         <div class="mx-auto max-w-5xl px-4 py-6 sm:px-6">
+            @if (session('status'))
+                <div class="mb-6 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm p-4 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-400">
+                    {{ session('status') }}
+                </div>
+            @endif
             @if ($errors->any())
                 <div class="mb-6 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-sm p-4 dark:bg-rose-500/10 dark:border-rose-500/20 dark:text-rose-400">
                     {{ $errors->first() }}
@@ -191,6 +196,34 @@
                             </button>
                             <p class="text-xs text-slate-400 text-center dark:text-slate-500">Your dates are held for 20 minutes while you complete payment.</p>
                         </form>
+
+                        <div x-data="{ open: false }" class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                            <button type="button" @click="open = !open" class="w-full text-center text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-emerald-700 dark:hover:text-emerald-400">
+                                Not ready to book? Ask a question instead
+                            </button>
+                            <form x-show="open" x-cloak method="POST" action="{{ route('stays.inquire', $house) }}" class="mt-3 space-y-3">
+                                @csrf
+                                <div>
+                                    <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Your name</label>
+                                    <input type="text" name="name" required class="{{ $inputClass }}">
+                                </div>
+                                <div>
+                                    <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Phone</label>
+                                    <input type="text" name="phone" required placeholder="2547XXXXXXXX" class="{{ $inputClass }}">
+                                </div>
+                                <div>
+                                    <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Email (optional)</label>
+                                    <input type="email" name="email" class="{{ $inputClass }}">
+                                </div>
+                                <div>
+                                    <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Your question</label>
+                                    <textarea name="message" rows="3" placeholder="e.g. Is early check-in possible on the 20th?" class="{{ $inputClass }}"></textarea>
+                                </div>
+                                <button type="submit" class="w-full rounded-lg border border-slate-300 dark:border-slate-700 px-6 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">
+                                    Send question
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
