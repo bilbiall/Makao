@@ -57,6 +57,8 @@ class StayListingController extends Controller
     {
         abort_unless(House::bnbVisible()->whereKey($house->id)->exists(), 404);
 
+        $house->increment('views_count');
+
         $house->load(['location', 'photos', 'pricePackages']);
         $house->load(['reviews' => fn ($q) => $q->latest()->limit(20)]);
 

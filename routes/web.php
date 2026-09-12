@@ -206,6 +206,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureAdminRole::class])->prefix
     Route::get('/bookings', \App\Livewire\AdminApp\Bookings::class)->name('app.admin.bookings');
     Route::get('/promotions', \App\Livewire\AdminApp\Promotions::class)->name('app.admin.promotions');
     Route::get('/inquiries', \App\Livewire\AdminApp\Inquiries::class)->name('app.admin.inquiries');
+    Route::get('/analytics', \App\Livewire\AdminApp\Analytics::class)->name('app.admin.analytics');
     Route::get('/users', \App\Livewire\AdminApp\Users::class)->name('app.admin.users');
     Route::get('/staff-roles', \App\Livewire\AdminApp\StaffRoles::class)->name('app.admin.staff-roles');
     Route::get('/chat', fn () => view('admin-app.chat'))->name('app.admin.chat');
