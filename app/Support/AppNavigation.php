@@ -90,12 +90,14 @@ class AppNavigation
             // - it manages bookings and markets those units (discounts, its own public
             // profile via Profile), not long-term tenancy, so the nav is trimmed to just
             // Bookings/Promotions/Chat (matching StaffScope::onHouseOrAssignedHouse()).
+            // Own /app/agent/* route names (same underlying components as admin) rather
+            // than app.admin.* - see routes/web.php for why.
             'agent' => [
-                ['label' => 'Bookings', 'icon' => 'heroicon-o-calendar-days', 'route' => 'app.admin.bookings', 'tab' => true],
-                ['label' => 'Promotions', 'icon' => 'heroicon-o-tag', 'route' => 'app.admin.promotions', 'tab' => true],
-                ['label' => 'Inquiries', 'icon' => 'heroicon-o-question-mark-circle', 'route' => 'app.admin.inquiries', 'tab' => true],
-                ['label' => 'Chat', 'icon' => 'heroicon-o-chat-bubble-left-right', 'route' => 'app.admin.chat', 'tab' => true],
-                ['label' => 'Analytics', 'icon' => 'heroicon-o-presentation-chart-line', 'route' => 'app.admin.analytics', 'tab' => false],
+                ['label' => 'Bookings', 'icon' => 'heroicon-o-calendar-days', 'route' => 'app.agent.bookings', 'tab' => true],
+                ['label' => 'Promotions', 'icon' => 'heroicon-o-tag', 'route' => 'app.agent.promotions', 'tab' => true],
+                ['label' => 'Inquiries', 'icon' => 'heroicon-o-question-mark-circle', 'route' => 'app.agent.inquiries', 'tab' => true],
+                ['label' => 'Chat', 'icon' => 'heroicon-o-chat-bubble-left-right', 'route' => 'app.agent.chat', 'tab' => true],
+                ['label' => 'Analytics', 'icon' => 'heroicon-o-presentation-chart-line', 'route' => 'app.agent.analytics', 'tab' => false],
             ],
             'user' => [
                 ['label' => 'Home', 'icon' => 'heroicon-o-home', 'route' => 'app.user.dashboard', 'tab' => true],
@@ -152,6 +154,7 @@ class AppNavigation
             'tenant' => 'app.tenant.profile',
             'superadmin' => 'app.superadmin.profile',
             'user' => 'app.user.profile',
+            'agent' => 'app.agent.profile',
             default => 'app.admin.profile',
         };
     }

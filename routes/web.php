@@ -214,6 +214,21 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureAdminRole::class])->prefix
     Route::get('/profile', \App\Livewire\Profile::class)->name('app.admin.profile');
 });
 
+// 'agent' technically passes the same EnsureAdminRole gate as admin/landlord/manager/
+// caretaker (it shares that middleware), but gets its own URL namespace pointing at the
+// exact same components - an external BnB marketing contractor seeing "/app/admin/..."
+// in their address bar reads as "I have admin access", which isn't true (StaffScope
+// still narrows every one of these pages to just their assigned houses) and isn't a
+// good look for an account that isn't core staff.
+Route::middleware(['auth', \App\Http\Middleware\EnsureAdminRole::class])->prefix('app/agent')->group(function () {
+    Route::get('/bookings', \App\Livewire\AdminApp\Bookings::class)->name('app.agent.bookings');
+    Route::get('/promotions', \App\Livewire\AdminApp\Promotions::class)->name('app.agent.promotions');
+    Route::get('/inquiries', \App\Livewire\AdminApp\Inquiries::class)->name('app.agent.inquiries');
+    Route::get('/analytics', \App\Livewire\AdminApp\Analytics::class)->name('app.agent.analytics');
+    Route::get('/chat', fn () => view('admin-app.chat'))->name('app.agent.chat');
+    Route::get('/profile', \App\Livewire\Profile::class)->name('app.agent.profile');
+});
+
 Route::middleware(['auth', \App\Http\Middleware\EnsureUserRole::class])->prefix('app/user')->group(function () {
     Route::get('/dashboard', \App\Livewire\UserApp\Dashboard::class)->name('app.user.dashboard');
     Route::get('/watchlist', \App\Livewire\UserApp\Watchlist::class)->name('app.user.watchlist');

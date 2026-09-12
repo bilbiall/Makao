@@ -76,7 +76,11 @@ class Setting extends Model
         $payload = $this->payload ?? [];
 
         return filled($payload['mpesa']['consumer_key'] ?? null)
-            || filled($payload['pesapal']['consumer_key'] ?? null);
+            || filled($payload['pesapal']['consumer_key'] ?? null)
+            // A landlord/agent may have self-served a Daraja channel via
+            // MpesaChannelResource / AdminApp\MpesaChannels instead of (or as well
+            // as) the legacy mpesa.* payload fields above - either one should count.
+            || ($this->landlord_id && \App\Models\MpesaChannel::where('landlord_id', $this->landlord_id)->exists());
     }
 
     /** The landlord's own pending request to enable automatic payments, if any -
