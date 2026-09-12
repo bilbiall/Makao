@@ -125,7 +125,9 @@ class ListInvoices extends ListRecords
                             $invoice->update(['last_reminded_at' => $today]);
                             $count++;
                         } catch (\Throwable $e) {
-                            // silently skip failed sends
+                            \Illuminate\Support\Facades\Log::warning('Mass reminder SMS failed', [
+                                'invoice_id' => $invoice->id, 'landlord_id' => $invoice->landlord_id, 'error' => $e->getMessage(),
+                            ]);
                         }
 
                         if ($tenant->email) {
@@ -141,7 +143,9 @@ class ListInvoices extends ListRecords
                                 \App\Helpers\EmailHelper::send($tenant->email, "Payment reminder - Invoice {$invoice->invoice_number}", $emailBody, $invoice->landlord_id);
                                 $invoice->update(['last_reminded_at' => $today]);
                             } catch (\Throwable $e) {
-                                // ignore email failures (e.g. SMTP not configured)
+                                \Illuminate\Support\Facades\Log::warning('Mass reminder email failed', [
+                                    'invoice_id' => $invoice->id, 'landlord_id' => $invoice->landlord_id, 'error' => $e->getMessage(),
+                                ]);
                             }
                         }
                     }

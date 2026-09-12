@@ -161,7 +161,15 @@ class Invoice extends Model
                 try {
                     SmsHelper::sendSms($tenant->phone_number, $message, $invoice->landlord_id);
                 } catch (\Throwable $e) {
-                    // ignore SMS failures (e.g. gateway not configured)
+                    // Still don't let a gateway problem block invoice creation, but a
+                    // silent failure with zero trace is worse than a log line - this is
+                    // the only place that would ever reveal a bad/missing SMS config.
+                    \Illuminate\Support\Facades\Log::warning('Invoice SMS failed', [
+                        'invoice_id' => $invoice->id,
+                        'landlord_id' => $invoice->landlord_id,
+                        'phone' => $tenant->phone_number,
+                        'error' => $e->getMessage(),
+                    ]);
                 }
 
                 // Email is best-effort and skipped entirely when the tenant has no
@@ -178,7 +186,12 @@ class Invoice extends Model
 
                         \App\Helpers\EmailHelper::send($tenant->email, "New invoice {$invoice->invoice_number}", $body, $invoice->landlord_id);
                     } catch (\Throwable $e) {
-                        // ignore email failures (e.g. SMTP not configured)
+                        \Illuminate\Support\Facades\Log::warning('Invoice email failed', [
+                            'invoice_id' => $invoice->id,
+                            'landlord_id' => $invoice->landlord_id,
+                            'email' => $tenant->email,
+                            'error' => $e->getMessage(),
+                        ]);
                     }
                 }
 

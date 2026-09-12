@@ -96,7 +96,12 @@ class Payment extends Model
             try {
                 \App\Helpers\SmsHelper::sendSms($tenant->phone_number, $message, $payment->landlord_id);
             } catch (\Throwable $e) {
-                // ignore SMS failures (e.g. gateway not configured)
+                \Illuminate\Support\Facades\Log::warning('Payment SMS failed', [
+                    'payment_id' => $payment->id,
+                    'landlord_id' => $payment->landlord_id,
+                    'phone' => $tenant->phone_number,
+                    'error' => $e->getMessage(),
+                ]);
             }
 
             // Email is best-effort and skipped entirely when the tenant has no
@@ -112,7 +117,12 @@ class Payment extends Model
 
                     \App\Helpers\EmailHelper::send($tenant->email, "Payment received - Invoice {$invoice->invoice_number}", $emailBody, $payment->landlord_id);
                 } catch (\Throwable $e) {
-                    // ignore email failures (e.g. SMTP not configured)
+                    \Illuminate\Support\Facades\Log::warning('Payment email failed', [
+                        'payment_id' => $payment->id,
+                        'landlord_id' => $payment->landlord_id,
+                        'email' => $tenant->email,
+                        'error' => $e->getMessage(),
+                    ]);
                 }
             }
 
