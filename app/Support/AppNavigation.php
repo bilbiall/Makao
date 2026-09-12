@@ -52,6 +52,7 @@ class AppNavigation
                 ['label' => 'Issues', 'icon' => 'heroicon-o-wrench-screwdriver', 'route' => 'app.admin.issues', 'tab' => false],
                 ['label' => 'Notices', 'icon' => 'heroicon-o-flag', 'route' => 'app.admin.notices', 'tab' => false],
                 ['label' => 'Bookings', 'icon' => 'heroicon-o-calendar-days', 'route' => 'app.admin.bookings', 'tab' => false],
+                ['label' => 'Promotions', 'icon' => 'heroicon-o-tag', 'route' => 'app.admin.promotions', 'tab' => false],
                 ['label' => 'Reports', 'icon' => 'heroicon-o-chart-bar', 'route' => 'app.admin.reports', 'tab' => false],
                 ['label' => 'Staff', 'icon' => 'heroicon-o-identification', 'route' => 'app.admin.users', 'tab' => false],
                 ['label' => 'Staff Roles', 'icon' => 'heroicon-o-shield-check', 'route' => 'app.admin.staff-roles', 'tab' => false],
@@ -84,10 +85,12 @@ class AppNavigation
                 ['label' => 'Chat', 'icon' => 'heroicon-o-chat-bubble-left-right', 'route' => 'app.admin.chat', 'tab' => false],
             ],
             // Agent is scoped to specific short_term houses only (staff_assignments.house_id)
-            // - it manages bookings for those units, not long-term tenancy, so the nav is
-            // trimmed to just Bookings + Chat (matching StaffScope::onHouseOrAssignedHouse()).
+            // - it manages bookings and markets those units (discounts, its own public
+            // profile via Profile), not long-term tenancy, so the nav is trimmed to just
+            // Bookings/Promotions/Chat (matching StaffScope::onHouseOrAssignedHouse()).
             'agent' => [
                 ['label' => 'Bookings', 'icon' => 'heroicon-o-calendar-days', 'route' => 'app.admin.bookings', 'tab' => true],
+                ['label' => 'Promotions', 'icon' => 'heroicon-o-tag', 'route' => 'app.admin.promotions', 'tab' => true],
                 ['label' => 'Chat', 'icon' => 'heroicon-o-chat-bubble-left-right', 'route' => 'app.admin.chat', 'tab' => true],
             ],
             'user' => [

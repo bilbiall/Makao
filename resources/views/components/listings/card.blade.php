@@ -2,7 +2,8 @@
 @php
     $isStay = $house->isShortTerm();
     $showRoute = $isStay ? route('stays.show', $house) : route('listings.show', $house);
-    $cheapestPackage = $isStay ? $house->pricePackages->sortBy('price')->first() : null;
+    $cheapestPackage = $isStay ? $house->pricePackages->sortBy(fn ($p) => $p->effectivePrice())->first() : null;
+    $hasDiscount = $cheapestPackage?->hasActiveDiscount() ?? false;
     $photo = $house->photos->first();
 @endphp
 <div class="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
@@ -12,6 +13,11 @@
         @endif
         <div class="absolute left-3 top-3 flex items-center gap-1.5">
             <x-listings.kind-tag :mode="$house->listing_mode" />
+            @if ($hasDiscount)
+                <span class="inline-flex items-center gap-1 rounded-full bg-rose-600/90 px-2 py-0.5 text-xs font-semibold text-white">
+                    {{ $cheapestPackage->discount_percent }}% OFF
+                </span>
+            @endif
             @if ($house->location?->landlord?->isVerified())
                 <span title="This landlord has been reviewed and verified by our team" class="inline-flex items-center gap-1 rounded-full bg-sky-600/90 px-2 py-0.5 text-xs font-medium text-white">
                     @svg('heroicon-s-check-badge', 'w-3.5 h-3.5')
@@ -40,7 +46,13 @@
         <div class="flex items-start justify-between gap-3">
             <p class="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">
                 @if ($isStay && $cheapestPackage)
-                    KES {{ number_format($cheapestPackage->price) }}<span class="text-sm font-normal text-slate-500 dark:text-slate-400">/{{ $cheapestPackage->billing_unit }}</span>
+                    @if ($hasDiscount)
+                        <span class="text-sm font-normal text-slate-400 line-through">KES {{ number_format($cheapestPackage->price) }}</span>
+                        <span class="text-rose-600 dark:text-rose-400">KES {{ number_format($cheapestPackage->discountedPrice()) }}</span>
+                    @else
+                        KES {{ number_format($cheapestPackage->price) }}
+                    @endif
+                    <span class="text-sm font-normal text-slate-500 dark:text-slate-400">/{{ $cheapestPackage->billing_unit }}</span>
                 @else
                     KES {{ number_format($house->rent_amount) }}<span class="text-sm font-normal text-slate-500 dark:text-slate-400">/mo</span>
                 @endif

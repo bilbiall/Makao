@@ -55,6 +55,10 @@ class BookingController extends Controller
                 return null;
             }
 
+            // Lock in whatever the package's discount resolves to right now - if it
+            // expires mid-hold, this booking still honours the rate the guest saw.
+            $rate = $package->effectivePrice();
+
             return Booking::create([
                 'house_id' => $house->id,
                 'user_id' => $useAccount ? $user->id : null,
@@ -65,10 +69,10 @@ class BookingController extends Controller
                 'check_in' => $checkIn,
                 'check_out' => $checkOut,
                 'nights' => $nights,
-                'package_name' => $package->name,
-                'nightly_rate' => $package->price,
+                'package_name' => $package->name . ($package->hasActiveDiscount() ? ' (' . $package->discount_percent . '% off)' : ''),
+                'nightly_rate' => $rate,
                 'billing_unit' => $package->billing_unit,
-                'total_amount' => $package->price * match ($package->billing_unit) {
+                'total_amount' => $rate * match ($package->billing_unit) {
                     'week' => (int) ceil($nights / 7),
                     'month' => (int) ceil($nights / 30),
                     default => $nights,

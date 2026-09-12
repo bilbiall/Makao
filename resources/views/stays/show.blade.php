@@ -136,9 +136,19 @@
                                 <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Price package</label>
                                 <select name="price_package_id" required class="{{ $inputClass }}">
                                     @foreach ($house->pricePackages as $package)
-                                        <option value="{{ $package->id }}">{{ $package->name }} - KES {{ number_format($package->price) }} / {{ $package->billing_unit }}</option>
+                                        <option value="{{ $package->id }}">
+                                            {{ $package->name }} -
+                                            @if ($package->hasActiveDiscount())
+                                                was KES {{ number_format($package->price) }}, now KES {{ number_format($package->discountedPrice()) }} / {{ $package->billing_unit }} ({{ $package->discount_percent }}% off{{ $package->discount_label ? ': ' . $package->discount_label : '' }})
+                                            @else
+                                                KES {{ number_format($package->price) }} / {{ $package->billing_unit }}
+                                            @endif
+                                        </option>
                                     @endforeach
                                 </select>
+                                @if ($house->pricePackages->contains(fn ($p) => $p->hasActiveDiscount()))
+                                    <p class="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1">A discounted package is running right now - pick it above to get the lower rate.</p>
+                                @endif
                             </div>
 
                             <div class="grid grid-cols-2 gap-3">
