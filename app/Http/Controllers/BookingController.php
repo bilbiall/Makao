@@ -88,10 +88,32 @@ class BookingController extends Controller
 
     public function show(Booking $booking)
     {
-        $booking->load('house.location', 'payments');
+        $booking->load('house.location', 'payments', 'review');
 
         $mpesaInitiateUrl = URL::signedRoute('bookings.mpesa.initiate', ['booking' => $booking->id]);
+        $reviewUrl = URL::signedRoute('bookings.review', ['booking' => $booking->id]);
 
-        return view('bookings.show', compact('booking', 'mpesaInitiateUrl'));
+        return view('bookings.show', compact('booking', 'mpesaInitiateUrl', 'reviewUrl'));
+    }
+
+    public function storeReview(Request $request, Booking $booking)
+    {
+        abort_unless($booking->canBeReviewed(), 403);
+
+        $data = $request->validate([
+            'rating' => ['required', 'integer', 'min:1', 'max:5'],
+            'comment' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        \App\Models\HouseReview::create([
+            'house_id' => $booking->house_id,
+            'booking_id' => $booking->id,
+            'user_id' => $booking->user_id,
+            'rating' => $data['rating'],
+            'comment' => $data['comment'] ?? null,
+        ]);
+
+        return redirect(URL::signedRoute('bookings.show', ['booking' => $booking->id]))
+            ->with('status', 'Thanks for your review!');
     }
 }

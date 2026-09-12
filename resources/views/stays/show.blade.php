@@ -38,7 +38,35 @@
                     <p class="mt-1 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
                         @svg('heroicon-o-map-pin', 'w-4 h-4 shrink-0')
                         {{ $house->location?->geo_id ?? $house->location?->location_name }} &middot; {{ $house->house_type }}
+                        @if ($house->reviewsCount() > 0)
+                            &middot;
+                            <span class="flex items-center gap-1 text-slate-700 dark:text-slate-300 font-medium">
+                                @svg('heroicon-s-star', 'w-4 h-4 text-amber-400')
+                                {{ $house->averageRating() }} ({{ $house->reviewsCount() }})
+                            </span>
+                        @endif
                     </p>
+
+                    @if ($agent)
+                        <a href="{{ route('agents.show', $agent->ensureSlug()) }}" class="mt-4 flex items-center gap-3 rounded-xl border border-slate-200 p-3 hover:border-emerald-300 transition dark:border-slate-800 dark:hover:border-emerald-500/40">
+                            @if ($agent->avatarUrl())
+                                <img src="{{ $agent->avatarUrl() }}" class="h-10 w-10 rounded-full object-cover">
+                            @else
+                                <div class="h-10 w-10 rounded-full bg-emerald-100 dark:bg-emerald-500/10 flex items-center justify-center text-sm font-semibold text-emerald-700 dark:text-emerald-400">
+                                    {{ strtoupper(substr($agent->name, 0, 1)) }}
+                                </div>
+                            @endif
+                            <div class="min-w-0">
+                                <p class="text-sm font-medium text-slate-900 dark:text-slate-100">Hosted by {{ $agent->name }}</p>
+                                @if ($agent->averageHouseRating())
+                                    <p class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                                        @svg('heroicon-s-star', 'w-3.5 h-3.5 text-amber-400')
+                                        {{ $agent->averageHouseRating() }} average across their stays
+                                    </p>
+                                @endif
+                            </div>
+                        </a>
+                    @endif
 
                     @if ($house->description)
                         <p class="mt-6 text-slate-700 leading-relaxed dark:text-slate-300">{{ $house->description }}</p>
@@ -59,6 +87,33 @@
                     @endif
 
                     <x-listings.nearby-places :house="$house" />
+
+                    @if ($house->reviews->isNotEmpty())
+                        <div class="mt-8 border-t border-slate-200 pt-6 dark:border-slate-800">
+                            <h2 class="flex items-center gap-2 text-base font-semibold text-slate-900 dark:text-slate-100">
+                                @svg('heroicon-s-star', 'w-5 h-5 text-amber-400')
+                                {{ $house->averageRating() }} &middot; {{ $house->reviewsCount() }} {{ $house->reviewsCount() === 1 ? 'review' : 'reviews' }}
+                            </h2>
+                            <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                                @foreach ($house->reviews as $review)
+                                    <div class="rounded-xl border border-slate-200 p-3 dark:border-slate-800">
+                                        <div class="flex items-center justify-between">
+                                            <p class="flex items-center gap-0.5">
+                                                @for ($i = 1; $i <= 5; $i++)
+                                                    @svg($i <= $review->rating ? 'heroicon-s-star' : 'heroicon-o-star', 'w-3.5 h-3.5 ' . ($i <= $review->rating ? 'text-amber-400' : 'text-slate-300 dark:text-slate-700'))
+                                                @endfor
+                                            </p>
+                                            <span class="text-xs text-slate-400 dark:text-slate-500">{{ $review->created_at->diffForHumans() }}</span>
+                                        </div>
+                                        @if ($review->comment)
+                                            <p class="mt-2 text-sm text-slate-700 dark:text-slate-300">{{ $review->comment }}</p>
+                                        @endif
+                                        <p class="mt-2 text-xs text-slate-400 dark:text-slate-500">{{ $review->reviewerName() }}</p>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
                 </div>
 
                 <div>

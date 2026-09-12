@@ -17,7 +17,7 @@ class StayListingController extends Controller
 {
     public function index(Request $request)
     {
-        $query = House::bnbVisible()->with(['location.area', 'photos', 'pricePackages']);
+        $query = House::bnbVisible()->with(['location.area', 'photos', 'pricePackages'])->withCount('reviews')->withAvg('reviews', 'rating');
 
         // Same area-or-city filter dimension as PropertyListingController - see
         // House::scopeInAreaOrCity().
@@ -58,7 +58,15 @@ class StayListingController extends Controller
         abort_unless(House::bnbVisible()->whereKey($house->id)->exists(), 404);
 
         $house->load(['location', 'photos', 'pricePackages']);
+        $house->load(['reviews' => fn ($q) => $q->latest()->limit(20)]);
 
-        return view('stays.show', compact('house'));
+        // The agent managing this specific property, if any - shown as a "Hosted
+        // by" card linking to their public profile. Falls back to nothing (not
+        // every short_term house has a dedicated agent assigned).
+        $agent = \App\Models\User::where('role', 'agent')
+            ->whereHas('assignedHouses', fn ($q) => $q->where('houses.id', $house->id))
+            ->first();
+
+        return view('stays.show', compact('house', 'agent'));
     }
 }

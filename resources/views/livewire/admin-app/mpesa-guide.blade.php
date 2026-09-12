@@ -11,7 +11,6 @@
             {!! $html !!}
         </div>
     </div>
-</div>
 
 <style>
     .mpesa-guide-content { font-size: 0.875rem; line-height: 1.65; color: #334155; }
@@ -52,3 +51,4 @@
     .mpesa-guide-content hr { border: none; border-top: 1px solid #e2e8f0; margin: 1.25rem 0; }
     html.dark .mpesa-guide-content hr { border-top-color: #1e293b; }
 </style>
+</div>

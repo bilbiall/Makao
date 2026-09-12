@@ -75,6 +75,17 @@ class Booking extends Model
         return $this->hasMany(BookingPayment::class);
     }
 
+    public function review()
+    {
+        return $this->hasOne(HouseReview::class);
+    }
+
+    /** The one and only gate for leaving a review - see HouseReview's class docblock. */
+    public function canBeReviewed(): bool
+    {
+        return $this->status === 'checked_out' && !$this->review()->exists();
+    }
+
     /**
      * Date-range overlap: two ranges [a_in, a_out) and [b_in, b_out) overlap iff
      * a_in < b_out AND a_out > b_in. Reused by both the public availability check

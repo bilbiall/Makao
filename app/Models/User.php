@@ -35,6 +35,9 @@ class User extends Authenticatable implements MustVerifyEmail
         'location_id',
         'landlord_id',
         'staff_role_id',
+        'avatar_path',
+        'bio',
+        'slug',
     ];
 
     /**
@@ -206,6 +209,61 @@ class User extends Authenticatable implements MustVerifyEmail
     public function assignedLocations()
     {
         return $this->belongsToMany(Location::class, 'staff_assignments')->withPivot('role')->withTimestamps();
+    }
+
+    /** An agent's directly-assigned short_term houses (as opposed to a whole Location) - see StaffAssignment::house(). */
+    public function assignedHouses()
+    {
+        return $this->belongsToMany(House::class, 'staff_assignments')->withPivot('role')->withTimestamps();
+    }
+
+    public function houseReviews()
+    {
+        return $this->hasMany(HouseReview::class);
+    }
+
+    public function avatarUrl(): ?string
+    {
+        return $this->avatar_path ? \Illuminate\Support\Facades\Storage::disk('public')->url($this->avatar_path) : null;
+    }
+
+    /**
+     * A public profile (currently: an agent's page listing the short-stay
+     * properties they manage) needs a stable, shareable URL - generated once,
+     * on first need, rather than for every user up front. Same word-based +
+     * random-suffix convention as House/Landlord's own slugs.
+     */
+    public function ensureSlug(): string
+    {
+        if (!$this->slug) {
+            $base = \Illuminate\Support\Str::slug($this->name) ?: 'user';
+
+            do {
+                $slug = $base . '-' . \Illuminate\Support\Str::lower(\Illuminate\Support\Str::random(6));
+            } while (static::where('slug', $slug)->exists());
+
+            $this->slug = $slug;
+            $this->save();
+        }
+
+        return $this->slug;
+    }
+
+    /**
+     * Average rating across every review left on any house this agent manages -
+     * a simple mean of individual reviews (not averaged per-house-then-per-agent),
+     * so an agent with more well-reviewed stays is weighted accordingly.
+     */
+    public function averageHouseRating(): ?float
+    {
+        $average = HouseReview::whereIn('house_id', $this->assignedHouses()->pluck('houses.id'))->avg('rating');
+
+        return $average ? round($average, 1) : null;
+    }
+
+    public function houseReviewsCount(): int
+    {
+        return HouseReview::whereIn('house_id', $this->assignedHouses()->pluck('houses.id'))->count();
     }
 
     public function watchlist()

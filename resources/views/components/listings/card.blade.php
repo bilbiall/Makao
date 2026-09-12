@@ -45,6 +45,13 @@
                     KES {{ number_format($house->rent_amount) }}<span class="text-sm font-normal text-slate-500 dark:text-slate-400">/mo</span>
                 @endif
             </p>
+            @if ($isStay && $house->reviewsCount() > 0)
+                <p class="flex items-center gap-1 text-sm font-medium text-slate-700 dark:text-slate-300 flex-shrink-0">
+                    @svg('heroicon-s-star', 'w-4 h-4 text-amber-400')
+                    {{ $house->averageRating() }}
+                    <span class="text-xs font-normal text-slate-400">({{ $house->reviewsCount() }})</span>
+                </p>
+            @endif
         </div>
 
         <h3 class="mt-1 truncate text-sm font-medium text-slate-900 dark:text-slate-100">{{ $house->publicName() }}</h3>

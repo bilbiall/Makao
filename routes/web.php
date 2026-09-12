@@ -66,6 +66,10 @@ Route::get('/stays', [\App\Http\Controllers\StayListingController::class, 'index
 Route::get('/stays/{house}', [\App\Http\Controllers\StayListingController::class, 'show'])->name('stays.show');
 Route::post('/stays/{house}/book', [\App\Http\Controllers\BookingController::class, 'store'])->name('bookings.store');
 
+// Public agent profile - photo/bio/rating + every stay they manage, shareable by
+// the agent themselves (see Profile's "Your public profile" section).
+Route::get('/agents/{user:slug}', [\App\Http\Controllers\AgentProfileController::class, 'show'])->name('agents.show');
+
 // Signed, not auth-gated - most guests book without an account, so there's no session
 // to check ownership against. A booking's id is sequential and its details (guest name/
 // phone/dates/amount) are sensitive, so the link handed back at booking creation (and
@@ -77,6 +81,13 @@ Route::get('/bookings/{booking}', [\App\Http\Controllers\BookingController::clas
 Route::post('/bookings/{booking}/mpesa/initiate', [\App\Http\Controllers\BookingPaymentController::class, 'initiate'])
     ->middleware(['signed', 'throttle:10,1'])
     ->name('bookings.mpesa.initiate');
+
+// Same signed-link eligibility model as the two routes above - only reachable
+// from the booking's own confirmation page, which is the proof this guest
+// actually stayed there. See Booking::canBeReviewed().
+Route::post('/bookings/{booking}/review', [\App\Http\Controllers\BookingController::class, 'storeReview'])
+    ->middleware(['signed', 'throttle:10,1'])
+    ->name('bookings.review');
 
 // password reset (email or phone)
 Route::get('/forgot-password', [\App\Http\Controllers\ForgotPasswordController::class, 'showForgotForm'])

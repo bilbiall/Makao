@@ -199,6 +199,36 @@ class House extends Model
         return $this->hasMany(Booking::class);
     }
 
+    public function reviews()
+    {
+        return $this->hasMany(HouseReview::class);
+    }
+
+    /**
+     * Prefers withAvg('reviews', 'rating')/withCount('reviews') when the caller
+     * eager-loaded them (e.g. a listing grid, to avoid an N+1 query per card) -
+     * falls back to a live query otherwise (e.g. a single listing's own page).
+     */
+    public function averageRating(): ?float
+    {
+        if ($this->getAttribute('reviews_avg_rating') !== null) {
+            return round((float) $this->getAttribute('reviews_avg_rating'), 1);
+        }
+
+        $average = $this->reviews()->avg('rating');
+
+        return $average ? round($average, 1) : null;
+    }
+
+    public function reviewsCount(): int
+    {
+        if ($this->getAttribute('reviews_count') !== null) {
+            return (int) $this->getAttribute('reviews_count');
+        }
+
+        return $this->reviews()->count();
+    }
+
     public function alerts()
     {
         return $this->hasMany(HouseAlert::class);
