@@ -52,7 +52,11 @@ class StaffPermissions
     public const ADMIT_VIEWING_REQUESTS = 'admit_viewing_requests';
     public const RESOLVE_MPESA_REVIEW = 'resolve_mpesa_review';
 
-    public const VIEW_REPORTS = 'view_reports';
+    public const VIEW_REPORT_OVERVIEW = 'view_report_overview';
+    public const VIEW_REPORT_RENT_ROLL = 'view_report_rent_roll';
+    public const VIEW_REPORT_ARREARS = 'view_report_arrears';
+    public const VIEW_REPORT_BNB_PERFORMANCE = 'view_report_bnb_performance';
+    public const VIEW_REPORT_INCOME_STATEMENT = 'view_report_income_statement';
     public const MANAGE_EXPENSES = 'manage_expenses';
 
     public const SEND_ANNOUNCEMENTS = 'send_announcements';
@@ -111,7 +115,11 @@ class StaffPermissions
                 self::RESOLVE_MPESA_REVIEW => 'Resolve unmatched M-Pesa payments',
             ],
             'Reports & Expenses' => [
-                self::VIEW_REPORTS => 'View reports',
+                self::VIEW_REPORT_OVERVIEW => 'View Overview report (invoices & payments)',
+                self::VIEW_REPORT_RENT_ROLL => 'View Rent Roll report',
+                self::VIEW_REPORT_ARREARS => 'View Arrears / aging report',
+                self::VIEW_REPORT_BNB_PERFORMANCE => 'View BnB Performance report',
+                self::VIEW_REPORT_INCOME_STATEMENT => 'View Income Statement report',
                 self::MANAGE_EXPENSES => 'Manage expenses',
             ],
             'Announcements' => [
