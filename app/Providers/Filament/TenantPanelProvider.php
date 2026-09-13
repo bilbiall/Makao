@@ -51,7 +51,7 @@ class TenantPanelProvider extends PanelProvider
             ->databaseNotificationsPolling('10s')
             ->login()
             ->colors([
-                'primary' => \App\Support\BrandPalette::filamentColor(),
+                'primary' => \App\Support\BrandPalette::filamentColor(null, auth()->user()?->landlord_id),
             ])
             ->discoverResources(in: app_path('Filament/Tenant/Resources'), for: 'App\\Filament\\Tenant\\Resources')
             ->discoverPages(in: app_path('Filament/Tenant/Pages'), for: 'App\\Filament\\Tenant\\Pages')

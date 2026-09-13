@@ -7,10 +7,10 @@ $steps = [
 ];
 @endphp
 
-<section class="bg-white border-y border-slate-200">
+<section class="bg-white border-y border-slate-200 dark:bg-slate-900 dark:border-slate-800">
     <div class="max-w-6xl mx-auto px-6 py-24">
         <div class="text-center max-w-2xl mx-auto">
-            <h2 class="text-3xl font-bold text-slate-900">How it works</h2>
+            <h2 class="text-3xl font-bold text-slate-900 dark:text-slate-100">How it works</h2>
         </div>
 
         <div class="mt-14 grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -19,8 +19,8 @@ $steps = [
                     <div class="mx-auto md:mx-0 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600 text-white font-semibold">
                         {{ $step['n'] }}
                     </div>
-                    <h3 class="mt-4 font-semibold text-slate-900">{{ $step['title'] }}</h3>
-                    <p class="mt-1.5 text-sm text-slate-500">{{ $step['body'] }}</p>
+                    <h3 class="mt-4 font-semibold text-slate-900 dark:text-slate-100">{{ $step['title'] }}</h3>
+                    <p class="mt-1.5 text-sm text-slate-500 dark:text-slate-400">{{ $step['body'] }}</p>
                 </div>
             @endforeach
         </div>

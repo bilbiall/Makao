@@ -1,4 +1,6 @@
 <x-layouts.marketing>
+    <x-marketing.intent-popup />
+
     {{-- Hero --}}
     <section class="relative isolate">
         <img src="{{ asset('images/nairobi-skyline-hero.jpg') }}" alt="Nairobi skyline at golden hour" class="absolute inset-0 h-full w-full object-cover">

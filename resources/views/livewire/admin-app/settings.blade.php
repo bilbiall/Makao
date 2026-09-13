@@ -84,6 +84,41 @@
             </div>
 
             <div class="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">Branding</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400">The accent color used across your dashboard, tenant portal, and public listings. Leave on the platform default unless you want your own.</p>
+                @php
+                    $paletteSwatches = [
+                        'green' => ['label' => 'Green', 'hex' => '#059669'],
+                        'blue' => ['label' => 'Blue', 'hex' => '#2563eb'],
+                        'gold' => ['label' => 'Gold', 'hex' => '#d97706'],
+                        'red' => ['label' => 'Red', 'hex' => '#dc2626'],
+                    ];
+                @endphp
+                <div class="space-y-2">
+                    <label @class([
+                        'flex items-center gap-3 rounded-lg border p-3 cursor-pointer transition',
+                        'border-emerald-600 ring-1 ring-emerald-600 dark:border-emerald-500 dark:ring-emerald-500' => empty($data['brand_palette']),
+                        'border-slate-200 dark:border-slate-700' => !empty($data['brand_palette']),
+                    ])>
+                        <input type="radio" wire:model="data.brand_palette" value="" class="sr-only">
+                        <span class="h-8 w-8 rounded-full flex-shrink-0 border border-dashed border-slate-300 dark:border-slate-600"></span>
+                        <span class="text-sm font-medium text-slate-800 dark:text-slate-200">Platform default</span>
+                    </label>
+                    @foreach ($paletteSwatches as $key => $swatch)
+                        <label @class([
+                            'flex items-center gap-3 rounded-lg border p-3 cursor-pointer transition',
+                            'border-emerald-600 ring-1 ring-emerald-600 dark:border-emerald-500 dark:ring-emerald-500' => ($data['brand_palette'] ?? '') === $key,
+                            'border-slate-200 dark:border-slate-700' => ($data['brand_palette'] ?? '') !== $key,
+                        ])>
+                            <input type="radio" wire:model="data.brand_palette" value="{{ $key }}" class="sr-only">
+                            <span class="h-8 w-8 rounded-full flex-shrink-0 border border-black/10" style="background-color: {{ $swatch['hex'] }}"></span>
+                            <span class="text-sm font-medium text-slate-800 dark:text-slate-200">{{ $swatch['label'] }}</span>
+                        </label>
+                    @endforeach
+                </div>
+            </div>
+
+            <div class="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
                 <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">Verification</p>
                 <p class="text-xs text-slate-500 dark:text-slate-400">A "Verified" badge shown on your public listings once our team has reviewed your business.</p>
                 @php $verificationStatus = $this->landlord?->verification_status; @endphp

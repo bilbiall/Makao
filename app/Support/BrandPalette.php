@@ -21,17 +21,24 @@ class BrandPalette
         'red' => 'Red',
     ];
 
-    public static function current(): string
+    /**
+     * A specific landlord's own palette choice (Settings > General), falling back to
+     * the platform-wide default (superadmin's Platform Settings > Appearance) when
+     * that landlord hasn't picked one - same fallback semantics as every other
+     * Setting::effective() field. Pass null (or omit) for the platform-wide palette
+     * itself, e.g. on the public marketing site where no landlord is in play yet.
+     */
+    public static function current(?int $landlordId = null): string
     {
-        $palette = Setting::forLandlord(null)->payload['brand_palette'] ?? 'green';
+        $palette = Setting::effective($landlordId, 'brand_palette', 'green');
 
         return array_key_exists($palette, self::OPTIONS) ? $palette : 'green';
     }
 
     /** @return array<int, string> */
-    public static function filamentColor(?string $palette = null): array
+    public static function filamentColor(?string $palette = null, ?int $landlordId = null): array
     {
-        return match ($palette ?? self::current()) {
+        return match ($palette ?? self::current($landlordId)) {
             'blue' => Color::Blue,
             'gold' => Color::Amber,
             'red' => Color::Red,

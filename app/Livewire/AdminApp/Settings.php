@@ -66,6 +66,11 @@ class Settings extends Component
         // Same defaults as HasLandlordSettingsSchema, applied only where not already set.
         $defaults = [
             'app_name' => config('app.name'),
+            // Empty string, not a real palette key, so an unrelated save (e.g. editing
+            // Templates) never accidentally locks this landlord onto 'green' - Setting::
+            // effective()'s filled() check only falls back to the platform-wide palette
+            // while this stays blank. See BrandPalette::current().
+            'brand_palette' => '',
             'timezone' => 'Africa/Nairobi',
             'currency' => 'KES',
             'template_invoice' => SmsTemplateHelper::getDefaultTemplate('template_invoice'),

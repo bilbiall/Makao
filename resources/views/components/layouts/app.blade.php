@@ -7,7 +7,7 @@
     $allItems = \App\Support\AppNavigation::forRole($role);
     $profileRoute = \App\Support\AppNavigation::profileRoute($role);
     $filamentRoute = \App\Support\AppNavigation::filamentDashboardRoute($role);
-    $brandPalette = \App\Models\Setting::forLandlord(null)->payload['brand_palette'] ?? 'green';
+    $brandPalette = \App\Support\BrandPalette::current($user->landlord_id);
 @endphp
 <!DOCTYPE html>
 <html lang="en" data-palette="{{ $brandPalette }}" class="h-full bg-stone-50 dark:bg-slate-950">

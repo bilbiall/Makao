@@ -45,7 +45,7 @@ class AdminPanelProvider extends PanelProvider
             ->databaseNotificationsPolling('10s')
             ->login()
             ->colors([
-                'primary' => \App\Support\BrandPalette::filamentColor(),
+                'primary' => \App\Support\BrandPalette::filamentColor(null, auth()->user()?->landlord_id),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             // discoverPages already picks up App\Filament\Pages\Dashboard (this project's
