@@ -18,6 +18,7 @@ class ViewingRequest extends Model
     protected $fillable = [
         'user_id',
         'house_id',
+        'preferred_visit_date',
         'status',
         'requested_at',
         'admin_notes',
@@ -30,6 +31,7 @@ class ViewingRequest extends Model
     protected function casts(): array
     {
         return [
+            'preferred_visit_date' => 'date',
             'requested_at' => 'datetime',
             'contacted_at' => 'datetime',
         ];
@@ -50,25 +52,29 @@ class ViewingRequest extends Model
             try {
                 $house = $request->house;
                 $requester = $request->user;
+                $title = 'New Viewing Request';
+                $message = ($requester->name ?? 'A user') . " requested a viewing for {$house?->house_name}"
+                    . ($request->preferred_visit_date ? ', available ' . $request->preferred_visit_date->format('d M Y') : '') . '.';
 
-                // Notify the landlord/admins plus any manager/caretaker assigned to this house's location.
-                $staffUserIds = \App\Models\StaffAssignment::withoutGlobalScopes()
-                    ->where('location_id', $house?->location_id)
-                    ->pluck('user_id');
-
-                $recipients = \App\Models\User::where('landlord_id', $request->landlord_id)
-                    ->where(function ($q) use ($staffUserIds) {
-                        $q->whereIn('role', ['admin', 'landlord'])
-                            ->orWhereIn('id', $staffUserIds);
-                    })
-                    ->get();
-
-                foreach ($recipients as $recipient) {
+                foreach (static::notificationRecipients($request, $house) as $recipient) {
                     $recipient->notify(new \App\Notifications\DatabaseNotification(
-                        'New Viewing Request',
-                        ($requester->name ?? 'A user') . " requested a viewing for {$house?->house_name}.",
+                        $title,
+                        $message,
                         route('app.admin.viewing-requests')
                     ));
+
+                    if (filled($recipient->email)) {
+                        try {
+                            \App\Helpers\EmailHelper::send($recipient->email, $title, $message, $request->landlord_id);
+                        } catch (\Throwable $e) {
+                            \Illuminate\Support\Facades\Log::warning('Viewing request email failed', [
+                                'viewing_request_id' => $request->id,
+                                'landlord_id' => $request->landlord_id,
+                                'email' => $recipient->email,
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
+                    }
                 }
 
                 \App\Helpers\ActivityLogger::log(
@@ -80,6 +86,41 @@ class ViewingRequest extends Model
                 // ignore notification/logging errors
             }
         });
+    }
+
+    /**
+     * Who gets notified of a new request: whichever individual staff users and/or
+     * whole staff roles the landlord chose in Settings > Notifications (see
+     * App\Livewire\AdminApp\Settings), or - if they've never configured this - the
+     * same hardcoded default as before (admin/landlord + any manager/caretaker
+     * assigned to this house's location), so an unconfigured landlord's behavior
+     * doesn't change.
+     */
+    protected static function notificationRecipients(self $request, ?House $house)
+    {
+        $config = \App\Models\Setting::forLandlord($request->landlord_id)->payload['notifications']['viewing_requests'] ?? [];
+        $userIds = $config['user_ids'] ?? [];
+        $staffRoleIds = $config['staff_role_ids'] ?? [];
+
+        if (empty($userIds) && empty($staffRoleIds)) {
+            $staffUserIds = \App\Models\StaffAssignment::withoutGlobalScopes()
+                ->where('location_id', $house?->location_id)
+                ->pluck('user_id');
+
+            return \App\Models\User::where('landlord_id', $request->landlord_id)
+                ->where(function ($q) use ($staffUserIds) {
+                    $q->whereIn('role', ['admin', 'landlord'])
+                        ->orWhereIn('id', $staffUserIds);
+                })
+                ->get();
+        }
+
+        return \App\Models\User::where('landlord_id', $request->landlord_id)
+            ->where(function ($q) use ($userIds, $staffRoleIds) {
+                $q->whereIn('id', $userIds)
+                    ->orWhereIn('staff_role_id', $staffRoleIds);
+            })
+            ->get();
     }
 
     public function user()

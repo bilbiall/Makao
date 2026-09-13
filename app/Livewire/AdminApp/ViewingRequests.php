@@ -215,7 +215,7 @@ class ViewingRequests extends Component
 
         return $this->streamCsv(
             'viewing-requests.csv',
-            ['Requester', 'Phone', 'Email', 'House', 'Status', 'Requested At', 'Contacted At', 'Notes'],
+            ['Requester', 'Phone', 'Email', 'House', 'Status', 'Requested At', 'Available To Visit', 'Contacted At', 'Notes'],
             $requests->map(fn (ViewingRequest $request) => [
                 $request->user?->name,
                 $request->user?->phone_number,
@@ -223,6 +223,7 @@ class ViewingRequests extends Component
                 $request->house?->house_name,
                 $request->status,
                 optional($request->requested_at)->format('Y-m-d H:i'),
+                optional($request->preferred_visit_date)->format('Y-m-d'),
                 optional($request->contacted_at)->format('Y-m-d H:i'),
                 $request->admin_notes,
             ])

@@ -12,8 +12,15 @@
                     {{ $isWatchlisted ? 'Saved' : 'Save' }}
                 </button>
             </form>
-            <form method="POST" action="{{ route('listings.request-viewing', $house) }}">
+            <form method="POST" action="{{ route('listings.request-viewing', $house) }}" class="space-y-1.5">
                 @csrf
+                @unless ($pendingRequest)
+                    <div>
+                        <label class="text-xs font-medium text-slate-600 dark:text-slate-400">Available to visit on</label>
+                        <input type="date" name="preferred_visit_date" required min="{{ now()->toDateString() }}"
+                            class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+                    </div>
+                @endunless
                 <button type="submit" @disabled($pendingRequest) @class([
                     'w-full rounded-lg bg-emerald-600 text-sm font-semibold text-white hover:bg-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed',
                     'px-4 py-2.5' => $compact,

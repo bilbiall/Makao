@@ -61,6 +61,9 @@
                         <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{{ $request->user?->phone_number }}</p>
                         <p class="text-xs text-slate-500 dark:text-slate-400">{{ $request->house?->house_name ?? 'Unknown house' }} &middot; {{ $request->house?->location?->location_name }}</p>
                         <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">Requested {{ $request->requested_at?->format('d M Y, H:i') }}</p>
+                        @if ($request->preferred_visit_date)
+                            <p class="text-xs text-emerald-600 dark:text-emerald-400">Available to visit {{ $request->preferred_visit_date->format('d M Y') }}</p>
+                        @endif
                     </div>
                     <div class="flex flex-col items-end gap-1 flex-shrink-0">
                         <span @class([

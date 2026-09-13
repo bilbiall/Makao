@@ -47,6 +47,7 @@ class ViewingRequestResource extends Resource
                 Tables\Columns\TextColumn::make('house.house_name')->label('House')->searchable(),
                 Tables\Columns\TextColumn::make('house.location.location_name')->label('Property')->toggleable(),
                 Tables\Columns\TextColumn::make('requested_at')->label('Requested')->dateTime()->sortable(),
+                Tables\Columns\TextColumn::make('preferred_visit_date')->label('Available To Visit')->date()->toggleable(),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
                     ->color(fn (string $state) => match ($state) {

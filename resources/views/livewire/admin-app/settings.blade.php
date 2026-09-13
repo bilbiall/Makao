@@ -3,8 +3,8 @@
     // admin/superadmin - General (business info, set up during onboarding) stays
     // open to the property owner too, minus the app_name field itself (see below).
     $tabs = $this->isAdminRole()
-        ? ['general' => 'General', 'sms' => 'SMS', 'templates' => 'Templates', 'email' => 'Email', 'billing' => 'Billing', 'payments' => 'Payments']
-        : ['general' => 'General', 'templates' => 'Templates', 'billing' => 'Billing', 'payments' => 'Payments'];
+        ? ['general' => 'General', 'sms' => 'SMS', 'templates' => 'Templates', 'email' => 'Email', 'billing' => 'Billing', 'payments' => 'Payments', 'notifications' => 'Notifications']
+        : ['general' => 'General', 'templates' => 'Templates', 'billing' => 'Billing', 'payments' => 'Payments', 'notifications' => 'Notifications'];
     $inputClass = 'mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100';
     $labelClass = 'text-xs font-medium text-slate-600 dark:text-slate-400';
 @endphp
@@ -404,6 +404,39 @@
                             </button>
                         </div>
                     @endif
+                </div>
+            @endif
+        @elseif ($activeTab === 'notifications')
+            <div>
+                <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">New viewing request alerts</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Who should be notified (in-app and by email) when someone requests to view a property. Leave everything unchecked to keep the default - you, and any manager/caretaker assigned to that property.</p>
+            </div>
+            <div>
+                <label class="{{ $labelClass }}">Notify these staff members</label>
+                <div class="mt-1 max-h-56 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-700 divide-y divide-slate-100 dark:divide-slate-800">
+                    @forelse ($this->notifiableUsers as $notifiableUser)
+                        <label class="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-300">
+                            <input type="checkbox" wire:model="data.notifications.viewing_requests.user_ids" value="{{ $notifiableUser->id }}" class="rounded border-slate-300 dark:border-slate-600">
+                            {{ $notifiableUser->name }}
+                            <span class="text-xs text-slate-400 dark:text-slate-500">({{ ucfirst($notifiableUser->role) }}{{ $notifiableUser->staffRole ? ' - ' . $notifiableUser->staffRole->name : '' }})</span>
+                        </label>
+                    @empty
+                        <p class="px-3 py-2 text-xs text-slate-400 dark:text-slate-500">No staff accounts yet.</p>
+                    @endforelse
+                </div>
+            </div>
+            @if ($this->notifiableStaffRoles->count())
+                <div>
+                    <label class="{{ $labelClass }}">Or notify everyone with these staff roles</label>
+                    <p class="text-[11px] text-slate-400 dark:text-slate-500 mb-1">Whoever holds this role at the time - not just today's members.</p>
+                    <div class="mt-1 rounded-lg border border-slate-200 dark:border-slate-700 divide-y divide-slate-100 dark:divide-slate-800">
+                        @foreach ($this->notifiableStaffRoles as $notifiableRole)
+                            <label class="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-300">
+                                <input type="checkbox" wire:model="data.notifications.viewing_requests.staff_role_ids" value="{{ $notifiableRole->id }}" class="rounded border-slate-300 dark:border-slate-600">
+                                {{ $notifiableRole->name }}
+                            </label>
+                        @endforeach
+                    </div>
                 </div>
             @endif
         @endif

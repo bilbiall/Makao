@@ -121,7 +121,7 @@ class PropertyListingController extends Controller
         return back();
     }
 
-    public function requestViewing(House $house)
+    public function requestViewing(House $house, Request $request)
     {
         $user = Auth::user();
         abort_unless($user && $user->isUser(), 403, 'Only "looking for a house" accounts can request a viewing.');
@@ -134,9 +134,14 @@ class PropertyListingController extends Controller
             return back()->with('status', 'You already have a pending request for this house.');
         }
 
+        $validated = $request->validate([
+            'preferred_visit_date' => 'required|date|after_or_equal:today',
+        ]);
+
         ViewingRequest::create([
             'user_id' => $user->id,
             'house_id' => $house->id,
+            'preferred_visit_date' => $validated['preferred_visit_date'],
         ]);
 
         return back()->with('status', 'Viewing requested. The landlord will be in touch to arrange a visit.');

@@ -97,6 +97,9 @@ class Settings extends Component
             'smtp' => ['encryption' => 'tls'],
             'pesapal' => ['sandbox' => true, 'currency' => 'KES'],
             'mpesa' => ['sandbox' => true, 'currency' => 'KES'],
+            'notifications' => [
+                'viewing_requests' => ['user_ids' => [], 'staff_role_ids' => []],
+            ],
         ];
 
         $this->data = array_replace_recursive($defaults, $payload);
@@ -138,6 +141,24 @@ class Settings extends Component
     public function getLandlordProperty(): ?\App\Models\Landlord
     {
         return \App\Models\Landlord::find($this->targetLandlordId());
+    }
+
+    /** Staff-like accounts (never tenants/self-registered "user" accounts) this landlord could pick as a viewing-request notification recipient. */
+    public function getNotifiableUsersProperty()
+    {
+        return \App\Models\User::where('landlord_id', $this->targetLandlordId())
+            ->whereIn('role', ['admin', 'landlord', 'manager', 'caretaker', 'agent', 'staff'])
+            ->with('staffRole:id,name')
+            ->orderBy('name')
+            ->get();
+    }
+
+    /** This landlord's custom staff roles - picking one notifies every user currently assigned to it, not just today's members. */
+    public function getNotifiableStaffRolesProperty()
+    {
+        return \App\Models\StaffRole::where('landlord_id', $this->targetLandlordId())
+            ->orderBy('name')
+            ->get();
     }
 
     public function requestVerification(): void
@@ -251,6 +272,23 @@ class Settings extends Component
         }
 
         $payload = array_replace_recursive($payload, $incoming);
+
+        // array_replace_recursive merges numeric-indexed sub-arrays positionally
+        // (index-by-index) rather than replacing the whole list, so unchecking a
+        // notification recipient down to fewer ids than were previously saved would
+        // silently leave the old higher-index ids in place. Assign this key wholesale
+        // instead - $incoming always carries it (see the 'notifications' default above).
+        if (array_key_exists('notifications', $incoming)) {
+            // Checkbox values arrive as strings - normalize to ints so this matches
+            // the User/StaffRole primary keys they get whereIn()'d against later.
+            $vr = $incoming['notifications']['viewing_requests'] ?? [];
+            $incoming['notifications']['viewing_requests'] = [
+                'user_ids' => array_values(array_unique(array_map('intval', $vr['user_ids'] ?? []))),
+                'staff_role_ids' => array_values(array_unique(array_map('intval', $vr['staff_role_ids'] ?? []))),
+            ];
+
+            $payload['notifications'] = $incoming['notifications'];
+        }
 
         // Once admin/superadmin has actually configured a gateway and flips this
         // live, the landlord's own pending request (if any) is fulfilled.
