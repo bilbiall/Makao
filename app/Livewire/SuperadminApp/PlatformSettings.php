@@ -349,6 +349,14 @@ class PlatformSettings extends Component
         }
     }
 
+    /** Last time the everyMinute() heartbeat in routes/console.php actually ran - null
+     *  means the server cron has never called `schedule:run` since the cache was last
+     *  cleared/this key was introduced. See the System tab. */
+    public function getScheduleLastRanAtProperty(): ?\Carbon\Carbon
+    {
+        return \Illuminate\Support\Facades\Cache::get('renty_schedule_last_ran_at');
+    }
+
     public function render()
     {
         return view('livewire.superadmin-app.platform-settings')

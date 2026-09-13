@@ -1,5 +1,5 @@
 @php
-    $tabs = ['appearance' => 'Appearance', 'general' => 'General', 'ai' => 'AI Search', 'sms' => 'SMS', 'email' => 'Email', 'billing' => 'Subscription Billing'];
+    $tabs = ['appearance' => 'Appearance', 'general' => 'General', 'ai' => 'AI Search', 'sms' => 'SMS', 'email' => 'Email', 'billing' => 'Subscription Billing', 'system' => 'System'];
     $inputClass = 'mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100';
     $labelClass = 'text-xs font-medium text-slate-600 dark:text-slate-400';
     $paletteSwatches = [
@@ -339,11 +339,66 @@
                     <input type="text" wire:model="data.subscription_mpesa.currency" class="{{ $inputClass }}">
                 </div>
             </div>
+        @elseif ($activeTab === 'system')
+            <div>
+                <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">Scheduled jobs (cron)</p>
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    Every landlord's auto-invoicing, monthly recurring bill charges, and trial-expiry checks are all
+                    driven off a single server cron entry - not per landlord. Set this up once for the whole platform.
+                </p>
+            </div>
+
+            @php $lastRan = $this->scheduleLastRanAt; @endphp
+            <div @class([
+                'rounded-lg border p-3 text-sm flex items-center gap-2',
+                'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-400' => $lastRan && $lastRan->diffInMinutes(now()) < 5,
+                'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-500/10 dark:border-amber-500/20 dark:text-amber-400' => $lastRan && $lastRan->diffInMinutes(now()) >= 5,
+                'bg-rose-50 border-rose-200 text-rose-700 dark:bg-rose-500/10 dark:border-rose-500/20 dark:text-rose-400' => !$lastRan,
+            ])>
+                @if ($lastRan && $lastRan->diffInMinutes(now()) < 5)
+                    @svg('heroicon-o-check-circle', 'w-5 h-5 flex-shrink-0')
+                    <span>Cron is running - last confirmed {{ $lastRan->diffForHumans() }}.</span>
+                @elseif ($lastRan)
+                    @svg('heroicon-o-exclamation-triangle', 'w-5 h-5 flex-shrink-0')
+                    <span>Cron was running, but hasn't checked in since {{ $lastRan->diffForHumans() }} - it may have stopped. Verify the cron job on the server.</span>
+                @else
+                    @svg('heroicon-o-exclamation-triangle', 'w-5 h-5 flex-shrink-0')
+                    <span>No cron detected yet. Add the entry below on the server, then refresh this page in a couple of minutes.</span>
+                @endif
+            </div>
+
+            <div x-data="{ copied: false }">
+                <label class="{{ $labelClass }}">Cron entry - add in cPanel (Advanced &rarr; Cron Jobs), set to run every minute</label>
+                @php $cronLine = '* * * * * cd /home/youruser/path-to-your-app && php artisan schedule:run >> /dev/null 2>&1'; @endphp
+                <div class="mt-1 flex items-center gap-2">
+                    <code class="flex-1 block bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-[11px] text-slate-700 overflow-x-auto whitespace-nowrap dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300">{{ $cronLine }}</code>
+                    <button
+                        type="button"
+                        @click="navigator.clipboard.writeText('{{ $cronLine }}').then(() => { copied = true; setTimeout(() => copied = false, 2000) })"
+                        class="flex-shrink-0 rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                    >
+                        <span x-text="copied ? 'Copied!' : 'Copy'"></span>
+                    </button>
+                </div>
+                <p class="mt-1.5 text-[11px] text-slate-400 dark:text-slate-500">Replace <code>/home/youruser/path-to-your-app</code> with this app's actual path on the server (the folder containing <code>artisan</code>).</p>
+            </div>
+
+            <div class="rounded-lg bg-slate-50 border border-slate-200 p-3 text-xs text-slate-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 space-y-1">
+                <p class="font-semibold text-slate-700 dark:text-slate-300">What this one cron entry drives:</p>
+                <ul class="list-disc list-inside space-y-0.5">
+                    <li>Auto-invoicing, daily at 9:00 AM - only for landlords who've enabled it in their own Settings &gt; Billing.</li>
+                    <li>Recurring bill charges, daily at 8:00 AM (runs before auto-invoicing, so this month's bills exist in time to be invoiced).</li>
+                    <li>Trial/subscription expiry checks, daily - flips overdue landlord subscriptions to expired.</li>
+                </ul>
+                <p>No <code>queue:work</code> daemon is needed - jobs process synchronously, and most shared hosts don't allow a long-running process anyway.</p>
+            </div>
         @endif
 
-        <button wire:click="save" wire:loading.attr="disabled" wire:target="save" class="w-full rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60">
-            <span wire:loading.remove wire:target="save">Save</span>
-            <span wire:loading wire:target="save">Saving...</span>
-        </button>
+        @unless ($activeTab === 'system')
+            <button wire:click="save" wire:loading.attr="disabled" wire:target="save" class="w-full rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60">
+                <span wire:loading.remove wire:target="save">Save</span>
+                <span wire:loading wire:target="save">Saving...</span>
+            </button>
+        @endunless
     </div>
 </div>
