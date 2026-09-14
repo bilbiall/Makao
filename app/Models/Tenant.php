@@ -112,24 +112,57 @@ class Tenant extends Model
     }
 
     /**
-     * Sends the "you've been added as a tenant, here's your connect code" SMS -
-     * used both by the created-hook below (first admission) and by a PM's
-     * "Resend invite" action for a tenant who lost the original message.
+     * The message text for inviting/reminding this tenant to use the portal -
+     * shared by sendInviteSms() and inviteWhatsappUrl() so both channels say the
+     * same thing. Branches on connection status: a tenant who already linked a
+     * portal account (user_id set) has no live join_code to hand them
+     * (ConnectApartment::claim() only matches whereNull('user_id'), and clears
+     * join_code on claim), so re-sending the join-code text to them would be
+     * meaningless - they get a plain login reminder instead.
      */
-    public function sendInviteSms(): void
+    public function inviteMessage(): string
     {
-        $message = \App\Helpers\SmsTemplateHelper::render('template_tenant_invite', [
+        if ($this->user_id) {
+            return \App\Helpers\SmsTemplateHelper::render('template_tenant_reminder', [
+                'tenant_name' => $this->tenant_name,
+                'property_name' => $this->house?->location?->location_name ?? '',
+                'login_url' => route('generic.login'),
+            ], $this->landlord_id);
+        }
+
+        return \App\Helpers\SmsTemplateHelper::render('template_tenant_invite', [
             'tenant_name' => $this->tenant_name,
             'property_name' => $this->house?->location?->location_name ?? '',
             'code' => $this->join_code,
             'join_url' => route('app.user.connect'),
         ], $this->landlord_id);
+    }
 
+    /**
+     * Sends the invite/reminder SMS (see inviteMessage()) - used both by the
+     * created-hook below (first admission) and by a PM's "Resend invite" action
+     * for a tenant who lost the original message, connected or not.
+     */
+    public function sendInviteSms(): void
+    {
         try {
-            SmsHelper::sendSms($this->phone_number, $message, $this->landlord_id);
+            SmsHelper::sendSms($this->phone_number, $this->inviteMessage(), $this->landlord_id);
         } catch (\Throwable $e) {
             // ignore SMS failures (e.g. gateway not configured)
         }
+    }
+
+    /**
+     * wa.me link prefilled with the same invite/reminder text as sendInviteSms(),
+     * so a PM can send it manually over WhatsApp instead of (or alongside) SMS.
+     * Read-only - unlike the SMS action, this never regenerates join_code, since
+     * it's rendered on every table row load, not just on click.
+     */
+    public function inviteWhatsappUrl(): ?string
+    {
+        $base = \App\Support\PhoneNumber::toWhatsapp($this->phone_number);
+
+        return $base ? $base . '?text=' . urlencode($this->inviteMessage()) : null;
     }
 
 

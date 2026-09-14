@@ -80,6 +80,7 @@ class Settings extends Component
             'template_mass_reminder' => SmsTemplateHelper::getDefaultTemplate('template_mass_reminder'),
             'template_tenant_welcome' => SmsTemplateHelper::getDefaultTemplate('template_tenant_welcome'),
             'template_tenant_invite' => SmsTemplateHelper::getDefaultTemplate('template_tenant_invite'),
+            'template_tenant_reminder' => SmsTemplateHelper::getDefaultTemplate('template_tenant_reminder'),
             'template_notice_approved' => SmsTemplateHelper::getDefaultTemplate('template_notice_approved'),
             'template_notice_denied' => SmsTemplateHelper::getDefaultTemplate('template_notice_denied'),
             'template_password_reset_sms' => SmsTemplateHelper::getDefaultTemplate('template_password_reset_sms'),

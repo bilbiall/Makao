@@ -176,24 +176,35 @@ class TenantResource extends Resource
             ])
             ->actions([
                 Tables\Actions\Action::make('resend_invite')
-                    ->label('Resend invite')
+                    ->label(fn (Tenant $record) => $record->user_id ? 'Send login reminder' : 'Resend invite')
                     ->icon('heroicon-o-arrow-path')
                     ->color('warning')
-                    ->visible(fn (Tenant $record) => !$record->user_id)
                     ->requiresConfirmation()
-                    ->modalDescription('Generates a new code and re-sends the invite SMS to this tenant\'s phone number.')
+                    ->modalDescription(fn (Tenant $record) => $record->user_id
+                        ? 'Re-sends an SMS reminding this tenant to log in and check their account.'
+                        : 'Generates a new code and re-sends the invite SMS to this tenant\'s phone number.')
                     ->action(function (Tenant $record) {
-                        $record->update([
-                            'join_code' => Tenant::generateJoinCode(),
-                            'join_code_expires_at' => now()->addDays(14),
-                        ]);
+                        if (!$record->user_id) {
+                            $record->update([
+                                'join_code' => Tenant::generateJoinCode(),
+                                'join_code_expires_at' => now()->addDays(14),
+                            ]);
+                        }
+
                         $record->sendInviteSms();
 
                         \Filament\Notifications\Notification::make()
                             ->success()
-                            ->title('Invite resent')
+                            ->title($record->user_id ? 'Reminder sent' : 'Invite resent')
                             ->send();
                     }),
+                Tables\Actions\Action::make('invite_whatsapp')
+                    ->label(fn (Tenant $record) => $record->user_id ? 'Send reminder via WhatsApp' : 'Send invite via WhatsApp')
+                    ->icon('heroicon-s-chat-bubble-left')
+                    ->color('success')
+                    ->url(fn (Tenant $record) => $record->inviteWhatsappUrl())
+                    ->visible(fn (Tenant $record) => (bool) $record->inviteWhatsappUrl())
+                    ->openUrlInNewTab(),
                 Tables\Actions\Action::make('message')
                     ->label('Message')
                     ->icon('heroicon-s-chat-bubble-left')

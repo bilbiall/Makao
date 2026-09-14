@@ -246,6 +246,12 @@ trait HasLandlordSettingsSchema
                         ->default(\App\Helpers\SmsTemplateHelper::getDefaultTemplate('template_tenant_invite'))
                         ->rows(4),
 
+                    Forms\Components\Textarea::make('template_tenant_reminder')
+                        ->label('Tenant Reminder Template')
+                        ->helperText('Sent by "Resend invite" once a tenant has already connected an account - a plain login reminder instead of a join code, since their code no longer works. Variables: {tenant_name}, {property_name}, {login_url}, {app_name}')
+                        ->default(\App\Helpers\SmsTemplateHelper::getDefaultTemplate('template_tenant_reminder'))
+                        ->rows(4),
+
                     Forms\Components\Textarea::make('template_notice_approved')
                         ->label('Notice Approved Template')
                         ->helperText('Variables: {tenant_name}, {balance}, {approval_date}, {vacate_date}, {property_name}')

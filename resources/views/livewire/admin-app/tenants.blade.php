@@ -130,11 +130,16 @@
                                 class="flex-1 text-center rounded-lg border border-emerald-200 dark:border-emerald-500/30 py-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-400">
                                 WhatsApp
                             </a>
+                            <a href="{{ $tenant->inviteWhatsappUrl() }}" target="_blank"
+                                class="flex-1 text-center rounded-lg border border-emerald-200 dark:border-emerald-500/30 py-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                                {{ $tenant->user_id ? 'Send reminder' : 'Send invite' }}
+                            </a>
                         @endif
-                        @if (!$tenant->user_id && $canAdmitTenants)
-                            <button type="button" wire:click="resendInvite({{ $tenant->id }})" wire:confirm="Resend the invite code to {{ $tenant->tenant_name }}?"
+                        @if ($canAdmitTenants)
+                            <button type="button" wire:click="resendInvite({{ $tenant->id }})"
+                                wire:confirm="{{ $tenant->user_id ? 'Send a login reminder SMS to ' . $tenant->tenant_name . '?' : 'Resend the invite code to ' . $tenant->tenant_name . '?' }}"
                                 class="flex-1 rounded-lg border border-amber-200 dark:border-amber-500/30 py-1.5 text-xs font-medium text-amber-700 dark:text-amber-400">
-                                Resend invite
+                                {{ $tenant->user_id ? 'Send reminder' : 'Resend invite' }}
                             </button>
                         @endif
                         @if ($canEditTenants)

@@ -103,15 +103,18 @@ class Tenants extends Component
     {
         abort_unless(Auth::user()->hasPermission(StaffPermissions::ADMIT_TENANTS), 403);
 
-        $tenant = StaffScope::onTenant(Tenant::query())->whereNull('user_id')->findOrFail($tenantId);
+        $tenant = StaffScope::onTenant(Tenant::query())->findOrFail($tenantId);
 
-        $tenant->update([
-            'join_code' => Tenant::generateJoinCode(),
-            'join_code_expires_at' => now()->addDays(14),
-        ]);
+        if (!$tenant->user_id) {
+            $tenant->update([
+                'join_code' => Tenant::generateJoinCode(),
+                'join_code_expires_at' => now()->addDays(14),
+            ]);
+        }
+
         $tenant->sendInviteSms();
 
-        session()->flash('tenant-updated', 'Invite resent.');
+        session()->flash('tenant-updated', $tenant->user_id ? 'Reminder sent.' : 'Invite resent.');
     }
 
     public function viewTenant(int $tenantId): void
