@@ -4,7 +4,7 @@
     $role = $user->role;
     $tabItems = \App\Support\AppNavigation::tabItems($role);
     $moreItems = \App\Support\AppNavigation::moreItems($role);
-    $allItems = \App\Support\AppNavigation::forRole($role);
+    $navGroups = \App\Support\AppNavigation::groupedItems($role);
     $profileRoute = \App\Support\AppNavigation::profileRoute($role);
     $filamentRoute = \App\Support\AppNavigation::filamentDashboardRoute($role);
     $brandPalette = \App\Support\BrandPalette::current($user->landlord_id);
@@ -47,22 +47,23 @@
             <x-theme-toggle class="h-8 w-8 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-300" />
         </div>
         <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-            @foreach ($allItems as $item)
-                @php $active = request()->routeIs($item['route']); @endphp
-                <a href="{{ route($item['route']) }}"
-                   @class([
-                       'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition',
-                       'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400' => $active,
-                       'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100' => !$active,
-                   ])>
-                    @svg($item['icon'], 'w-5 h-5 flex-shrink-0')
-                    <span class="flex-1">{{ $item['label'] }}</span>
-                    @if ($item['label'] === 'Chat')
-                        <livewire:chat-unread-badge :key="'chat-badge-sidebar'" />
-                    @elseif ($item['label'] === 'Viewing Requests')
-                        <livewire:viewing-requests-badge :key="'viewing-requests-badge-sidebar'" />
-                    @endif
-                </a>
+            @foreach ($navGroups['ungrouped'] as $item)
+                <x-nav-item :item="$item" />
+            @endforeach
+
+            @foreach ($navGroups['groups'] as $group)
+                @php $groupActive = collect($group['items'])->contains(fn ($item) => request()->routeIs($item['route'])); @endphp
+                <details class="group/nav" @if ($groupActive) open @endif>
+                    <summary class="flex cursor-pointer list-none items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300">
+                        @svg('heroicon-o-chevron-right', 'w-3.5 h-3.5 flex-shrink-0 transition-transform group-open/nav:rotate-90')
+                        <span class="flex-1 normal-case tracking-normal text-[13px] font-medium text-slate-500 dark:text-slate-400">{{ $group['label'] }}</span>
+                    </summary>
+                    <div class="mt-0.5 space-y-1 pb-1">
+                        @foreach ($group['items'] as $item)
+                            <x-nav-item :item="$item" />
+                        @endforeach
+                    </div>
+                </details>
             @endforeach
         </nav>
         <div class="border-t border-slate-100 p-4 dark:border-slate-800">

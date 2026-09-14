@@ -32,36 +32,36 @@ class AppNavigation
             // in the existing Filament panel.
             'admin', 'landlord' => [
                 ['label' => 'Dashboard', 'icon' => 'heroicon-o-home', 'route' => 'app.admin.dashboard', 'tab' => true],
-                ['label' => 'Tenants', 'icon' => 'heroicon-o-users', 'route' => 'app.admin.tenants', 'tab' => true],
-                ['label' => 'Properties', 'icon' => 'heroicon-o-building-office-2', 'route' => 'app.admin.properties', 'tab' => true],
-                ['label' => 'Units', 'icon' => 'heroicon-o-home-modern', 'route' => 'app.admin.units', 'tab' => false],
-                ['label' => 'Viewing Requests', 'icon' => 'heroicon-o-calendar-days', 'route' => 'app.admin.viewing-requests', 'tab' => false],
-                ['label' => 'Users', 'icon' => 'heroicon-o-user-group', 'route' => 'app.admin.interested-users', 'tab' => false],
-                ['label' => 'Invoices', 'icon' => 'heroicon-o-credit-card', 'route' => 'app.admin.invoices', 'tab' => true],
-                ['label' => 'Payments', 'icon' => 'heroicon-o-banknotes', 'route' => 'app.admin.payments', 'tab' => false],
-                ['label' => 'M-Pesa Review', 'icon' => 'heroicon-o-device-phone-mobile', 'route' => 'app.admin.mpesa-review', 'tab' => false],
+                ['label' => 'Tenants', 'icon' => 'heroicon-o-users', 'route' => 'app.admin.tenants', 'tab' => true, 'group' => 'Tenants & Leasing'],
+                ['label' => 'Properties', 'icon' => 'heroicon-o-building-office-2', 'route' => 'app.admin.properties', 'tab' => true, 'group' => 'Properties'],
+                ['label' => 'Units', 'icon' => 'heroicon-o-home-modern', 'route' => 'app.admin.units', 'tab' => false, 'group' => 'Properties'],
+                ['label' => 'Viewing Requests', 'icon' => 'heroicon-o-calendar-days', 'route' => 'app.admin.viewing-requests', 'tab' => false, 'group' => 'Tenants & Leasing'],
+                ['label' => 'Users', 'icon' => 'heroicon-o-user-group', 'route' => 'app.admin.interested-users', 'tab' => false, 'group' => 'Tenants & Leasing'],
+                ['label' => 'Invoices', 'icon' => 'heroicon-o-credit-card', 'route' => 'app.admin.invoices', 'tab' => true, 'group' => 'Finance'],
+                ['label' => 'Payments', 'icon' => 'heroicon-o-banknotes', 'route' => 'app.admin.payments', 'tab' => false, 'group' => 'Finance'],
+                ['label' => 'M-Pesa Review', 'icon' => 'heroicon-o-device-phone-mobile', 'route' => 'app.admin.mpesa-review', 'tab' => false, 'group' => 'Finance'],
                 // No app-shell page exists for this yet (setup is rare, one-time) - links
                 // straight into the Filament panel rather than leaving it unreachable from
                 // the main nav, which is where a landlord actually lands by default.
-                ['label' => 'M-Pesa Setup Guide', 'icon' => 'heroicon-o-book-open', 'route' => 'app.admin.mpesa-guide', 'tab' => false],
-                ['label' => 'M-Pesa Channels', 'icon' => 'heroicon-o-key', 'route' => 'app.admin.mpesa-channels', 'tab' => false],
-                ['label' => 'Bills', 'icon' => 'heroicon-o-receipt-percent', 'route' => 'app.admin.bills', 'tab' => false],
-                ['label' => 'Bill Types', 'icon' => 'heroicon-o-adjustments-horizontal', 'route' => 'app.admin.bill-types', 'tab' => false],
-                ['label' => 'Announcements', 'icon' => 'heroicon-o-megaphone', 'route' => 'app.admin.announcements', 'tab' => false],
-                ['label' => 'Expenses', 'icon' => 'heroicon-o-banknotes', 'route' => 'app.admin.expenses', 'tab' => false],
-                ['label' => 'Issues', 'icon' => 'heroicon-o-wrench-screwdriver', 'route' => 'app.admin.issues', 'tab' => false],
-                ['label' => 'Notices', 'icon' => 'heroicon-o-flag', 'route' => 'app.admin.notices', 'tab' => false],
-                ['label' => 'Bookings', 'icon' => 'heroicon-o-calendar-days', 'route' => 'app.admin.bookings', 'tab' => false],
-                ['label' => 'Promotions', 'icon' => 'heroicon-o-tag', 'route' => 'app.admin.promotions', 'tab' => false],
-                ['label' => 'Inquiries', 'icon' => 'heroicon-o-question-mark-circle', 'route' => 'app.admin.inquiries', 'tab' => false],
-                ['label' => 'Analytics', 'icon' => 'heroicon-o-presentation-chart-line', 'route' => 'app.admin.analytics', 'tab' => false],
-                ['label' => 'Reports', 'icon' => 'heroicon-o-chart-bar', 'route' => 'app.admin.reports', 'tab' => false],
-                ['label' => 'Staff', 'icon' => 'heroicon-o-identification', 'route' => 'app.admin.users', 'tab' => false],
-                ['label' => 'Staff Roles', 'icon' => 'heroicon-o-shield-check', 'route' => 'app.admin.staff-roles', 'tab' => false],
-                ['label' => 'Logs', 'icon' => 'heroicon-o-clipboard-document-list', 'route' => 'app.admin.logs', 'tab' => false],
-                ['label' => 'Import Data', 'icon' => 'heroicon-o-arrow-up-tray', 'route' => 'app.admin.import-data', 'tab' => false],
+                ['label' => 'M-Pesa Setup Guide', 'icon' => 'heroicon-o-book-open', 'route' => 'app.admin.mpesa-guide', 'tab' => false, 'group' => 'Finance'],
+                ['label' => 'M-Pesa Channels', 'icon' => 'heroicon-o-key', 'route' => 'app.admin.mpesa-channels', 'tab' => false, 'group' => 'Finance'],
+                ['label' => 'Bills', 'icon' => 'heroicon-o-receipt-percent', 'route' => 'app.admin.bills', 'tab' => false, 'group' => 'Finance'],
+                ['label' => 'Bill Types', 'icon' => 'heroicon-o-adjustments-horizontal', 'route' => 'app.admin.bill-types', 'tab' => false, 'group' => 'Finance'],
+                ['label' => 'Announcements', 'icon' => 'heroicon-o-megaphone', 'route' => 'app.admin.announcements', 'tab' => false, 'group' => 'BnB & Marketing'],
+                ['label' => 'Expenses', 'icon' => 'heroicon-o-banknotes', 'route' => 'app.admin.expenses', 'tab' => false, 'group' => 'Finance'],
+                ['label' => 'Issues', 'icon' => 'heroicon-o-wrench-screwdriver', 'route' => 'app.admin.issues', 'tab' => false, 'group' => 'Operations'],
+                ['label' => 'Notices', 'icon' => 'heroicon-o-flag', 'route' => 'app.admin.notices', 'tab' => false, 'group' => 'Tenants & Leasing'],
+                ['label' => 'Bookings', 'icon' => 'heroicon-o-calendar-days', 'route' => 'app.admin.bookings', 'tab' => false, 'group' => 'BnB & Marketing'],
+                ['label' => 'Promotions', 'icon' => 'heroicon-o-tag', 'route' => 'app.admin.promotions', 'tab' => false, 'group' => 'BnB & Marketing'],
+                ['label' => 'Inquiries', 'icon' => 'heroicon-o-question-mark-circle', 'route' => 'app.admin.inquiries', 'tab' => false, 'group' => 'BnB & Marketing'],
+                ['label' => 'Analytics', 'icon' => 'heroicon-o-presentation-chart-line', 'route' => 'app.admin.analytics', 'tab' => false, 'group' => 'Insights'],
+                ['label' => 'Reports', 'icon' => 'heroicon-o-chart-bar', 'route' => 'app.admin.reports', 'tab' => false, 'group' => 'Insights'],
+                ['label' => 'Staff', 'icon' => 'heroicon-o-identification', 'route' => 'app.admin.users', 'tab' => false, 'group' => 'Team & Settings'],
+                ['label' => 'Staff Roles', 'icon' => 'heroicon-o-shield-check', 'route' => 'app.admin.staff-roles', 'tab' => false, 'group' => 'Team & Settings'],
+                ['label' => 'Logs', 'icon' => 'heroicon-o-clipboard-document-list', 'route' => 'app.admin.logs', 'tab' => false, 'group' => 'Team & Settings'],
+                ['label' => 'Import Data', 'icon' => 'heroicon-o-arrow-up-tray', 'route' => 'app.admin.import-data', 'tab' => false, 'group' => 'Team & Settings'],
                 ['label' => 'Chat', 'icon' => 'heroicon-o-chat-bubble-left-right', 'route' => 'app.admin.chat', 'tab' => false],
-                ['label' => 'Settings', 'icon' => 'heroicon-o-cog-6-tooth', 'route' => 'app.admin.settings', 'tab' => false],
+                ['label' => 'Settings', 'icon' => 'heroicon-o-cog-6-tooth', 'route' => 'app.admin.settings', 'tab' => false, 'group' => 'Team & Settings'],
             ],
             // Manager and Caretaker share an identical, trimmed nav for now (see the
             // Phase 1 plan for why) - missing Reports/Staff/Settings, matching
@@ -71,19 +71,19 @@ class AppNavigation
             // gate actions *within* these pages, not which pages are reachable at all.
             'caretaker', 'manager', 'staff' => [
                 ['label' => 'Dashboard', 'icon' => 'heroicon-o-home', 'route' => 'app.admin.dashboard', 'tab' => true],
-                ['label' => 'Tenants', 'icon' => 'heroicon-o-users', 'route' => 'app.admin.tenants', 'tab' => true],
-                ['label' => 'Properties', 'icon' => 'heroicon-o-building-office-2', 'route' => 'app.admin.properties', 'tab' => true],
-                ['label' => 'Units', 'icon' => 'heroicon-o-home-modern', 'route' => 'app.admin.units', 'tab' => false],
-                ['label' => 'Viewing Requests', 'icon' => 'heroicon-o-calendar-days', 'route' => 'app.admin.viewing-requests', 'tab' => false],
-                ['label' => 'Invoices', 'icon' => 'heroicon-o-credit-card', 'route' => 'app.admin.invoices', 'tab' => true],
-                ['label' => 'Payments', 'icon' => 'heroicon-o-banknotes', 'route' => 'app.admin.payments', 'tab' => false],
-                ['label' => 'M-Pesa Review', 'icon' => 'heroicon-o-device-phone-mobile', 'route' => 'app.admin.mpesa-review', 'tab' => false],
-                ['label' => 'Bills', 'icon' => 'heroicon-o-receipt-percent', 'route' => 'app.admin.bills', 'tab' => false],
-                ['label' => 'Bill Types', 'icon' => 'heroicon-o-adjustments-horizontal', 'route' => 'app.admin.bill-types', 'tab' => false],
-                ['label' => 'Announcements', 'icon' => 'heroicon-o-megaphone', 'route' => 'app.admin.announcements', 'tab' => false],
-                ['label' => 'Issues', 'icon' => 'heroicon-o-wrench-screwdriver', 'route' => 'app.admin.issues', 'tab' => false],
-                ['label' => 'Notices', 'icon' => 'heroicon-o-flag', 'route' => 'app.admin.notices', 'tab' => false],
-                ['label' => 'Bookings', 'icon' => 'heroicon-o-calendar-days', 'route' => 'app.admin.bookings', 'tab' => false],
+                ['label' => 'Tenants', 'icon' => 'heroicon-o-users', 'route' => 'app.admin.tenants', 'tab' => true, 'group' => 'Tenants & Leasing'],
+                ['label' => 'Properties', 'icon' => 'heroicon-o-building-office-2', 'route' => 'app.admin.properties', 'tab' => true, 'group' => 'Properties'],
+                ['label' => 'Units', 'icon' => 'heroicon-o-home-modern', 'route' => 'app.admin.units', 'tab' => false, 'group' => 'Properties'],
+                ['label' => 'Viewing Requests', 'icon' => 'heroicon-o-calendar-days', 'route' => 'app.admin.viewing-requests', 'tab' => false, 'group' => 'Tenants & Leasing'],
+                ['label' => 'Invoices', 'icon' => 'heroicon-o-credit-card', 'route' => 'app.admin.invoices', 'tab' => true, 'group' => 'Finance'],
+                ['label' => 'Payments', 'icon' => 'heroicon-o-banknotes', 'route' => 'app.admin.payments', 'tab' => false, 'group' => 'Finance'],
+                ['label' => 'M-Pesa Review', 'icon' => 'heroicon-o-device-phone-mobile', 'route' => 'app.admin.mpesa-review', 'tab' => false, 'group' => 'Finance'],
+                ['label' => 'Bills', 'icon' => 'heroicon-o-receipt-percent', 'route' => 'app.admin.bills', 'tab' => false, 'group' => 'Finance'],
+                ['label' => 'Bill Types', 'icon' => 'heroicon-o-adjustments-horizontal', 'route' => 'app.admin.bill-types', 'tab' => false, 'group' => 'Finance'],
+                ['label' => 'Announcements', 'icon' => 'heroicon-o-megaphone', 'route' => 'app.admin.announcements', 'tab' => false, 'group' => 'BnB & Marketing'],
+                ['label' => 'Issues', 'icon' => 'heroicon-o-wrench-screwdriver', 'route' => 'app.admin.issues', 'tab' => false, 'group' => 'Operations'],
+                ['label' => 'Notices', 'icon' => 'heroicon-o-flag', 'route' => 'app.admin.notices', 'tab' => false, 'group' => 'Tenants & Leasing'],
+                ['label' => 'Bookings', 'icon' => 'heroicon-o-calendar-days', 'route' => 'app.admin.bookings', 'tab' => false, 'group' => 'BnB & Marketing'],
                 ['label' => 'Chat', 'icon' => 'heroicon-o-chat-bubble-left-right', 'route' => 'app.admin.chat', 'tab' => false],
             ],
             // Agent is scoped to specific short_term houses only (staff_assignments.house_id)
@@ -121,6 +121,34 @@ class AppNavigation
             ],
             default => [],
         };
+    }
+
+    /**
+     * Desktop sidebar view of forRole(): items with no 'group' key stay as
+     * top-level links (kept short - just the handful used constantly, e.g.
+     * Dashboard/Chat); everything else is bucketed under its group label, in
+     * the order each group label first appears, so a long per-role list (27
+     * items for admin/landlord) collapses into a handful of sections the
+     * sidebar can render as collapsible groups instead of one long list.
+     */
+    public static function groupedItems(string $role): array
+    {
+        $ungrouped = [];
+        $groups = [];
+
+        foreach (static::forRole($role) as $item) {
+            $group = $item['group'] ?? null;
+
+            if ($group === null) {
+                $ungrouped[] = $item;
+                continue;
+            }
+
+            $groups[$group]['label'] ??= $group;
+            $groups[$group]['items'][] = $item;
+        }
+
+        return ['ungrouped' => $ungrouped, 'groups' => array_values($groups)];
     }
 
     public static function tabItems(string $role): array
