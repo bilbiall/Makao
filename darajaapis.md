@@ -270,8 +270,10 @@ Webhook URLs Safaricom calls **into** this app (all under your site's `APP_URL`)
 | Purpose | Path | Registered how |
 |---|---|---|
 | STK push result | `/api/mpesa/callback` | Sent automatically inside every STK push request - nothing to register manually |
-| C2B confirmation | `/api/mpesa/c2b/confirmation` | Registered once per shortcode via the **Register C2B** button |
-| C2B validation | `/api/mpesa/c2b/validation` | Registered at the same time, same button |
+| C2B confirmation | `/api/payments/c2b/confirmation` | Registered once per shortcode via the **Register C2B** button |
+| C2B validation | `/api/payments/c2b/validation` | Registered at the same time, same button |
+
+> Note the C2B paths don't contain the word "mpesa" - see Troubleshooting below for why.
 
 ## Troubleshooting
 
@@ -295,6 +297,15 @@ first.
 **C2B registration fails**
 Wrong credentials for that shortcode, or the shortcode is a Till rather than a
 Paybill (Tills can't do C2B account-number matching).
+
+**"Registration failed: Bad Request - Invalid ValidationURL - URL has the word MPESA"**
+An undocumented Safaricom restriction on the **live** `registerurl` endpoint
+(sandbox doesn't enforce it) - it rejects any Confirmation/ValidationURL that
+contains the literal word "mpesa". This app's C2B webhook URLs are already at
+`/api/payments/c2b/confirmation` and `/api/payments/c2b/validation` specifically
+to avoid this - if you still see this error, your `APP_URL` itself probably
+contains "mpesa" (e.g. a subdomain like `mpesa.example.com`), which you'll need
+to change.
 
 **C2B payments show up but always land as "needs_review"**
 Either the tenant wasn't told their `payment_account_code`, or their phone number on

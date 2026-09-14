@@ -117,8 +117,12 @@ class MpesaService
                 ->post($base . '/mpesa/c2b/v1/registerurl', [
                     'ShortCode' => $channel->business_shortcode,
                     'ResponseType' => 'Completed',
-                    'ConfirmationURL' => rtrim(config('app.url'), '/') . '/api/mpesa/c2b/confirmation',
-                    'ValidationURL' => rtrim(config('app.url'), '/') . '/api/mpesa/c2b/validation',
+                    // Deliberately NOT /api/mpesa/c2b/* - Safaricom's live registerurl
+                    // rejects any URL containing the word "mpesa" ("Bad Request - Invalid
+                    // ValidationURL - URL has the word MPESA"), sandbox doesn't enforce
+                    // it. See routes/api.php for the alternate route pair.
+                    'ConfirmationURL' => rtrim(config('app.url'), '/') . '/api/payments/c2b/confirmation',
+                    'ValidationURL' => rtrim(config('app.url'), '/') . '/api/payments/c2b/validation',
                 ]);
 
             $body = $response->json() ?? [];

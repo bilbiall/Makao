@@ -67,3 +67,21 @@ Route::post('/mpesa/c2b/validation', [\App\Http\Controllers\MpesaC2bController::
 Route::post('/mpesa/c2b/confirmation', [\App\Http\Controllers\MpesaC2bController::class, 'confirmation'])
     ->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class)
     ->name('api.mpesa.c2b.confirmation');
+
+/**
+ * Same two C2B webhooks, at an alternate path with no "mpesa" in it. Safaricom's
+ * live "Register C2B" endpoint (POST /mpesa/c2b/v1/registerurl) rejects any
+ * Confirmation/ValidationURL containing the substring "mpesa" with
+ * "Bad Request - Invalid ValidationURL - URL has the word MPESA" - undocumented,
+ * and sandbox doesn't enforce it, only live does. MpesaService::registerC2bUrls()
+ * registers these routes going forward; the /mpesa/c2b/* pair above is left
+ * running (not removed) so any channel already registered against it keeps
+ * receiving webhooks.
+ */
+Route::post('/payments/c2b/validation', [\App\Http\Controllers\MpesaC2bController::class, 'validation'])
+    ->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class)
+    ->name('api.c2b.validation');
+
+Route::post('/payments/c2b/confirmation', [\App\Http\Controllers\MpesaC2bController::class, 'confirmation'])
+    ->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class)
+    ->name('api.c2b.confirmation');
