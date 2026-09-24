@@ -6,6 +6,7 @@ use App\Helpers\EmailHelper;
 use App\Helpers\SmsHelper;
 use App\Models\Setting;
 use App\Services\OpenRouterCatalogService;
+use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -46,6 +47,25 @@ class PlatformSettings extends Page implements HasForms
         }
 
         $this->form->fill($payload);
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('view_investor_pitch')
+                ->label('Investor pitch')
+                ->icon('heroicon-o-presentation-chart-line')
+                ->color('gray')
+                ->url(route('investors'))
+                ->openUrlInNewTab(),
+
+            Action::make('view_rollout_plan')
+                ->label('Rollout plan')
+                ->icon('heroicon-o-map')
+                ->color('gray')
+                ->url(route('investors.rollout'))
+                ->openUrlInNewTab(),
+        ];
     }
 
     public function form(Form $form): Form

@@ -9,6 +9,12 @@ Route::get('/pricing', [MarketingController::class, 'pricing'])->name('pricing')
 Route::get('/privacy', [MarketingController::class, 'privacy'])->name('privacy');
 Route::get('/terms', [MarketingController::class, 'terms'])->name('terms');
 
+// Standalone investor pitch pages - self-contained HTML (own fonts/styles), served
+// as-is rather than through the marketing layout. Publicly viewable so the link is
+// shareable with investors without requiring a claude.ai account or org access.
+Route::get('/investors', fn () => response()->file(resource_path('pitch/investor-pitch.html')))->name('investors');
+Route::get('/investors/rollout', fn () => response()->file(resource_path('pitch/rollout-plan.html')))->name('investors.rollout');
+
 //generic login
 //Route::get('/login', fn () => view('generic-login'))->name('generic.login');
 //Route::post('/login', \App\Http\Controllers\GenericLoginController::class)->name('generic.login.attempt');

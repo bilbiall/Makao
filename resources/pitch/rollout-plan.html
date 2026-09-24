@@ -1,0 +1,487 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Renty Rollout Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#15181c;
+    --paper:#faf7f0;
+    --paper-dim:#f1ecdf;
+    --dusk:#26333f;
+    --dusk-2:#1d2831;
+    --marigold:#c9821f;
+    --marigold-ink:#7a4e0f;
+    --clay:#a8442c;
+    --renty:#0f7a4f;
+    --line:#e2dccb;
+    --ink-soft:#4a4740;
+    --card:#ffffff;
+    --shadow: 0 1px 2px rgba(21,24,28,.04), 0 8px 24px -12px rgba(21,24,28,.12);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ink:#f1ede3;
+      --paper:#14181b;
+      --paper-dim:#1b2024;
+      --dusk:#2c3a47;
+      --dusk-2:#233039;
+      --marigold:#e3a144;
+      --marigold-ink:#f6d19a;
+      --clay:#d97256;
+      --renty:#2fae7c;
+      --line:#333a3f;
+      --ink-soft:#b9b3a5;
+      --card:#1c2124;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 30px -14px rgba(0,0,0,.55);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ink:#f1ede3;
+    --paper:#14181b;
+    --paper-dim:#1b2024;
+    --dusk:#2c3a47;
+    --dusk-2:#233039;
+    --marigold:#e3a144;
+    --marigold-ink:#f6d19a;
+    --clay:#d97256;
+    --renty:#2fae7c;
+    --line:#333a3f;
+    --ink-soft:#b9b3a5;
+    --card:#1c2124;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 30px -14px rgba(0,0,0,.55);
+  }
+
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Archivo',ui-sans-serif,system-ui,sans-serif;
+    margin:0;
+    padding-inline:20px;
+    line-height:1.55;
+  }
+  h1,h2,h3,.display{
+    font-family:'Fraunces','Iowan Old Style',Georgia,serif;
+    font-weight:600;
+    text-wrap:balance;
+    letter-spacing:-0.01em;
+    color:var(--ink);
+  }
+  .wrap{max-width:840px;margin:0 auto;}
+  .wide{max-width:1080px;margin:0 auto;}
+
+  /* ---------- top bar ---------- */
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding-block:18px;
+    border-bottom:1px solid var(--line);
+    margin-bottom:48px;
+  }
+  .wordmark{font-family:'Fraunces',serif;font-weight:700;font-size:1.15rem;letter-spacing:-0.02em;}
+  .wordmark span{color:var(--renty);}
+  .topbar nav{display:flex;gap:18px;align-items:center;font-size:.85rem;}
+  .topbar a{color:var(--ink-soft);text-decoration:none;}
+  .topbar a:hover{color:var(--ink);}
+  .pill-link{
+    border:1px solid var(--line);
+    padding:7px 14px;border-radius:99px;
+    color:var(--ink) !important;
+    font-weight:600;
+  }
+
+  /* ---------- hero ---------- */
+  .eyebrow{
+    text-transform:uppercase;letter-spacing:.14em;font-size:.72rem;font-weight:700;
+    color:var(--marigold-ink);
+    display:inline-flex;align-items:center;gap:8px;
+  }
+  .eyebrow::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--marigold);display:inline-block;}
+  h1.hero{font-size:clamp(2rem,5.4vw,3.15rem);margin:14px 0 18px;line-height:1.05;}
+  .hero-sub{font-size:1.1rem;color:var(--ink-soft);max-width:640px;margin:0 0 30px;}
+
+  .stat-strip{
+    display:grid;grid-template-columns:repeat(4,1fr);
+    border:1px solid var(--line);border-radius:14px;overflow:hidden;
+    margin-bottom:56px;background:var(--card);box-shadow:var(--shadow);
+  }
+  .stat-strip .stat{padding:20px 18px;border-right:1px solid var(--line);}
+  .stat-strip .stat:last-child{border-right:none;}
+  .stat b{
+    display:block;font-family:'Fraunces',serif;font-size:1.7rem;font-weight:600;
+    font-variant-numeric:tabular-nums; letter-spacing:-.01em;
+  }
+  .stat span{font-size:.76rem;color:var(--ink-soft);}
+
+  /* ---------- section scaffolding ---------- */
+  section{margin-bottom:64px;}
+  .kicker{
+    display:flex;align-items:baseline;gap:12px;margin-bottom:6px;
+  }
+  .kicker .num{
+    font-family:'Fraunces',serif;color:var(--marigold);font-weight:600;font-size:1rem;
+  }
+  h2{font-size:1.7rem;margin:0 0 6px;}
+  .lede{color:var(--ink-soft);max-width:640px;margin:0 0 28px;font-size:1rem;}
+
+  /* ---------- readiness grid ---------- */
+  .cat{margin-bottom:26px;}
+  .cat h4{
+    font-family:'Archivo',sans-serif;font-weight:700;font-size:.8rem;
+    text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft);
+    margin:0 0 10px;
+  }
+  .chiplist{display:flex;flex-wrap:wrap;gap:8px;}
+  .chip{
+    display:flex;align-items:center;gap:7px;
+    border:1px solid var(--line);background:var(--card);
+    border-radius:9px;padding:8px 12px;font-size:.85rem;box-shadow:var(--shadow);
+  }
+  .chip.live::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--renty);flex:none;}
+  .chip.soon{color:var(--ink-soft);border-style:dashed;}
+  .chip.soon::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--clay);flex:none;}
+
+  .legend{display:flex;gap:20px;font-size:.78rem;color:var(--ink-soft);margin:18px 0 30px;}
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .legend i{width:7px;height:7px;border-radius:50%;display:inline-block;}
+  .legend .l1{background:var(--renty);}
+  .legend .l2{background:var(--clay);}
+
+  /* ---------- market stat cards ---------- */
+  .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px;}
+  .mcard{
+    border:1px solid var(--line);border-radius:14px;padding:20px;background:var(--card);box-shadow:var(--shadow);
+  }
+  .mcard b{
+    display:block;font-family:'Fraunces',serif;font-size:2rem;font-weight:600;color:var(--clay);
+    letter-spacing:-.01em; font-variant-numeric:tabular-nums;
+  }
+  .mcard p{margin:6px 0 0;font-size:.85rem;color:var(--ink-soft);}
+  .source-note{font-size:.75rem;color:var(--ink-soft);margin-top:6px;}
+
+  /* ---------- phases (numbered spine) ---------- */
+  .phase{
+    display:grid;grid-template-columns:64px 1fr;gap:0 24px;position:relative;
+  }
+  .phase + .phase{margin-top:8px;}
+  .phase .spine{position:relative;display:flex;flex-direction:column;align-items:center;}
+  .phase .marker{
+    width:40px;height:40px;border-radius:50%;background:var(--dusk);color:#f6f2e6;
+    display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:600;
+    font-size:1rem;flex:none;
+  }
+  :root[data-theme="light"] .phase .marker, :root:not([data-theme="dark"]) .phase .marker{color:#f6f2e6;}
+  .phase .thread{width:2px;flex:1;background:var(--line);margin-top:4px;}
+  .phase:last-child .thread{display:none;}
+  .phase-body{padding-bottom:44px;}
+  .phase-body h3{font-size:1.28rem;margin:6px 0 4px;}
+  .phase-meta{font-size:.78rem;color:var(--marigold-ink);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;}
+  .phase-body p.desc{color:var(--ink-soft);max-width:560px;margin:0 0 16px;}
+  .phase-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:22px;}
+  .deliverables{list-style:none;margin:0;padding:0;font-size:.88rem;}
+  .deliverables li{padding-left:20px;position:relative;margin-bottom:7px;}
+  .deliverables li::before{content:"→";position:absolute;left:0;color:var(--renty);font-weight:700;}
+  .sidebox{
+    background:var(--paper-dim);border:1px solid var(--line);border-radius:12px;padding:14px 16px;font-size:.82rem;
+    height:fit-content;
+  }
+  .sidebox dt{font-weight:700;color:var(--ink-soft);text-transform:uppercase;font-size:.68rem;letter-spacing:.07em;margin-top:10px;}
+  .sidebox dt:first-child{margin-top:0;}
+  .sidebox dd{margin:3px 0 0;}
+
+  /* ---------- team table ---------- */
+  table{width:100%;border-collapse:collapse;font-size:.87rem;}
+  th{
+    text-align:left;font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-soft);
+    padding:8px 12px;border-bottom:2px solid var(--line);
+  }
+  td{padding:12px;border-bottom:1px solid var(--line);vertical-align:top;}
+  tr:last-child td{border-bottom:none;}
+  .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--card);box-shadow:var(--shadow);}
+  .tag{
+    display:inline-block;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+    padding:2px 8px;border-radius:99px;background:var(--paper-dim);color:var(--ink-soft);
+  }
+
+  /* ---------- risk grid ---------- */
+  .risk-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .risk{border:1px solid var(--line);border-radius:12px;padding:16px 18px;background:var(--card);box-shadow:var(--shadow);}
+  .risk h5{margin:0 0 6px;font-size:.92rem;display:flex;align-items:center;gap:8px;}
+  .risk h5::before{content:"!";width:18px;height:18px;border-radius:5px;background:var(--clay);color:#fff;font-size:.7rem;
+    display:flex;align-items:center;justify-content:center;font-weight:800;flex:none;font-family:'Archivo',sans-serif;}
+  .risk p{margin:0;font-size:.83rem;color:var(--ink-soft);}
+
+  /* ---------- kpi row ---------- */
+  .kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;}
+  .kpi{border:1px solid var(--line);border-radius:12px;padding:14px;text-align:center;background:var(--card);box-shadow:var(--shadow);}
+  .kpi b{display:block;font-family:'Fraunces',serif;font-size:1.05rem;}
+  .kpi span{font-size:.72rem;color:var(--ink-soft);}
+
+  blockquote{
+    border-left:3px solid var(--marigold);margin:0;padding:4px 0 4px 20px;
+    font-family:'Fraunces',serif;font-size:1.3rem;font-weight:500;line-height:1.4;color:var(--ink);
+  }
+
+  footer{
+    border-top:1px solid var(--line);padding:32px 0 60px;margin-top:20px;
+    font-size:.78rem;color:var(--ink-soft);
+  }
+  footer a{color:var(--ink-soft);}
+  footer .sources{margin-top:10px;}
+  footer .sources a{display:block;margin-bottom:3px;}
+
+  @media (max-width:760px){
+    .stat-strip{grid-template-columns:repeat(2,1fr);}
+    .stat-strip .stat:nth-child(2){border-right:none;}
+    .stat-grid{grid-template-columns:1fr;}
+    .phase{grid-template-columns:44px 1fr;}
+    .phase .marker{width:32px;height:32px;font-size:.85rem;}
+    .phase-grid{grid-template-columns:1fr;}
+    .risk-grid{grid-template-columns:1fr;}
+    .kpi-row{grid-template-columns:repeat(2,1fr);}
+  }
+</style>
+
+<div class="wrap">
+  <div class="topbar">
+    <div class="wordmark">Renty<span>.</span></div>
+    <nav>
+      <a href="#readiness">Product</a>
+      <a href="#rollout">Rollout</a>
+      <a href="#team">Team</a>
+      <a href="#risks">Risks</a>
+      <a class="pill-link" id="pitch-link" href="/investors" target="_blank" rel="noopener">View the pitch →</a>
+    </nav>
+  </div>
+
+  <span class="eyebrow">National rollout plan · Internal</span>
+  <h1 class="hero">From a Nairobi pilot to every county town in Kenya.</h1>
+  <p class="hero-sub">A concrete, phased plan for taking Renty — property management, tenant self-service, and M-Pesa-native payments in one platform — from a working product to the operating system for rental housing across Kenya, city by city.</p>
+
+  <div class="stat-strip">
+    <div class="stat"><b>53.3M</b><span>People in Kenya, mid-2025</span></div>
+    <div class="stat"><b>~90%</b><span>Of urban households rent their home</span></div>
+    <div class="stat"><b>90%+</b><span>Mobile money penetration nationally</span></div>
+    <div class="stat"><b>5</b><span>Cities in the first 18 months</span></div>
+  </div>
+
+  <section id="readiness">
+    <div class="kicker"><span class="num">01</span><h2>Where the product stands today</h2></div>
+    <p class="lede">This isn't a slide-deck product. Every capability below is built, tested against real data, and running. The rollout plan that follows is a go-to-market and hiring plan on top of a platform that already works.</p>
+
+    <div class="cat">
+      <h4>Core operations</h4>
+      <div class="chiplist">
+        <span class="chip live">Property → unit hierarchy with photo upload &amp; auto-compression</span>
+        <span class="chip live">Bulk CSV import for landlords migrating from spreadsheets</span>
+        <span class="chip live">Long-term rentals and short-stay/BnB in one system</span>
+        <span class="chip live">Viewing requests, notices to vacate, maintenance issues</span>
+        <span class="chip live">Custom, per-property recurring bill types (water, trash, security…)</span>
+      </div>
+    </div>
+
+    <div class="cat">
+      <h4>Payments &amp; fintech</h4>
+      <div class="chiplist">
+        <span class="chip live">M-Pesa STK Push ("Pay Now") — per property Daraja credentials</span>
+        <span class="chip live">M-Pesa C2B — auto-reconciles Paybill payments with zero tenant action</span>
+        <span class="chip live">Automatic invoicing, balances, and payment history</span>
+        <span class="chip live">Pesapal card/bank fallback</span>
+      </div>
+    </div>
+
+    <div class="cat">
+      <h4>Tenant experience</h4>
+      <div class="chiplist">
+        <span class="chip live">Self-service tenant portal — invoices, bills, payments, issues</span>
+        <span class="chip live">SMS invite codes — tenants self-verify and join their own tenancy</span>
+        <span class="chip live">SMS + email announcements, sent to a property or the whole portfolio</span>
+        <span class="chip live">AI chat assistant for public property search</span>
+      </div>
+    </div>
+
+    <div class="cat">
+      <h4>Access, discovery &amp; scale</h4>
+      <div class="chiplist">
+        <span class="chip live">Multi-landlord SaaS isolation with a superadmin console</span>
+        <span class="chip live">Custom staff roles — granular, delegable permissions per employee</span>
+        <span class="chip live">Public search &amp; discovery site, installable as a mobile app (PWA)</span>
+        <span class="chip soon">Native Android app (TWA wrapper in progress)</span>
+        <span class="chip soon">WhatsApp Business messaging (deliberately deferred — see risks)</span>
+        <span class="chip soon">Assisted identity/KYC verification for listings</span>
+      </div>
+    </div>
+    <div class="legend"><span><i class="l1"></i>Live in production today</span><span><i class="l2"></i>Near-term roadmap</span></div>
+  </section>
+
+  <section id="market">
+    <div class="kicker"><span class="num">02</span><h2>Why Kenya, why now</h2></div>
+    <p class="lede">Kenya combines two things that rarely coexist in emerging rental markets: near-universal digital payments, and a rental sector that is almost entirely run on paper.</p>
+    <div class="stat-grid">
+      <div class="mcard"><b>91%</b><p>Of Nairobi households are tenants, not owners — one of the highest urban rental rates in the world.</p></div>
+      <div class="mcard"><b>90%+</b><p>Mobile money penetration — Kenyans already pay rent by M-Pesa, they just do it with no digital record on the landlord's side.</p></div>
+      <div class="mcard"><b>77%</b><p>Of Kenyan rental stock is flats and apartments — multi-unit buildings that are painful to run from a notebook once portfolios grow.</p></div>
+    </div>
+    <p class="source-note">Sources: Kenya National Bureau of Statistics population projections; Central Bank of Kenya / industry mobile-money penetration reporting, 2025; national housing survey data on urban tenure and rental stock composition. Figures are the most recent publicly reported estimates at time of writing and should be re-verified before external use in formal materials.</p>
+    <blockquote>The gap Renty closes isn't payments — Kenyans already pay by M-Pesa. It's that nobody on the landlord's side can prove who paid, for what, or when.</blockquote>
+  </section>
+
+  <section id="rollout">
+    <div class="kicker"><span class="num">03</span><h2>The rollout sequence</h2></div>
+    <p class="lede">Five phases, each with an exit condition before moving to the next. Early phases are deliberately small and hands-on — the goal is a repeatable playbook, not raw speed.</p>
+
+    <div class="phase">
+      <div class="spine"><div class="marker">0</div><div class="thread"></div></div>
+      <div class="phase-body">
+        <div class="phase-meta">Months 1–3 · Nairobi beachhead</div>
+        <h3>Prove the playbook with 10–20 landlords</h3>
+        <p class="desc">Founder-led, concierge onboarding in one or two Nairobi neighborhoods. Every landlord is onboarded personally — the goal is to learn what breaks, not to scale yet.</p>
+        <div class="phase-grid">
+          <ul class="deliverables">
+            <li>Onboard 10–20 landlords, 150–300 units, across a mix of long-term and BnB</li>
+            <li>Every landlord live on M-Pesa STK Push and/or C2B within their first week</li>
+            <li>Weekly founder check-ins — collect friction points directly, ship fixes fast</li>
+            <li>Referral loop: happy landlords introduce the next cohort</li>
+          </ul>
+          <dl class="sidebox">
+            <dt>Team</dt><dd>Founder only</dd>
+            <dt>Exit criteria</dt><dd>≥80% of onboarded landlords still active after 60 days; at least one unprompted referral</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="spine"><div class="marker">1</div><div class="thread"></div></div>
+      <div class="phase-body">
+        <div class="phase-meta">Months 4–6 · Nairobi scale-out</div>
+        <h3>Turn the playbook into a repeatable motion</h3>
+        <p class="desc">Expand across the wider Nairobi metro (5.8M+ people). First hires come in to remove the founder as the bottleneck.</p>
+        <div class="phase-grid">
+          <ul class="deliverables">
+            <li>Hire a Customer Success / Onboarding lead and a support agent</li>
+            <li>Ship a self-serve onboarding flow so not every landlord needs a personal walkthrough</li>
+            <li>Launch a caretaker/agent referral incentive (caretakers already have a role in the product)</li>
+            <li>First paid marketing test: Facebook/WhatsApp groups where Nairobi landlords already trade advice</li>
+          </ul>
+          <dl class="sidebox">
+            <dt>Team</dt><dd>+2 (CS lead, support agent)</dd>
+            <dt>Exit criteria</dt><dd>100+ landlords, MRR covers CS + support headcount</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="spine"><div class="marker">2</div><div class="thread"></div></div>
+      <div class="phase-body">
+        <div class="phase-meta">Months 7–10 · Mombasa &amp; Kisumu</div>
+        <h3>First proof the model travels outside Nairobi</h3>
+        <p class="desc">Coast (Mombasa, 1.5M+) and the lake region (Kisumu) — different tenant mix, different BnB seasonality, first real test of the platform outside the capital.</p>
+        <div class="phase-grid">
+          <ul class="deliverables">
+            <li>Hire one City Launch Lead per city — local, on the ground, commission-driven</li>
+            <li>Partner with local real-estate agent associations for warm introductions</li>
+            <li>Localize SMS templates and support hours to each city</li>
+            <li>Stand up city-level dashboards to compare unit economics against Nairobi</li>
+          </ul>
+          <dl class="sidebox">
+            <dt>Team</dt><dd>+2 City Launch Leads</dd>
+            <dt>Exit criteria</dt><dd>Each city independently profitable on a per-landlord basis within 4 months of launch</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="spine"><div class="marker">3</div><div class="thread"></div></div>
+      <div class="phase-body">
+        <div class="phase-meta">Months 11–14 · The growth corridor</div>
+        <h3>Nakuru, Eldoret, Thika, Nyeri</h3>
+        <p class="desc">Fast-growing secondary towns along Kenya's main economic corridor. Smaller portfolios per landlord, higher volume of landlords — the playbook shifts toward volume, not white-glove onboarding.</p>
+        <div class="phase-grid">
+          <ul class="deliverables">
+            <li>Reuse the Mombasa/Kisumu playbook — no new product work required</li>
+            <li>Introduce a lightweight reseller/agent commission model for smaller towns</li>
+            <li>First dedicated backend hire to keep reliability high as landlord count grows</li>
+          </ul>
+          <dl class="sidebox">
+            <dt>Team</dt><dd>+1 backend engineer, +reseller network</dd>
+            <dt>Exit criteria</dt><dd>Reseller-sourced landlords convert at ≥ the direct-sales rate</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <div class="phase">
+      <div class="spine"><div class="marker">4</div></div>
+      <div class="phase-body">
+        <div class="phase-meta">Months 15–24 · National coverage</div>
+        <h3>Every county town, product-led</h3>
+        <p class="desc">By now the product, support model, and reseller network should carry most new growth without a city-by-city launch team.</p>
+        <div class="phase-grid">
+          <ul class="deliverables">
+            <li>Self-serve signup is the default path for new landlords, everywhere</li>
+            <li>Reseller network covers remaining county towns</li>
+            <li>Evaluate the payments-take-rate revenue lever once volume justifies it (see the investor pitch)</li>
+          </ul>
+          <dl class="sidebox">
+            <dt>Team</dt><dd>Stable core team + reseller network</dd>
+            <dt>Exit criteria</dt><dd>National footprint reached; shift focus to depth (more units per landlord) over breadth</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="team">
+    <div class="kicker"><span class="num">04</span><h2>Team &amp; hiring plan</h2></div>
+    <p class="lede">Lean by design — each hire is tied to a specific phase above, not made ahead of need.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Role</th><th>Brought on</th><th>Responsible for</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Founder / CEO</strong></td><td><span class="tag">Now</span></td><td>Product direction, Phase 0 sales, fundraising</td></tr>
+          <tr><td>Customer Success &amp; Onboarding Lead</td><td><span class="tag">Phase 1</span></td><td>Landlord onboarding, retention, the referral loop</td></tr>
+          <tr><td>Support Agent (Swahili/English)</td><td><span class="tag">Phase 1</span></td><td>Tenant &amp; landlord support, WhatsApp/phone lines</td></tr>
+          <tr><td>City Launch Lead <em>(× city cluster)</em></td><td><span class="tag">Phase 2</span></td><td>Local sales, agent partnerships, on-the-ground trust-building</td></tr>
+          <tr><td>Backend/Platform Engineer</td><td><span class="tag">Phase 3</span></td><td>Reliability, M-Pesa/SMS scale, new feature velocity</td></tr>
+          <tr><td>Finance &amp; Ops Lead</td><td><span class="tag">Phase 3</span></td><td>Billing operations, reseller payouts, compliance</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="risks">
+    <div class="kicker"><span class="num">05</span><h2>Risks &amp; how we handle them</h2></div>
+    <div class="risk-grid">
+      <div class="risk"><h5>Daraja / M-Pesa API dependency</h5><p>Payments are the product's core value and run entirely through Safaricom's Daraja API. Mitigation: Pesapal already exists as a card/bank fallback; monitor Daraja status proactively.</p></div>
+      <div class="risk"><h5>SMS costs at scale</h5><p>Bills, reminders and announcements all send SMS. Mitigation: email is a free second channel (already built), and SMS volume is directly tied to paying landlord count, so it scales with revenue.</p></div>
+      <div class="risk"><h5>Displacing an entrenched manual habit</h5><p>Landlords have run rent books and WhatsApp groups for years. Mitigation: concierge onboarding in Phase 0 exists specifically to remove friction, not add it.</p></div>
+      <div class="risk"><h5>Kenya Data Protection Act, 2019</h5><p>Tenant PII (ID numbers, payment history) is sensitive. Mitigation: manual, founder-reviewed verification instead of a third-party KYC vendor until volume justifies the cost and the compliance overhead that comes with it.</p></div>
+      <div class="risk"><h5>Informal competition</h5><p>The real competitor isn't another SaaS tool — it's a WhatsApp group and a notebook. Mitigation: the product has to be strictly easier than doing nothing, which is why onboarding speed is an explicit Phase 0/1 metric.</p></div>
+      <div class="risk"><h5>WhatsApp integration, deliberately not built yet</h5><p>Considered and explicitly deferred — official Meta Cloud API requires dedicating a business number exclusively, unofficial libraries are unreliable. Revisit once a city lead needs it operationally.</p></div>
+    </div>
+  </section>
+
+  <section id="kpis">
+    <div class="kicker"><span class="num">06</span><h2>What we watch every week</h2></div>
+    <div class="kpi-row">
+      <div class="kpi"><b>Landlords onboarded</b><span>cumulative, by city</span></div>
+      <div class="kpi"><b>Units under management</b><span>cumulative</span></div>
+      <div class="kpi"><b>M-Pesa GMV processed</b><span>KES / month</span></div>
+      <div class="kpi"><b>MRR</b><span>subscription revenue</span></div>
+      <div class="kpi"><b>60-day retention</b><span>% still active</span></div>
+    </div>
+  </section>
+
+  <footer>
+    <div>Renty Rollout Plan · internal planning document · not for external distribution without review.</div>
+    <div class="sources">
+      Market figures referenced above: Kenya National Bureau of Statistics population projections (2025); Central Bank of Kenya / Communications Authority mobile-money penetration data (2025); published national housing survey estimates on urban tenure and rental housing stock. Verify before quoting externally.
+    </div>
+  </footer>
+</div>
+
+</body></html>
