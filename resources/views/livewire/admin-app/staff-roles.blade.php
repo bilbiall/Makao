@@ -101,9 +101,40 @@
                 </div>
             </div>
         @empty
-            <div class="rounded-2xl bg-white border border-slate-200 p-8 text-center text-sm text-slate-500 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400">
-                No custom staff roles yet - staff you create still default to Manager/Caretaker/Agent until you make one here.
+            <div class="rounded-2xl bg-white border border-slate-200 p-6 text-center text-sm text-slate-500 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400">
+                No custom staff roles yet - staff you create still default to one of the built-in roles below until you make one here.
             </div>
         @endforelse
+    </div>
+
+    <div class="space-y-3">
+        <div>
+            <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">Built-in roles</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Every staff account without a custom role assigned falls back to one of these - fixed, not editable here.</p>
+        </div>
+        @foreach ($builtInRoles as $role)
+            <div class="rounded-2xl bg-slate-50 border border-slate-200 p-4 dark:bg-slate-900/40 dark:border-slate-800">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <p class="font-semibold text-slate-900 dark:text-slate-100">{{ $role['name'] }}</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                            {{ $role['scope_type'] === 'house' ? 'Unit-based' : 'Property-based' }}
+                            &middot; {{ $role['scope_type'] === 'house' ? 'sees only their directly assigned units' : 'sees everything in their assigned properties' }}
+                        </p>
+                    </div>
+                    <span class="rounded-full bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-300 px-2.5 py-0.5 text-xs font-medium flex-shrink-0">
+                        Built-in
+                    </span>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                    {{ count($role['permissions']) }} of {{ count(\App\Support\StaffPermissions::all()) }} permissions
+                    @if (count($role['permissions']) < count(\App\Support\StaffPermissions::all()))
+                        (bookings only)
+                    @else
+                        (full access)
+                    @endif
+                </p>
+            </div>
+        @endforeach
     </div>
 </div>

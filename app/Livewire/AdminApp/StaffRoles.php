@@ -95,6 +95,33 @@ class StaffRoles extends Component
         return view('livewire.admin-app.staff-roles', [
             'roles' => $roles,
             'catalog' => StaffPermissions::catalog(),
+            'builtInRoles' => $this->builtInRoles(),
         ])->layout('components.layouts.app', ['title' => 'Staff Roles']);
+    }
+
+    /**
+     * The three legacy roles every staff account still falls back to until a
+     * custom staff role is created and assigned - shown read-only alongside the
+     * custom roles list so a landlord can see what scope/permissions "Manager",
+     * "Caretaker" and "Agent" already carry before deciding whether they need
+     * something different. Mirrors StaffScope (property vs unit scope) and
+     * StaffPermissions::defaultFor() (which slugs each one carries) exactly -
+     * this is presentation only, not a second source of truth for the rules.
+     */
+    protected function builtInRoles(): array
+    {
+        $all = StaffPermissions::all();
+
+        return collect([
+            ['role' => 'manager', 'name' => 'Manager', 'scope_type' => 'location'],
+            ['role' => 'caretaker', 'name' => 'Caretaker', 'scope_type' => 'location'],
+            ['role' => 'agent', 'name' => 'Agent', 'scope_type' => 'house'],
+        ])->map(function (array $r) use ($all) {
+            $r['permissions'] = array_values(array_filter(
+                $all,
+                fn (string $slug) => StaffPermissions::defaultFor($r['role'], $slug)
+            ));
+            return $r;
+        })->all();
     }
 }
