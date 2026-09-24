@@ -13,7 +13,7 @@
     --marigold:#c9821f;
     --marigold-ink:#7a4e0f;
     --clay:#a8442c;
-    --renty:#0f7a4f;
+    --renty:#d97706; /* brand accent - matches the platform's current Gold setting (Platform Settings > Appearance); overridden live by the palette switcher below */
     --line:#e2dccb;
     --ink-soft:#4a4740;
     --card:#ffffff;
@@ -23,14 +23,14 @@
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
       --ink:#f1ede3; --paper:#12161a; --paper-dim:#191e22; --dusk:#2c3a47; --dusk-2:#212b32;
-      --marigold:#e3a144; --marigold-ink:#f6d19a; --clay:#d97256; --renty:#2fae7c;
+      --marigold:#e3a144; --marigold-ink:#f6d19a; --clay:#d97256; --renty:#fbbf24;
       --line:#31383d; --ink-soft:#b9b3a5; --card:#1b2024; --chrome:#242a2e;
       --shadow: 0 1px 2px rgba(0,0,0,.4), 0 24px 50px -20px rgba(0,0,0,.65);
     }
   }
   :root[data-theme="dark"]{
     --ink:#f1ede3; --paper:#12161a; --paper-dim:#191e22; --dusk:#2c3a47; --dusk-2:#212b32;
-    --marigold:#e3a144; --marigold-ink:#f6d19a; --clay:#d97256; --renty:#2fae7c;
+    --marigold:#e3a144; --marigold-ink:#f6d19a; --clay:#d97256; --renty:#fbbf24;
     --line:#31383d; --ink-soft:#b9b3a5; --card:#1b2024; --chrome:#242a2e;
     --shadow: 0 1px 2px rgba(0,0,0,.4), 0 24px 50px -20px rgba(0,0,0,.65);
   }
@@ -52,6 +52,21 @@
   .wordmark span{color:var(--renty);}
   .topbar a{color:var(--ink-soft);text-decoration:none;font-size:.85rem;}
   .pill-link{border:1px solid var(--line);padding:7px 14px;border-radius:99px;font-weight:600;color:var(--ink)!important;}
+
+  /* live theme + brand-color demo - proves the white-label palette feature is real */
+  .topbar-right{display:flex;align-items:center;gap:14px;}
+  .theme-toggle{
+    width:34px;height:34px;border-radius:50%;flex:none;
+    border:1px solid var(--line);background:var(--card);box-shadow:var(--shadow);
+    display:flex;align-items:center;justify-content:center;font-size:1rem;line-height:1;
+    color:var(--ink-soft);cursor:pointer;
+  }
+  .theme-toggle:hover{color:var(--ink);}
+  .palette-swatches{display:flex;align-items:center;gap:6px;padding:5px 7px;border:1px solid var(--line);border-radius:99px;background:var(--card);box-shadow:var(--shadow);}
+  .palette-swatches .swatch-label{font-size:.68rem;color:var(--ink-soft);margin-right:2px;white-space:nowrap;}
+  .swatch{width:16px;height:16px;border-radius:50%;flex:none;background:var(--sw);border:2px solid transparent;padding:0;cursor:pointer;}
+  .swatch.active{border-color:var(--ink);}
+  @media (max-width:600px){ .palette-swatches .swatch-label{display:none;} }
 
   /* hero */
   .hero{padding-block:52px 34px;}
@@ -130,7 +145,7 @@
   .ops-row strong{display:block;font-size:.92rem;}
   .ops-row span{display:block;font-size:.8rem;color:var(--ink-soft);margin-top:2px;}
   .ops-tag{font-size:.66rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:4px 9px;border-radius:99px;flex:none;margin-top:2px;}
-  .ops-tag--new{background:rgba(15,122,79,.14);color:var(--renty);}
+  .ops-tag--new{background:color-mix(in srgb, var(--renty) 16%, transparent);color:var(--renty);}
   .ops-tag--warn{background:rgba(201,130,31,.16);color:var(--marigold-ink);}
   .ops-tag--open{background:rgba(168,68,44,.14);color:var(--clay);}
 
@@ -218,7 +233,17 @@
 <div class="wrap">
   <div class="topbar">
     <div class="wordmark">Renty<span>.</span></div>
-    <a class="pill-link" id="gameplan-link" href="#" target="_blank" rel="noopener">Rollout plan →</a>
+    <div class="topbar-right">
+      <div class="palette-swatches" role="group" aria-label="Preview your own brand color">
+        <span class="swatch-label">Your brand color:</span>
+        <button type="button" class="swatch" data-palette="green" style="--sw:#059669" aria-label="Green" title="Green"></button>
+        <button type="button" class="swatch" data-palette="blue" style="--sw:#2563eb" aria-label="Blue" title="Blue"></button>
+        <button type="button" class="swatch active" data-palette="gold" style="--sw:#d97706" aria-label="Gold (current)" title="Gold (current)"></button>
+        <button type="button" class="swatch" data-palette="red" style="--sw:#dc2626" aria-label="Red" title="Red"></button>
+      </div>
+      <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode" title="Toggle light/dark"><span id="theme-toggle-icon" aria-hidden="true">&#9789;</span></button>
+      <a class="pill-link" id="gameplan-link" href="#" target="_blank" rel="noopener">Rollout plan →</a>
+    </div>
   </div>
 
   <div class="hero">
@@ -371,8 +396,18 @@
     </div>
   </section>
 
+  <section id="trust">
+    <div class="kicker"><span class="num">03</span><h2>Payments &amp; your data — the two questions every landlord actually asks</h2></div>
+    <p class="lede">Before "does it have a nice dashboard," every landlord asks two things: does it touch my money, and who can see my tenants. Straight answers to both.</p>
+    <div class="niche-grid">
+      <div class="niche"><div class="glyph">Y</div><h4>Every shilling lands in your account — not ours</h4><p>STK Push and C2B both run on <strong>your own</strong> M-Pesa Paybill or Till, using Daraja API credentials you set once per property. Renty is never in the money's path — we don't hold it, move it, or take a cut before it reaches you. We just watch the same API Safaricom already gives you.</p></div>
+      <div class="niche"><div class="glyph">A</div><h4>Payments record themselves</h4><p>The moment a tenant pays, Safaricom's callback reaches Renty in real time. The phone number or account reference on that payment is matched automatically to the right tenant and invoice — balance updated, receipt issued — with no landlord ever opening a bank statement to reconcile by hand.</p></div>
+      <div class="niche"><div class="glyph">D</div><h4>Your data stays yours</h4><p>Every landlord's properties, tenants and payment history live in their own isolated slice of the database, enforced at the query level, not just hidden in a menu. Grant a staff member exactly the access they need — no more — with custom staff roles, and pull any tenant, invoice or payment list to PDF whenever you want a copy outside Renty.</p></div>
+    </div>
+  </section>
+
   <section id="niche">
-    <div class="kicker"><span class="num">03</span><h2>Why this, not a generic property tool</h2></div>
+    <div class="kicker"><span class="num">04</span><h2>Why this, not a generic property tool</h2></div>
     <p class="lede">Global property-management software treats Kenya as an afterthought. Renty was built the other way around.</p>
     <div class="niche-grid">
       <div class="niche"><div class="glyph">M</div><h4>M-Pesa is the foundation, not a plugin</h4><p>STK Push and C2B Paybill reconciliation are core to the product — a payment matches a tenant automatically, by account number or phone, with no manual bank-statement reading.</p></div>
@@ -387,7 +422,7 @@
   <!-- ================= LANDLORD VIEW ================= -->
   <div data-audience="landlord" class="active">
     <section id="pricing">
-      <div class="kicker"><span class="num">04</span><h2>Pricing that grows with your portfolio</h2></div>
+      <div class="kicker"><span class="num">05</span><h2>Pricing that grows with your portfolio</h2></div>
       <p class="lede">One flat monthly fee. No per-transaction cut of your rent.</p>
       <div class="pricing-grid">
         <div class="price">
@@ -425,7 +460,7 @@
     </section>
 
     <section id="how">
-      <div class="kicker"><span class="num">05</span><h2>Live in a week, not a quarter</h2></div>
+      <div class="kicker"><span class="num">06</span><h2>Live in a week, not a quarter</h2></div>
       <div class="steps">
         <div class="step"><div class="n">1</div><h5>Add your properties</h5><p>Bring your spreadsheet — bulk import does the typing for you.</p></div>
         <div class="step"><div class="n">2</div><h5>Invite your tenants</h5><p>One SMS code each. They verify and join themselves.</p></div>
@@ -443,7 +478,7 @@
   <!-- ================= INVESTOR VIEW ================= -->
   <div data-audience="investor">
     <section id="market2">
-      <div class="kicker"><span class="num">04</span><h2>The market</h2></div>
+      <div class="kicker"><span class="num">05</span><h2>The market</h2></div>
       <p class="lede">Five cities, each independently large enough to matter, all reachable within 18 months.</p>
       <div class="stat-grid">
         <div class="mcard"><b>5.8M</b><p>People in the Nairobi metro area — the first, and largest, single market.</p></div>
@@ -454,7 +489,7 @@
     </section>
 
     <section id="model">
-      <div class="kicker"><span class="num">05</span><h2>Business model</h2></div>
+      <div class="kicker"><span class="num">06</span><h2>Business model</h2></div>
       <p class="lede">Predictable subscription revenue today, with a payments layer as future optionality.</p>
       <div class="bmodel-grid">
         <div class="bmodel"><span class="tag">Live today</span><h4>Tiered SaaS subscription</h4><p>KES 1,500 – 7,000 per landlord per month, scaling with portfolio size (see pricing under the landlord view). Predictable, recurring, no seasonality.</p></div>
@@ -464,7 +499,7 @@
     </section>
 
     <section id="why-now">
-      <div class="kicker"><span class="num">06</span><h2>Why now</h2></div>
+      <div class="kicker"><span class="num">07</span><h2>Why now</h2></div>
       <ul class="status-list">
         <li><span class="ok">✓</span><span>Mobile money is no longer an adoption question in Kenya — it's the default. The infrastructure this product depends on already exists at national scale.</span></li>
         <li><span class="ok">✓</span><span>Today's alternatives are a paper rent book, a spreadsheet, or a WhatsApp group — not a well-funded digital-native competitor built specifically around M-Pesa reconciliation.</span></li>
@@ -473,7 +508,7 @@
     </section>
 
     <section id="status">
-      <div class="kicker"><span class="num">07</span><h2>Where things stand</h2></div>
+      <div class="kicker"><span class="num">08</span><h2>Where things stand</h2></div>
       <p class="lede">Pre-revenue, pilot-ready. The honest starting point.</p>
       <div class="bmodel-grid">
         <div class="bmodel"><span class="tag">Built</span><h4>Full product, end to end</h4><p>Property &amp; unit management, M-Pesa STK/C2B, tenant self-service, custom billing, staff roles, announcements, public discovery site — all live and tested.</p></div>
@@ -483,7 +518,7 @@
     </section>
 
     <section id="ask">
-      <div class="kicker"><span class="num">08</span><h2>What the raise funds</h2></div>
+      <div class="kicker"><span class="num">09</span><h2>What the raise funds</h2></div>
       <p class="lede">Use-of-funds categories below — final amount to be scoped with the founder.</p>
       <div class="ask-grid">
         <div class="ask"><b>Hiring</b><span>CS, support &amp; city launch leads</span></div>
@@ -531,6 +566,62 @@
   });
   document.getElementById('gameplan-link').href = '/investors/rollout';
   document.getElementById('gameplan-link-2').href = '/investors/rollout';
+
+  // Live theme + brand-color demo. Mirrors the real product: a landlord's dark-mode
+  // preference and their brand_palette choice (Platform Settings > Appearance /
+  // Settings > General) reskin the whole app the same way this reskins this page.
+  (function(){
+    var PALETTES = {
+      green: { light: '#059669', dark: '#34d399' },
+      blue:  { light: '#2563eb', dark: '#60a5fa' },
+      gold:  { light: '#d97706', dark: '#fbbf24' },
+      red:   { light: '#dc2626', dark: '#f87171' }
+    };
+    var root = document.documentElement;
+    var themeBtn = document.getElementById('theme-toggle');
+    var themeIcon = document.getElementById('theme-toggle-icon');
+    var swatches = document.querySelectorAll('.swatch');
+
+    function readStorage(key, fallback){
+      try { return localStorage.getItem(key) || fallback; } catch (e) { return fallback; }
+    }
+    function writeStorage(key, value){
+      try { localStorage.setItem(key, value); } catch (e) {}
+    }
+    function currentTheme(){
+      var stored = readStorage('renty-pitch-theme', null);
+      if (stored) return stored;
+      return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+    }
+    function currentPalette(){
+      return readStorage('renty-pitch-palette', 'gold');
+    }
+    function apply(){
+      var theme = currentTheme();
+      var palette = PALETTES[currentPalette()] ? currentPalette() : 'gold';
+      root.setAttribute('data-theme', theme);
+      root.style.setProperty('--renty', PALETTES[palette][theme]);
+      if (themeIcon) themeIcon.innerHTML = theme === 'dark' ? '&#9788;' : '&#9789;';
+      swatches.forEach(function(s){
+        var isActive = s.getAttribute('data-palette') === palette;
+        s.classList.toggle('active', isActive);
+        s.title = s.getAttribute('aria-label').replace(' (current)', '') + (isActive ? ' (current)' : '');
+      });
+    }
+    if (themeBtn) {
+      themeBtn.addEventListener('click', function(){
+        writeStorage('renty-pitch-theme', currentTheme() === 'dark' ? 'light' : 'dark');
+        apply();
+      });
+    }
+    swatches.forEach(function(s){
+      s.addEventListener('click', function(){
+        writeStorage('renty-pitch-palette', s.getAttribute('data-palette'));
+        apply();
+      });
+    });
+    apply();
+  })();
 </script>
 
 </body></html>
