@@ -128,11 +128,7 @@
                 </div>
                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">
                     {{ count($role['permissions']) }} of {{ count(\App\Support\StaffPermissions::all()) }} permissions
-                    @if (count($role['permissions']) < count(\App\Support\StaffPermissions::all()))
-                        (bookings only)
-                    @else
-                        (full access)
-                    @endif
+                    ({{ strtolower($role['summary']) }})
                 </p>
             </div>
         @endforeach

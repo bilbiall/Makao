@@ -106,7 +106,8 @@ class StaffRoleResource extends Resource
     {
         $user = auth()->user();
 
-        return $user && in_array($user->role, ['admin', 'landlord']);
+        // Manager can also define/edit custom staff roles - see AdminApp\StaffRoles::mount().
+        return $user && in_array($user->role, ['admin', 'landlord', 'manager']);
     }
 
     public static function getEloquentQuery(): Builder

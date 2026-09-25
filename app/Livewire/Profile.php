@@ -48,6 +48,45 @@ class Profile extends Component
         return route('agents.show', Auth::user()->ensureSlug());
     }
 
+    /**
+     * Every staff account on a landlord (admin/landlord/manager/caretaker/custom
+     * staff) shares that landlord's public listings - not an individual storefront
+     * like an agent's, so this is deliberately separate from hasPublicProfile()
+     * above rather than folded into it (that one also gates the agent-only Bio
+     * field, which has nothing to do with this).
+     */
+    public function hasPortfolioSite(): bool
+    {
+        $user = Auth::user();
+
+        return $user->landlord_id && in_array($user->role, ['admin', 'landlord', 'manager', 'caretaker', 'staff'], true);
+    }
+
+    /**
+     * @return array<string, string> e.g. ['Homes' => url, 'Stays' => url] - only the
+     * kinds of listing this landlord actually has something published for, so a
+     * landlord with only long-term units doesn't get a dead "Stays" link.
+     */
+    public function portfolioSiteUrls(): array
+    {
+        if (!$this->hasPortfolioSite()) {
+            return [];
+        }
+
+        $landlordId = Auth::user()->landlord_id;
+        $urls = [];
+
+        if (\App\Models\House::publiclyVisible()->where('landlord_id', $landlordId)->exists()) {
+            $urls['Homes'] = route('listings.index', ['landlord' => $landlordId]);
+        }
+
+        if (\App\Models\House::bnbVisible()->where('landlord_id', $landlordId)->exists()) {
+            $urls['Stays'] = route('stays.index', ['landlord' => $landlordId]);
+        }
+
+        return $urls;
+    }
+
     public function updateDetails(): void
     {
         $user = Auth::user();

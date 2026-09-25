@@ -18,7 +18,10 @@ class StaffRoles extends Component
 
     public function mount(): void
     {
-        abort_unless(in_array(Auth::user()->role, ['admin', 'landlord']), 403);
+        // Manager (the landlord's day-to-day deputy, scoped to their assigned
+        // properties) can also define/edit custom staff roles - unlike Caretaker
+        // and Agent, who are staffed by these roles rather than authoring them.
+        abort_unless(in_array(Auth::user()->role, ['admin', 'landlord', 'manager']), 403);
     }
 
     protected function rules(): array
@@ -113,9 +116,9 @@ class StaffRoles extends Component
         $all = StaffPermissions::all();
 
         return collect([
-            ['role' => 'manager', 'name' => 'Manager', 'scope_type' => 'location'],
-            ['role' => 'caretaker', 'name' => 'Caretaker', 'scope_type' => 'location'],
-            ['role' => 'agent', 'name' => 'Agent', 'scope_type' => 'house'],
+            ['role' => 'manager', 'name' => 'Manager', 'scope_type' => 'location', 'summary' => 'Full access'],
+            ['role' => 'caretaker', 'name' => 'Caretaker', 'scope_type' => 'location', 'summary' => 'On-site tasks only'],
+            ['role' => 'agent', 'name' => 'Agent', 'scope_type' => 'house', 'summary' => 'Bookings only'],
         ])->map(function (array $r) use ($all) {
             $r['permissions'] = array_values(array_filter(
                 $all,

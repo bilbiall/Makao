@@ -136,15 +136,35 @@ class StaffPermissions
     /**
      * What a legacy (no custom staff_role assigned) manager/caretaker/agent
      * account can already do today - the backward-compatibility baseline.
-     * Manager and caretaker are already functionally identical everywhere in
-     * this codebase (both just StaffScope::isScopedStaff()), so they share the
-     * same default set here. Agent is denied everywhere except Bookings,
-     * matching StaffScope::denyIfAgent()'s existing blanket-deny behavior.
+     *
+     * Manager and caretaker still see the same records (both are
+     * StaffScope::isScopedStaff(), narrowed to their assigned properties) but no
+     * longer carry the same default PERMISSIONS - a caretaker is on-site staff
+     * (admits tenants, fixes issues, shows units, collects payments in person),
+     * not the person who should delete records, manage financial config, view
+     * reports, or decide notices to vacate by default. Manager keeps full access
+     * as the landlord's day-to-day deputy. Agent is denied everywhere except
+     * Bookings, matching StaffScope::denyIfAgent()'s existing blanket-deny
+     * behavior. A landlord can still grant a caretaker anything beyond this via
+     * a custom staff role (App\Models\StaffRole) - this is only the fallback for
+     * accounts still on the legacy role instead of one.
      */
     public static function defaultFor(string $role, string $slug): bool
     {
-        if (in_array($role, ['manager', 'caretaker'], true)) {
+        if ($role === 'manager') {
             return in_array($slug, self::all(), true);
+        }
+
+        if ($role === 'caretaker') {
+            return in_array($slug, [
+                self::ADMIT_TENANTS,
+                self::EDIT_TENANTS,
+                self::RECORD_PAYMENTS,
+                self::RESOLVE_ISSUES,
+                self::ADMIT_VIEWING_REQUESTS,
+                self::CHECKIN_BOOKINGS,
+                self::CHECKOUT_BOOKINGS,
+            ], true);
         }
 
         if ($role === 'agent') {

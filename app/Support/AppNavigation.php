@@ -29,7 +29,8 @@ class AppNavigation
             // narrowed to a single location and don't manage other staff, cross-property
             // reporting, or landlord-wide settings, matching UserResource::canAccess(),
             // Reports::shouldRegisterNavigation(), and Settings::shouldRegisterNavigation()
-            // in the existing Filament panel.
+            // in the existing Filament panel. Staff Roles is the one exception Manager
+            // gets beyond the shared caretakerNav() below - see StaffRoleResource::canAccess().
             'admin', 'landlord' => [
                 ['label' => 'Dashboard', 'icon' => 'heroicon-o-home', 'route' => 'app.admin.dashboard', 'tab' => true],
                 ['label' => 'Tenants', 'icon' => 'heroicon-o-users', 'route' => 'app.admin.tenants', 'tab' => true, 'group' => 'Tenants & Leasing'],
@@ -69,22 +70,14 @@ class AppNavigation
             // A landlord-defined custom role (App\Models\StaffRole) always gets this
             // same trimmed nav regardless of its checkbox permissions - the checkboxes
             // gate actions *within* these pages, not which pages are reachable at all.
-            'caretaker', 'manager', 'staff' => [
-                ['label' => 'Dashboard', 'icon' => 'heroicon-o-home', 'route' => 'app.admin.dashboard', 'tab' => true],
-                ['label' => 'Tenants', 'icon' => 'heroicon-o-users', 'route' => 'app.admin.tenants', 'tab' => true, 'group' => 'Tenants & Leasing'],
-                ['label' => 'Properties', 'icon' => 'heroicon-o-building-office-2', 'route' => 'app.admin.properties', 'tab' => true, 'group' => 'Properties'],
-                ['label' => 'Units', 'icon' => 'heroicon-o-home-modern', 'route' => 'app.admin.units', 'tab' => false, 'group' => 'Properties'],
-                ['label' => 'Viewing Requests', 'icon' => 'heroicon-o-calendar-days', 'route' => 'app.admin.viewing-requests', 'tab' => false, 'group' => 'Tenants & Leasing'],
-                ['label' => 'Invoices', 'icon' => 'heroicon-o-credit-card', 'route' => 'app.admin.invoices', 'tab' => true, 'group' => 'Finance'],
-                ['label' => 'Payments', 'icon' => 'heroicon-o-banknotes', 'route' => 'app.admin.payments', 'tab' => false, 'group' => 'Finance'],
-                ['label' => 'M-Pesa Review', 'icon' => 'heroicon-o-device-phone-mobile', 'route' => 'app.admin.mpesa-review', 'tab' => false, 'group' => 'Finance'],
-                ['label' => 'Bills', 'icon' => 'heroicon-o-receipt-percent', 'route' => 'app.admin.bills', 'tab' => false, 'group' => 'Finance'],
-                ['label' => 'Bill Types', 'icon' => 'heroicon-o-adjustments-horizontal', 'route' => 'app.admin.bill-types', 'tab' => false, 'group' => 'Finance'],
-                ['label' => 'Announcements', 'icon' => 'heroicon-o-megaphone', 'route' => 'app.admin.announcements', 'tab' => false, 'group' => 'BnB & Marketing'],
-                ['label' => 'Issues', 'icon' => 'heroicon-o-wrench-screwdriver', 'route' => 'app.admin.issues', 'tab' => false, 'group' => 'Operations'],
-                ['label' => 'Notices', 'icon' => 'heroicon-o-flag', 'route' => 'app.admin.notices', 'tab' => false, 'group' => 'Tenants & Leasing'],
-                ['label' => 'Bookings', 'icon' => 'heroicon-o-calendar-days', 'route' => 'app.admin.bookings', 'tab' => false, 'group' => 'BnB & Marketing'],
-                ['label' => 'Chat', 'icon' => 'heroicon-o-chat-bubble-left-right', 'route' => 'app.admin.chat', 'tab' => false],
+            'caretaker', 'staff' => self::caretakerNav(),
+            // Manager gets that same trimmed nav plus Staff Roles - the landlord's
+            // day-to-day deputy can define/edit custom staff roles for their team,
+            // unlike Caretaker/Agent/custom staff, who are assigned roles rather than
+            // authoring them (see StaffRoleResource::canAccess()).
+            'manager' => [
+                ...self::caretakerNav(),
+                ['label' => 'Staff Roles', 'icon' => 'heroicon-o-shield-check', 'route' => 'app.admin.staff-roles', 'tab' => false, 'group' => 'Team & Settings'],
             ],
             // Agent is scoped to specific short_term houses only (staff_assignments.house_id)
             // - it manages bookings and markets those units (discounts, its own public
@@ -121,6 +114,28 @@ class AppNavigation
             ],
             default => [],
         };
+    }
+
+    /** Shared base nav for Caretaker, custom staff, and Manager (who gets this plus Staff Roles) - see the 'manager'/'caretaker' match arms above. */
+    private static function caretakerNav(): array
+    {
+        return [
+            ['label' => 'Dashboard', 'icon' => 'heroicon-o-home', 'route' => 'app.admin.dashboard', 'tab' => true],
+            ['label' => 'Tenants', 'icon' => 'heroicon-o-users', 'route' => 'app.admin.tenants', 'tab' => true, 'group' => 'Tenants & Leasing'],
+            ['label' => 'Properties', 'icon' => 'heroicon-o-building-office-2', 'route' => 'app.admin.properties', 'tab' => true, 'group' => 'Properties'],
+            ['label' => 'Units', 'icon' => 'heroicon-o-home-modern', 'route' => 'app.admin.units', 'tab' => false, 'group' => 'Properties'],
+            ['label' => 'Viewing Requests', 'icon' => 'heroicon-o-calendar-days', 'route' => 'app.admin.viewing-requests', 'tab' => false, 'group' => 'Tenants & Leasing'],
+            ['label' => 'Invoices', 'icon' => 'heroicon-o-credit-card', 'route' => 'app.admin.invoices', 'tab' => true, 'group' => 'Finance'],
+            ['label' => 'Payments', 'icon' => 'heroicon-o-banknotes', 'route' => 'app.admin.payments', 'tab' => false, 'group' => 'Finance'],
+            ['label' => 'M-Pesa Review', 'icon' => 'heroicon-o-device-phone-mobile', 'route' => 'app.admin.mpesa-review', 'tab' => false, 'group' => 'Finance'],
+            ['label' => 'Bills', 'icon' => 'heroicon-o-receipt-percent', 'route' => 'app.admin.bills', 'tab' => false, 'group' => 'Finance'],
+            ['label' => 'Bill Types', 'icon' => 'heroicon-o-adjustments-horizontal', 'route' => 'app.admin.bill-types', 'tab' => false, 'group' => 'Finance'],
+            ['label' => 'Announcements', 'icon' => 'heroicon-o-megaphone', 'route' => 'app.admin.announcements', 'tab' => false, 'group' => 'BnB & Marketing'],
+            ['label' => 'Issues', 'icon' => 'heroicon-o-wrench-screwdriver', 'route' => 'app.admin.issues', 'tab' => false, 'group' => 'Operations'],
+            ['label' => 'Notices', 'icon' => 'heroicon-o-flag', 'route' => 'app.admin.notices', 'tab' => false, 'group' => 'Tenants & Leasing'],
+            ['label' => 'Bookings', 'icon' => 'heroicon-o-calendar-days', 'route' => 'app.admin.bookings', 'tab' => false, 'group' => 'BnB & Marketing'],
+            ['label' => 'Chat', 'icon' => 'heroicon-o-chat-bubble-left-right', 'route' => 'app.admin.chat', 'tab' => false],
+        ];
     }
 
     /**

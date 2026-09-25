@@ -37,6 +37,13 @@ class PropertyListingController extends Controller
             $query->where('rent_amount', '<=', $request->integer('max_rent'));
         }
 
+        // A landlord/staff account's "your public site" link (see Profile's Portfolio
+        // site section) - narrows this same public search down to just their own
+        // properties, so it reads as "your site" rather than the whole marketplace.
+        if ($request->filled('landlord')) {
+            $query->where('landlord_id', $request->integer('landlord'));
+        }
+
         $houses = $query->orderBy('rent_amount')->paginate(12)->withQueryString();
 
         $cities = City::breakdown();

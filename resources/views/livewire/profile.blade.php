@@ -70,6 +70,26 @@
         </div>
     @endif
 
+    @if ($this->hasPortfolioSite())
+        @php($portfolioUrls = $this->portfolioSiteUrls())
+        <div class="rounded-2xl bg-white border border-slate-200 shadow-sm p-5 space-y-3 dark:bg-slate-900 dark:border-slate-800">
+            <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">Your public site</p>
+            @if (empty($portfolioUrls))
+                <p class="text-xs text-slate-500 dark:text-slate-400">Nothing public yet - once a property is published and vacant (or a stay is published), its link on the public site shows up here.</p>
+            @else
+                <p class="text-xs text-slate-500 dark:text-slate-400">This is the same search renters use on Renty, narrowed to just your published properties.</p>
+                <div class="space-y-2">
+                    @foreach ($portfolioUrls as $label => $url)
+                        <div class="flex items-center gap-2">
+                            <input type="text" readonly value="{{ $url }}" class="flex-1 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400" onclick="this.select()">
+                            <a href="{{ $url }}" target="_blank" class="flex-shrink-0 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700">View {{ $label }}</a>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+        </div>
+    @endif
+
     <div class="rounded-2xl bg-white border border-slate-200 shadow-sm p-5 space-y-3 dark:bg-slate-900 dark:border-slate-800">
         <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">Change password</p>
         <div>

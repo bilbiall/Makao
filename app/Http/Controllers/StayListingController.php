@@ -34,6 +34,11 @@ class StayListingController extends Controller
             });
         }
 
+        // See PropertyListingController::index() - same "your public site" landlord filter.
+        if ($request->filled('landlord')) {
+            $query->where('landlord_id', $request->integer('landlord'));
+        }
+
         $houses = $query->paginate(12)->withQueryString();
 
         $cities = City::breakdown();
