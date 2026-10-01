@@ -38,3 +38,8 @@ Schedule::command('app:expire-trials')
     ->daily()
     ->withoutOverlapping();
 
+
+// Chat assistant message logs are kept for 90 days only (see ChatTurn / ChatMasker)
+Schedule::command('chat:prune-turns')
+    ->dailyAt('03:30')
+    ->withoutOverlapping();

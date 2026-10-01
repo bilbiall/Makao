@@ -260,6 +260,9 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureSuperadminRole::class])->p
     Route::get('/packages', \App\Livewire\SuperadminApp\Packages::class)->name('app.superadmin.packages');
     Route::get('/subscriptions', \App\Livewire\SuperadminApp\Subscriptions::class)->name('app.superadmin.subscriptions');
     Route::get('/settings', \App\Livewire\SuperadminApp\PlatformSettings::class)->name('app.superadmin.settings');
+    Route::get('/chat-insights', \App\Livewire\SuperadminApp\ChatInsights::class)->name('app.superadmin.chat-insights');
+    Route::get('/chat-inbox', \App\Livewire\SuperadminApp\ChatInbox::class)->name('app.superadmin.chat-inbox');
+    Route::get('/chat-phrases', \App\Livewire\SuperadminApp\ChatPhrases::class)->name('app.superadmin.chat-phrases');
     Route::get('/profile', \App\Livewire\Profile::class)->name('app.superadmin.profile');
 
     // Named routes so these can sit in AppNavigation like any other item (its blade

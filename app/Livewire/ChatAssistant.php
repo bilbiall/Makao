@@ -2,12 +2,20 @@
 
 namespace App\Livewire;
 
+use App\Models\ChatTurn;
 use App\Models\Setting;
+use App\Services\ChatAliasService;
 use App\Services\HouseMatchService;
 use App\Services\HouseSearchAiService;
 use App\Services\PlatformFaqService;
+use App\Services\SupportContactService;
+use App\Support\ChatCopy;
+use App\Support\ChatLanguage;
+use App\Support\ChatMasker;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Livewire\Component;
 
 /**
@@ -28,7 +36,8 @@ use Livewire\Component;
  *
  * Messages persist to the session (not a DB table), so anonymous visitors
  * keep their conversation across page loads for as long as their session
- * lasts, without needing an account.
+ * lasts, without needing an account. Separately, each turn is logged
+ * (masked) to chat_turns for the superadmin Chat insights dashboard.
  */
 class ChatAssistant extends Component
 {
@@ -37,6 +46,10 @@ class ChatAssistant extends Component
     // Cap what we keep in session so a very long conversation can't bloat the
     // session store indefinitely.
     protected const MAX_STORED_MESSAGES = 40;
+
+    // How many "tell me what you want" replies in a row before we also offer
+    // a human - the visitor is clearly not getting where they want to go.
+    protected const CLARIFY_BEFORE_HANDOFF = 2;
 
     public bool $open = false;
 
@@ -52,9 +65,28 @@ class ChatAssistant extends Component
     // areas?") without depending on the LLM extraction noticing the same thing.
     public ?string $lastBranch = null;
 
+    // The follow-up the assistant's last message offered ("want me to check
+    // KES 14,000 instead?") - kept as data, not just as text in the reply, so a
+    // bare "yes please" (or a tapped chip) can actually be carried out instead
+    // of being re-run as the same failed search. Shape: ['type' => string,
+    // 'patch' => filter changes a plain "yes" applies, or null when there are
+    // several options and the visitor must pick one, 'chips' => the options
+    // as quick replies].
+    public ?array $pendingOffer = null;
+
+    // Conversation bookkeeping that isn't search state: chatId (groups logged
+    // turns), lang ('en'|'sw', what the visitor last wrote in), struggles
+    // (consecutive turns we couldn't make progress on), lastTurnId (the logged
+    // row an offer outcome is written back to).
+    public array $meta = [];
+
     public bool $configured = true;
 
     public ?string $avatarUrl = null;
+
+    // What this one reply() call is doing, for the turn log. Livewire doesn't
+    // carry protected properties between requests, so it starts fresh each time.
+    protected array $turn = [];
 
     public function mount(HouseSearchAiService $ai): void
     {
@@ -67,6 +99,9 @@ class ChatAssistant extends Component
         $this->messages = $stored['messages'] ?? [];
         $this->filters = $stored['filters'] ?? [];
         $this->lastBranch = $stored['lastBranch'] ?? null;
+        $this->pendingOffer = $stored['pendingOffer'] ?? null;
+        $this->meta = $stored['meta'] ?? [];
+        $this->meta['chatId'] ??= (string) Str::uuid();
     }
 
     public function toggle(): void
@@ -76,9 +111,7 @@ class ChatAssistant extends Component
         if ($this->open && empty($this->messages)) {
             $this->messages[] = [
                 'role' => 'assistant',
-                'text' => $this->configured
-                    ? 'Hi! I\'m your Renty assistant. What type of house are you looking for - bedsitter, 1 bedroom, 2 bedroom...? Tell me the area and your budget too, e.g. "1 bedroom in Kasarani under 20k", and I\'ll find it.'
-                    : "Hi! The chat assistant isn't set up yet, but you can browse listings directly using search.",
+                'text' => ChatCopy::t($this->configured ? 'greeting' : 'greeting_unconfigured'),
                 'cards' => [],
             ];
 
@@ -111,7 +144,7 @@ class ChatAssistant extends Component
     {
         $this->messages[] = [
             'role' => 'assistant',
-            'text' => "I couldn't get your location - you can still tell me an area or a landmark instead.",
+            'text' => ChatCopy::t('location_denied', $this->lang()),
             'cards' => [],
         ];
         $this->persist();
@@ -133,6 +166,28 @@ class ChatAssistant extends Component
         $this->dispatch('chat-assistant-message-sent');
     }
 
+    /**
+     * Visitor tapped a quick-reply chip under the assistant's last message.
+     * Only the latest message's chips are rendered, so the index always refers
+     * to a still-live offer. The chip's filter changes ride on the user bubble
+     * ('apply') so reply() runs them exactly, with no free-text interpretation
+     * in between.
+     */
+    public function pickChip(int $index): void
+    {
+        $last = end($this->messages);
+        $chip = is_array($last) ? ($last['chips'][$index] ?? null) : null;
+
+        if (! $chip) {
+            return;
+        }
+
+        $this->messages[] = ['role' => 'user', 'text' => $chip['label'], 'cards' => [], 'apply' => $chip['patch']];
+        $this->persist();
+
+        $this->dispatch('chat-assistant-message-sent');
+    }
+
     /** Slow turn: the actual OpenRouter round trip(s), run as its own request. */
     public function reply(HouseSearchAiService $ai, HouseMatchService $matcher): void
     {
@@ -140,13 +195,28 @@ class ChatAssistant extends Component
             return;
         }
 
+        $lastMessage = end($this->messages);
+        $lastUserText = $lastMessage['text'];
+        $apply = $lastMessage['apply'] ?? null;
+
+        $this->turn = [
+            'text' => $lastUserText,
+            'prior_offer' => (bool) $this->pendingOffer,
+            'offer_result' => null,
+            'used_fallback' => false,
+            'llm_failed' => false,
+        ];
+
+        // A tapped chip's label is generated by us, so it says nothing about
+        // what language the visitor writes in.
+        if ($apply === null) {
+            $this->meta['lang'] = ChatLanguage::detect($lastUserText) ?? ($this->meta['lang'] ?? 'en');
+        }
+
+        $lang = $this->lang();
+
         if (! $this->configured) {
-            $this->messages[] = [
-                'role' => 'assistant',
-                'text' => "The chat assistant isn't set up yet - please browse listings directly for now.",
-                'cards' => [],
-            ];
-            $this->persist();
+            $this->respond(ChatCopy::t('unconfigured', $lang));
 
             return;
         }
@@ -154,19 +224,29 @@ class ChatAssistant extends Component
         $rateLimitKey = 'chat-assistant:'.request()->ip();
 
         if (RateLimiter::tooManyAttempts($rateLimitKey, 20)) {
-            $this->messages[] = [
-                'role' => 'assistant',
-                'text' => "You've sent quite a few messages - please wait a few minutes before continuing.",
-                'cards' => [],
-            ];
-            $this->persist();
+            $this->respond(ChatCopy::t('rate_limited', $lang));
 
             return;
         }
 
         RateLimiter::hit($rateLimitKey, 600);
 
-        $lastUserText = end($this->messages)['text'];
+        $aliases = app(ChatAliasService::class);
+
+        // "Can I talk to someone?" is a request for a person, not a search -
+        // hand over the team's contact links straight away. The search state
+        // and any pending offer are kept, so the visitor can carry on after.
+        if ($apply === null && $aliases->asksForHuman($lastUserText)) {
+            $this->turn['prior_offer'] = false;
+            $links = $this->contactLinks();
+
+            $this->respond(
+                ChatCopy::t($links ? 'handoff_requested' : 'handoff_unavailable', $lang),
+                [], $this->pendingOffer['chips'] ?? [], $this->pendingOffer, $links, 'handoff',
+            );
+
+            return;
+        }
 
         // A question about the platform itself ("how do you help property
         // managers", "what's the admission process") isn't a house search at
@@ -177,8 +257,43 @@ class ChatAssistant extends Component
         // (filters/lastBranch) is left untouched so a detour question doesn't
         // derail an in-progress search conversation.
         if ($faqAnswer = app(PlatformFaqService::class)->answer($lastUserText)) {
+            $this->turn['prior_offer'] = false;
             $this->messages[] = ['role' => 'assistant', 'text' => $faqAnswer, 'cards' => []];
+            $this->recordTurn($faqAnswer, 'faq', $this->pendingOffer, false);
             $this->persist();
+
+            return;
+        }
+
+        // A tapped chip, or a plain "yes"/"no" to the assistant's own last offer,
+        // is answered from the offer it refers to - never run back through
+        // extraction, which only sees filters and would just repeat the search
+        // that produced the offer (the "yes please" -> identical reply loop).
+        $offer = $this->pendingOffer;
+
+        if ($apply === null && $offer && $this->looksAffirmative($lastUserText)) {
+            if ($offer['patch'] !== null) {
+                $apply = $offer['patch'];
+            } else {
+                // Several options on the table - a bare "yes" doesn't say which.
+                $this->respond(ChatCopy::t('which_one', $lang), [], $offer['chips'], $offer);
+
+                return;
+            }
+        }
+
+        if ($apply === null && $offer && $this->looksNegative($lastUserText)) {
+            $this->turn['offer_result'] = 'declined';
+            $this->respond(ChatCopy::t('declined', $lang));
+
+            return;
+        }
+
+        if ($apply !== null) {
+            $this->turn['offer_result'] = 'accepted';
+            $this->filters = array_merge($this->filters, $apply);
+
+            $this->runSearch($ai, $matcher, $lastUserText);
 
             return;
         }
@@ -199,6 +314,7 @@ class ChatAssistant extends Component
         $filtersForExtraction = array_diff_key($this->filters, array_flip(['near_lat', 'near_lng']));
 
         $extracted = $ai->extractFilters($this->historyForApi(), $filtersForExtraction);
+        $this->turn['llm_failed'] = $extracted === null;
         $this->filters = $extracted ?? $this->filters;
 
         $newLandmark = $this->filters['landmark'] ?? null;
@@ -221,6 +337,7 @@ class ChatAssistant extends Component
         // South B instead" must be able to replace an old "2 Bedroom in Kahawa
         // Sukari", not be silently ignored because that field was already set).
         $regexExtracted = $ai->extractFiltersFallback($lastUserText);
+        $this->turn['used_fallback'] = $regexExtracted !== null;
 
         foreach ($regexExtracted ?? [] as $field => $value) {
             $this->filters[$field] = $value;
@@ -234,6 +351,17 @@ class ChatAssistant extends Component
         if ($this->lastBranch === 'zero_results' && $this->looksAffirmative($lastUserText)) {
             $this->filters['area_flexible'] = true;
         }
+
+        $this->runSearch($ai, $matcher, $lastUserText);
+    }
+
+    /**
+     * Runs the current filters against real listings and appends the reply.
+     * Shared by the normal path and the offer/chip path in reply().
+     */
+    protected function runSearch(HouseSearchAiService $ai, HouseMatchService $matcher, string $lastUserText): void
+    {
+        $lang = $this->lang();
 
         // A budget/amenity/nearby-only ask ("something with wifi under 15k") is
         // still a real, answerable search - HouseMatchService just runs it
@@ -263,21 +391,162 @@ class ChatAssistant extends Component
         // clarifying question when given nothing concrete - so those branches
         // always get the deterministic, hallucination-proof copy instead.
         $reply = $result['results']->isNotEmpty()
-            ? $ai->composeReply([['role' => 'user', 'content' => $lastUserText]], $result['facts'])
-            : $ai->fallbackReply($result['facts']);
+            ? $ai->composeReply([['role' => 'user', 'content' => $lastUserText]], $result['facts'], $lang)
+            : $ai->fallbackReply($result['facts'], $lang);
 
-        $this->messages[] = [
-            'role' => 'assistant',
-            'text' => $reply,
-            'cards' => $result['results']->isNotEmpty() ? $matcher->toCards($result['results']) : [],
-        ];
+        $cards = $result['results']->isNotEmpty() ? $matcher->toCards($result['results']) : [];
+        $offer = $this->offerFromFacts($result['facts']);
+        $stuck = false;
 
+        // Same words as the previous assistant message with nothing new to show
+        // means the visitor is going round in circles - say so and change tack
+        // rather than repeating the sentence a third time.
+        $previous = collect($this->messages)->reverse()->firstWhere('role', 'assistant');
+        if (empty($cards) && $previous && ($previous['text'] ?? null) === $reply) {
+            $reply = ChatCopy::t('repeat', $lang);
+            $stuck = true;
+        }
+
+        // Dead end with nothing concrete to offer, or several "what are you
+        // looking for?" in a row: this is where a person can do better than us.
+        if ($result['branch'] === 'none' && ! $offer) {
+            $stuck = true;
+        }
+
+        if ($result['branch'] === 'clarify') {
+            $this->meta['struggles'] = ($this->meta['struggles'] ?? 0) + 1;
+            $stuck = $stuck || $this->meta['struggles'] >= self::CLARIFY_BEFORE_HANDOFF;
+        } else {
+            $this->meta['struggles'] = 0;
+        }
+
+        $links = $stuck ? $this->contactLinks() : [];
+
+        if ($links) {
+            $reply .= "\n\n".ChatCopy::t('handoff_intro', $lang);
+        }
+
+        $this->respond($reply, $cards, $offer['chips'] ?? [], $offer, $links, $result['branch']);
+    }
+
+    /** Contact buttons for the team, from Platform Settings; empty when none are configured. */
+    protected function contactLinks(): array
+    {
+        return app(SupportContactService::class)->links($this->lang(), $this->filters);
+    }
+
+    /**
+     * Turns a dead-end search into a concrete follow-up the visitor can accept.
+     * Built from backend-computed facts only, so an offer is always something
+     * that really exists (a real price, a real unit type).
+     */
+    protected function offerFromFacts(array $facts): ?array
+    {
+        $lang = $this->lang();
+        $branch = $facts['branch'] ?? null;
+
+        if ($branch === 'zero_results') {
+            $patch = ['area_flexible' => true];
+
+            return [
+                'type' => 'widen_area',
+                'patch' => $patch,
+                'chips' => [['label' => ChatCopy::t('chip_other_areas', $lang), 'patch' => $patch]],
+            ];
+        }
+
+        if ($branch !== 'none') {
+            return null;
+        }
+
+        if (filled($facts['cheapest_available_for_type'] ?? null)) {
+            $price = (int) $facts['cheapest_available_for_type'];
+            $patch = ['max_rent' => $price];
+
+            return [
+                'type' => 'raise_budget',
+                'patch' => $patch,
+                'chips' => [['label' => ChatCopy::t('chip_show_price', $lang, ['price' => number_format($price)]), 'patch' => $patch]],
+            ];
+        }
+
+        if (filled($facts['available_house_types'] ?? null)) {
+            $chips = collect($facts['available_house_types'])
+                ->take(4)
+                ->map(fn (string $type) => ['label' => $type, 'patch' => ['house_type' => $type]])
+                ->all();
+
+            // Several options - a bare "yes" can't pick one, so no default patch.
+            return ['type' => 'switch_type', 'patch' => null, 'chips' => $chips];
+        }
+
+        return null;
+    }
+
+    /** Appends an assistant message, records the follow-up it offers (if any), and logs the turn. */
+    protected function respond(string $text, array $cards = [], array $chips = [], ?array $offer = null, array $links = [], ?string $branch = null): void
+    {
+        $this->pendingOffer = $offer;
+
+        $this->messages[] = ['role' => 'assistant', 'text' => $text, 'cards' => $cards, 'chips' => $chips, 'links' => $links];
+
+        $this->recordTurn($text, $branch, $offer, $links !== []);
         $this->persist();
     }
 
-    /** A short, plainly affirmative reply - "yes", "check other areas", "sure why not" - as opposed to a new, unrelated query. */
+    /**
+     * Logs this exchange for the superadmin Chat insights dashboard. Text is
+     * masked first (phone numbers, emails, long digit runs) and the GPS point
+     * is never stored. A failure here must never break the chat itself.
+     */
+    protected function recordTurn(string $replyText, ?string $branch, ?array $offer, bool $handoffShown): void
+    {
+        try {
+            $this->resolvePreviousOffer();
+
+            $row = ChatTurn::create([
+                'chat_id' => $this->meta['chatId'],
+                'user_text' => ChatMasker::mask(mb_substr($this->turn['text'] ?? '', 0, 500)),
+                'reply_text' => mb_substr($replyText, 0, 1000),
+                'language' => $this->lang(),
+                'branch' => $branch,
+                'filters' => array_diff_key($this->filters, array_flip(['near_lat', 'near_lng'])),
+                'used_fallback' => $this->turn['used_fallback'] ?? false,
+                'llm_failed' => $this->turn['llm_failed'] ?? false,
+                'offer_type' => $offer['type'] ?? null,
+                'handoff_shown' => $handoffShown,
+            ]);
+
+            $this->meta['lastTurnId'] = $row->id;
+        } catch (\Throwable $e) {
+            Log::warning('Chat turn logging failed', ['message' => $e->getMessage()]);
+        }
+    }
+
+    /** What the visitor did with the previous turn's offer, written back to that logged row. */
+    protected function resolvePreviousOffer(): void
+    {
+        if (empty($this->turn['prior_offer']) || empty($this->meta['lastTurnId'])) {
+            return;
+        }
+
+        ChatTurn::where('id', $this->meta['lastTurnId'])
+            ->where('chat_id', $this->meta['chatId'])
+            ->update(['offer_result' => $this->turn['offer_result'] ?? 'ignored']);
+    }
+
+    protected function lang(): string
+    {
+        return $this->meta['lang'] ?? 'en';
+    }
+
+    /** A short, plainly affirmative reply - "yes", "ndio", "check other areas" - as opposed to a new, unrelated query. */
     protected function looksAffirmative(string $text): bool
     {
+        if (app(ChatAliasService::class)->isYes($text)) {
+            return true;
+        }
+
         $normalized = trim(mb_strtolower($text), " \t\n\r\0\x0B.!?");
 
         if (mb_strlen($normalized) > 40) {
@@ -288,6 +557,19 @@ class ChatAssistant extends Component
             '/^(yes|yeah|yep|yup|sure|ok|okay|please|go ahead|check other areas?|other areas?|check elsewhere|anywhere else|elsewhere|show (me )?other(s)?|widen|broaden)\b/i',
             $normalized
         );
+    }
+
+    /** A short, plainly negative reply to the assistant's own last offer. */
+    protected function looksNegative(string $text): bool
+    {
+        if (app(ChatAliasService::class)->isNo($text)) {
+            return true;
+        }
+
+        $normalized = trim(mb_strtolower($text), " \t\n\r\0\x0B.!?");
+
+        return mb_strlen($normalized) <= 40
+            && (bool) preg_match('/^(no|nope|nah|not really|no thanks|no thank you|never ?mind|cancel)\b/i', $normalized);
     }
 
     /** OpenRouter's chat format only knows role+content - drop our extra 'cards' key. */
@@ -304,6 +586,8 @@ class ChatAssistant extends Component
             'messages' => array_slice($this->messages, -self::MAX_STORED_MESSAGES),
             'filters' => $this->filters,
             'lastBranch' => $this->lastBranch,
+            'pendingOffer' => $this->pendingOffer,
+            'meta' => $this->meta,
         ]);
     }
 

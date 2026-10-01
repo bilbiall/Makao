@@ -132,10 +132,34 @@ class PlatformSettings extends Page implements HasForms
                                     ->placeholder('G-XXXXXXXXXX')
                                     ->maxLength(50),
 
+                            ]),
+
+                        Forms\Components\Tabs\Tab::make('Support contacts')
+                            ->schema([
+                                Forms\Components\Placeholder::make('support_contacts_note')
+                                    ->label('')
+                                    ->content('Where the chat assistant sends visitors when it can\'t fully help (and when they ask for a person): WhatsApp, call and email buttons appear in the chat. Leave a field blank to hide that button.'),
+
+                                Forms\Components\TextInput::make('support_whatsapp')
+                                    ->label('WhatsApp number')
+                                    ->tel()
+                                    ->placeholder('0712 345 678 or +254712345678')
+                                    ->helperText('Opens a WhatsApp chat with a pre-filled message that includes what the visitor was searching for.')
+                                    ->regex('/^[+\d\s()-]{7,20}$/')
+                                    ->maxLength(20),
+
+                                Forms\Components\TextInput::make('support_phone')
+                                    ->label('Phone number (calls)')
+                                    ->tel()
+                                    ->placeholder('0712 345 678 or +254712345678')
+                                    ->helperText('Opens the phone dialler on mobile.')
+                                    ->regex('/^[+\d\s()-]{7,20}$/')
+                                    ->maxLength(20),
+
                                 Forms\Components\TextInput::make('platform_support_email')
-                                    ->label('Platform Support Email')
+                                    ->label('Support email')
                                     ->email()
-                                    ->helperText('Shown on the marketing site for general enquiries (not a specific landlord\'s support contact).')
+                                    ->helperText('Opens the visitor\'s mail app (Gmail on most phones) with a pre-filled message. Also shown on the marketing site for general enquiries (not a specific landlord\'s support contact).')
                                     ->maxLength(255),
                             ]),
 

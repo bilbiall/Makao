@@ -1,5 +1,5 @@
 @php
-    $tabs = ['appearance' => 'Appearance', 'general' => 'General', 'ai' => 'AI Search', 'sms' => 'SMS', 'email' => 'Email', 'billing' => 'Subscription Billing', 'system' => 'System'];
+    $tabs = ['appearance' => 'Appearance', 'general' => 'General', 'support' => 'Support contacts', 'ai' => 'AI Search', 'sms' => 'SMS', 'email' => 'Email', 'billing' => 'Subscription Billing', 'system' => 'System'];
     $inputClass = 'mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100';
     $labelClass = 'text-xs font-medium text-slate-600 dark:text-slate-400';
     $paletteSwatches = [
@@ -123,10 +123,27 @@
                 @error('data.google_analytics_id') <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p> @enderror
             </div>
 
-            <div class="pt-2 border-t border-slate-100 dark:border-slate-800">
-                <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">Support</p>
-                <label class="{{ $labelClass }}">Platform support email</label>
+        @elseif ($activeTab === 'support')
+            <p class="text-xs text-slate-500 dark:text-slate-400">Where the chat assistant sends visitors when it can't fully help (and when they ask for a person): WhatsApp, call and email buttons appear in the chat. Leave a field blank to hide that button.</p>
+
+            <div>
+                <label class="{{ $labelClass }}">WhatsApp number</label>
+                <input type="tel" wire:model="data.support_whatsapp" placeholder="0712 345 678 or +254712345678" class="{{ $inputClass }}">
+                <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Opens a WhatsApp chat with a pre-filled message that includes what the visitor was searching for.</p>
+                @error('data.support_whatsapp') <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p> @enderror
+            </div>
+
+            <div>
+                <label class="{{ $labelClass }}">Phone number (calls)</label>
+                <input type="tel" wire:model="data.support_phone" placeholder="0712 345 678 or +254712345678" class="{{ $inputClass }}">
+                <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Opens the phone dialler on mobile.</p>
+                @error('data.support_phone') <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p> @enderror
+            </div>
+
+            <div>
+                <label class="{{ $labelClass }}">Support email</label>
                 <input type="email" wire:model="data.platform_support_email" class="{{ $inputClass }}">
+                <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Opens the visitor's mail app (Gmail on most phones) with a pre-filled message. Also shown on the marketing site for general enquiries.</p>
                 @error('data.platform_support_email') <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p> @enderror
             </div>
         @elseif ($activeTab === 'ai')

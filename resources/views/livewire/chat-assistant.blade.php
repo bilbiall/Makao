@@ -123,7 +123,7 @@
                             @endif
                         </div>
                     @endif
-                    <div class="max-w-[80%] rounded-2xl px-3 py-2 text-sm {{ $message['role'] === 'user'
+                    <div class="max-w-[80%] whitespace-pre-line rounded-2xl px-3 py-2 text-sm {{ $message['role'] === 'user'
                         ? 'bg-emerald-600 text-white'
                         : 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100' }}">
                         {{ $message['text'] }}
@@ -157,6 +157,41 @@
                                     </p>
                                 </div>
                             </a>
+                        @endforeach
+                    </div>
+                @endif
+
+                {{-- Direct contact buttons (WhatsApp / call / email) the assistant offers
+                     when it can't fully help - numbers come from Platform Settings. --}}
+                @if ($loop->last && ! empty($message['links']))
+                    <div class="flex flex-wrap gap-2 pl-8">
+                        @foreach ($message['links'] as $link)
+                            <a
+                                href="{{ $link['url'] }}"
+                                @if ($link['kind'] === 'whatsapp') target="_blank" rel="noopener noreferrer" @endif
+                                class="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
+                            >
+                                @svg($link['kind'] === 'call' ? 'heroicon-o-phone' : ($link['kind'] === 'email' ? 'heroicon-o-envelope' : 'heroicon-o-chat-bubble-left-right'), 'w-4 h-4')
+                                {{ $link['label'] }}
+                            </a>
+                        @endforeach
+                    </div>
+                @endif
+
+                {{-- Quick replies: only the newest message's, so a tapped chip always
+                     refers to the offer that's actually still pending. --}}
+                @if ($loop->last && ! empty($message['chips']))
+                    <div class="flex flex-wrap gap-2 pl-8">
+                        @foreach ($message['chips'] as $i => $chip)
+                            <button
+                                type="button"
+                                wire:click="pickChip({{ $i }})"
+                                wire:loading.attr="disabled"
+                                wire:target="send,reply,pickChip"
+                                class="rounded-full border border-emerald-600 px-3 py-1.5 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-50 disabled:opacity-60 dark:border-emerald-500 dark:text-emerald-400 dark:hover:bg-emerald-950"
+                            >
+                                {{ $chip['label'] }}
+                            </button>
                         @endforeach
                     </div>
                 @endif

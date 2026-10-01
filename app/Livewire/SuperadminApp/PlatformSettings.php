@@ -91,6 +91,8 @@ class PlatformSettings extends Component
             'data.app_name' => 'required|string|max:255',
             'data.google_analytics_id' => 'nullable|string|max:50',
             'data.platform_support_email' => 'nullable|email|max:255',
+            'data.support_whatsapp' => ['nullable', 'string', 'max:20', 'regex:/^[+\d\s()-]{7,20}$/'],
+            'data.support_phone' => ['nullable', 'string', 'max:20', 'regex:/^[+\d\s()-]{7,20}$/'],
             'data.sms_url' => 'nullable|url|max:255',
             'data.sms_api_key' => 'nullable|string|max:255',
             'data.sms_partner_id' => 'nullable|string|max:100',

@@ -34,14 +34,23 @@
                 Find a BnB
             </a>
             <x-theme-toggle class="h-9 w-9 text-slate-400 hover:bg-slate-200/60 dark:text-slate-400 dark:hover:bg-slate-800" />
-            <a href="{{ route('generic.login') }}"
-               class="rounded-lg border px-4 py-2 text-sm font-medium transition-colors"
-               :class="scrolled ? 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800' : 'border-white/40 bg-transparent text-white hover:border-white/70'">
-                Log in
-            </a>
-            <a href="{{ route('get-started') }}" class="hidden rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700 sm:block">
-                Get started
-            </a>
+            @auth
+                {{-- Same role -> dashboard mapping the login form itself uses, so this
+                     always lands where logging in would have. --}}
+                <a href="{{ route(\App\Http\Controllers\GenericLoginController::dashboardRouteForRole(auth()->user()->role)) }}"
+                   class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700">
+                    Dashboard
+                </a>
+            @else
+                <a href="{{ route('generic.login') }}"
+                   class="rounded-lg border px-4 py-2 text-sm font-medium transition-colors"
+                   :class="scrolled ? 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800' : 'border-white/40 bg-transparent text-white hover:border-white/70'">
+                    Log in
+                </a>
+                <a href="{{ route('get-started') }}" class="hidden rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700 sm:block">
+                    Get started
+                </a>
+            @endauth
         </nav>
     </div>
 </header>

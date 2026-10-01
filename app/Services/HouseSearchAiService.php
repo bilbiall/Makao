@@ -210,10 +210,14 @@ class HouseSearchAiService
      * prices) instead of admitting it has nothing, so this method is not a
      * substitute for that check, only a second line of defense.
      */
-    public function composeReply(array $history, array $facts): string
+    public function composeReply(array $history, array $facts, string $lang = 'en'): string
     {
+        $languageRule = $lang === 'sw'
+            ? 'Write the reply in simple, natural Swahili (the visitor wrote in Swahili). Keep "KES", numbers, area names and unit types exactly as given in the facts.'
+            : 'Write the reply in English.';
+
         $system = <<<PROMPT
-            You are Makao's friendly, concise rental-search assistant for Kenya. You are given verified search facts computed by the backend - never invent listings, prices, counts, or areas beyond what appears in the facts below. Reply in 2-4 short sentences, warm and conversational, no markdown, no bullet points.
+            You are Makao's friendly, concise rental-search assistant for Kenya. You are given verified search facts computed by the backend - never invent listings, prices, counts, or areas beyond what appears in the facts below. Reply in 2-4 short sentences, warm and conversational, no markdown, no bullet points. {$languageRule}
 
             Facts: {$this->jsonEncode($facts)}
 
@@ -238,7 +242,7 @@ class HouseSearchAiService
 
         $raw = $this->chat(array_merge([['role' => 'system', 'content' => $system]], $history));
 
-        return $raw ?: $this->fallbackReply($facts);
+        return $raw ?: $this->fallbackReply($facts, $lang);
     }
 
     /**
@@ -246,8 +250,12 @@ class HouseSearchAiService
      * composeReply() failure path and, deliberately, as the ONLY narration for
      * any branch with no real listings behind it (see ChatAssistant::reply()).
      */
-    public function fallbackReply(array $facts): string
+    public function fallbackReply(array $facts, string $lang = 'en'): string
     {
+        if ($lang === 'sw') {
+            return \App\Support\ChatCopy::fallbackSw($facts);
+        }
+
         $criteria = $this->describeFilters($facts['filters'] ?? []);
 
         return match ($facts['branch'] ?? null) {
@@ -304,11 +312,18 @@ class HouseSearchAiService
             default => null,
         };
 
+        // The budget is often the one filter that actually failed ("1 Bedroom
+        // under 10k" when 1-beds exist but start at 14k) - leaving it out made
+        // the reply read as if the unit type itself didn't exist.
+        $budget = filled($filters['max_rent'] ?? null)
+            ? ' under KES '.number_format((int) $filters['max_rent'])
+            : '';
+
         return match (true) {
-            $type && $place => " for a {$type} {$place}",
-            (bool) $type => " for a {$type}",
-            (bool) $place => " {$place}",
-            default => '',
+            $type && $place => " for a {$type} {$place}{$budget}",
+            (bool) $type => " for a {$type}{$budget}",
+            (bool) $place => " {$place}{$budget}",
+            default => $budget,
         };
     }
 
@@ -426,6 +441,13 @@ class HouseSearchAiService
             }
         }
 
+        // A nickname the superadmin has taught the assistant ("Kasa" for
+        // Kasarani) - checked before the typo-tolerant pass so a deliberate
+        // alias is never overridden by a coincidentally-close real name.
+        if (! isset($filters['area']) && ($alias = app(ChatAliasService::class)->areaFor($text))) {
+            $filters['area'] = $alias;
+        }
+
         // A misspelled area ("Westland" for "Westlands", "Kilimanii" for
         // "Kilimani") would otherwise silently fail to match at all and drop
         // the visitor straight into "clarify" - only tried once an exact
@@ -516,6 +538,9 @@ class HouseSearchAiService
             $filters['max_rent'] = (int) str_replace(',', '', $m[1]);
         } elseif (preg_match('/(\d[\d,]*)\s*k\b/i', $text, $m)) {
             $filters['max_rent'] = (int) str_replace(',', '', $m[1]) * 1000;
+        } elseif (preg_match('/(\d[\d,]*)\s*elfu\b/iu', $text, $m)) {
+            // Swahili "elfu" = thousand: "chini ya 10 elfu" is 10,000.
+            $filters['max_rent'] = (int) str_replace(',', '', $m[1]) * 1000;
         } elseif (preg_match('/\b(\d{4,6})\b/', str_replace(',', '', $text), $m)) {
             $filters['max_rent'] = (int) $m[1];
         }
@@ -541,6 +566,12 @@ class HouseSearchAiService
             if (preg_match('/\b' . $word . '\s*-?\s*(?:bed(?:room)?s?|br)\b/i', $text)) {
                 return $number . ' Bedroom';
             }
+        }
+
+        // Swahili/Sheng phrasing ("vyumba viwili", "bedsitta") and any unit-type
+        // phrase the superadmin has added.
+        if ($aliased = app(ChatAliasService::class)->houseTypeFor($text)) {
+            return $aliased;
         }
 
         $exact = match (true) {
