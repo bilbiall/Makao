@@ -173,37 +173,73 @@
         <div x-show="moreOpen" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="translate-y-full" x-transition:enter-end="translate-y-0"
              class="absolute bottom-0 inset-x-0 bg-white rounded-t-2xl border-t border-slate-200 dark:bg-slate-900 dark:border-slate-800 pb-[env(safe-area-inset-bottom)]">
             <div class="mx-auto mt-3 h-1.5 w-10 rounded-full bg-slate-300 dark:bg-slate-700"></div>
-            <div class="px-4 py-4 grid grid-cols-3 gap-3">
-                @foreach ($moreItems as $item)
-                    <a href="{{ route($item['route']) }}" class="flex flex-col items-center gap-2 rounded-xl border border-slate-100 py-4 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800">
-                        <span class="relative">
-                            @svg($item['icon'], 'w-6 h-6 text-emerald-600 dark:text-emerald-400')
-                            @if ($item['label'] === 'Chat')
-                                <span class="absolute -top-1 -right-1.5"><livewire:chat-unread-badge :key="'chat-badge-more'" /></span>
-                            @elseif ($item['label'] === 'Viewing Requests')
-                                <span class="absolute -top-1 -right-1.5"><livewire:viewing-requests-badge :key="'viewing-requests-badge-more'" /></span>
-                            @endif
-                        </span>
-                        <span class="text-center">{{ $item['label'] }}</span>
-                    </a>
-                @endforeach
+            @php
+                // Same buckets as the desktop sidebar, minus whatever is already in the
+                // bottom bar. Roles with no groups (tenant, superadmin...) just get the flat grid.
+                $moreUngrouped = [];
+                $moreGroups = [];
+                foreach ($moreItems as $item) {
+                    if (empty($item['group'])) {
+                        $moreUngrouped[] = $item;
+                    } else {
+                        $moreGroups[$item['group']][] = $item;
+                    }
+                }
+                $activeGroup = '';
+                foreach ($moreGroups as $groupLabel => $groupItems) {
+                    foreach ($groupItems as $groupItem) {
+                        if (request()->routeIs($groupItem['route'])) {
+                            $activeGroup = $groupLabel;
+                        }
+                    }
+                }
+            @endphp
+            <div class="max-h-[70vh] overflow-y-auto overscroll-contain" x-data="{ openGroup: @js($activeGroup) }">
+                @if ($moreUngrouped)
+                    <div class="px-4 pt-4 grid grid-cols-3 gap-3">
+                        @foreach ($moreUngrouped as $item)
+                            @include('partials.more-sheet-item', ['item' => $item])
+                        @endforeach
+                    </div>
+                @endif
+
+                @if ($moreGroups)
+                    <div class="px-4 py-3 space-y-2">
+                        @foreach ($moreGroups as $groupLabel => $groupItems)
+                            <div class="rounded-xl border border-slate-100 dark:border-slate-800">
+                                <button type="button" @click="openGroup = openGroup === @js($groupLabel) ? '' : @js($groupLabel)"
+                                        class="flex w-full items-center justify-between px-4 py-3 text-sm font-semibold text-slate-800 dark:text-slate-200">
+                                    <span>{{ $groupLabel }} <span class="ml-1 text-xs font-normal text-slate-400">{{ count($groupItems) }}</span></span>
+                                    <span class="transition-transform" :class="openGroup === @js($groupLabel) ? 'rotate-180' : ''">@svg('heroicon-o-chevron-down', 'w-4 h-4 text-slate-400')</span>
+                                </button>
+                                <div x-show="openGroup === @js($groupLabel)" x-cloak class="grid grid-cols-3 gap-3 px-3 pb-3">
+                                    @foreach ($groupItems as $item)
+                                        @include('partials.more-sheet-item', ['item' => $item])
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+            </div>
+            <div class="flex items-center border-t border-slate-100 dark:border-slate-800 text-sm font-medium text-slate-600 dark:text-slate-300">
                 <button type="button" x-data @click="
                         const html = document.documentElement;
                         const nowDark = !html.classList.contains('dark');
                         html.classList.toggle('dark', nowDark);
                         try { localStorage.setItem('theme', nowDark ? 'dark' : 'light'); } catch (e) {}
-                    " class="flex flex-col items-center gap-2 rounded-xl border border-slate-100 py-4 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800">
-                    <span class="dark:hidden">@svg('heroicon-o-moon', 'w-6 h-6 text-emerald-600')</span>
-                    <span class="hidden dark:inline">@svg('heroicon-o-sun', 'w-6 h-6 text-emerald-400')</span>
-                    <span class="text-center"><span class="dark:hidden">Dark mode</span><span class="hidden dark:inline">Light mode</span></span>
+                    " class="flex flex-1 items-center justify-center gap-1.5 px-4 py-3">
+                    <span class="dark:hidden">@svg('heroicon-o-moon', 'w-4 h-4')</span>
+                    <span class="hidden dark:inline">@svg('heroicon-o-sun', 'w-4 h-4')</span>
+                    <span><span class="dark:hidden">Dark mode</span><span class="hidden dark:inline">Light mode</span></span>
                 </button>
+                @if ($filamentRoute)
+                    <a href="{{ route($filamentRoute) }}" class="flex flex-1 items-center justify-center gap-1.5 border-l border-slate-100 dark:border-slate-800 px-4 py-3">
+                        @svg('heroicon-o-computer-desktop', 'w-4 h-4')
+                        Advanced view
+                    </a>
+                @endif
             </div>
-            @if ($filamentRoute)
-                <a href="{{ route($filamentRoute) }}" class="flex items-center justify-center gap-1.5 border-t border-slate-100 dark:border-slate-800 px-4 py-3 text-sm font-medium text-slate-600 dark:text-slate-300">
-                    @svg('heroicon-o-computer-desktop', 'w-4 h-4')
-                    Advanced view
-                </a>
-            @endif
             <form method="POST" action="{{ route('app.logout') }}" class="border-t border-slate-100 dark:border-slate-800 px-4 py-3">
                 @csrf
                 <button type="submit" class="w-full text-center text-sm font-medium text-rose-600 dark:text-rose-400">Sign out</button>
