@@ -2,6 +2,7 @@
 
 namespace App\Livewire\AdminApp;
 
+use App\Models\LandlordRoleDefault;
 use App\Models\StaffRole;
 use App\Support\StaffPermissions;
 use Illuminate\Support\Facades\Auth;
@@ -15,6 +16,10 @@ class StaffRoles extends Component
     public string $name = '';
     public string $scope_type = 'location';
     public array $permissions = [];
+
+    // Built-in role (manager/caretaker/agent) being customised for this landlord only.
+    public ?string $editingBuiltIn = null;
+    public array $builtInPermissions = [];
 
     public function mount(): void
     {
@@ -34,8 +39,50 @@ class StaffRoles extends Component
         ];
     }
 
+    protected function canEditBuiltIn(): bool
+    {
+        // The landlord's own call - a manager shouldn't be able to widen their own access.
+        return in_array(Auth::user()->role, ['admin', 'landlord'], true) && Auth::user()->landlord_id;
+    }
+
+    public function startEditBuiltIn(string $role): void
+    {
+        abort_unless($this->canEditBuiltIn() && in_array($role, StaffPermissions::BUILT_IN_ROLES, true), 403);
+
+        $this->showForm = false;
+        $this->editingBuiltIn = $role;
+        $this->builtInPermissions = StaffPermissions::builtInFor(Auth::user()->landlord_id, $role);
+    }
+
+    public function saveBuiltIn(): void
+    {
+        abort_unless($this->canEditBuiltIn() && in_array($this->editingBuiltIn, StaffPermissions::BUILT_IN_ROLES, true), 403);
+        $this->validate(['builtInPermissions' => 'array', 'builtInPermissions.*' => 'in:' . implode(',', StaffPermissions::all())]);
+
+        LandlordRoleDefault::updateOrCreate(
+            ['landlord_id' => Auth::user()->landlord_id, 'role' => $this->editingBuiltIn],
+            ['permissions' => array_values($this->builtInPermissions)]
+        );
+        StaffPermissions::flushOverrideCache();
+
+        $this->editingBuiltIn = null;
+        session()->flash('staff-role-saved', 'Built-in role updated for your site.');
+    }
+
+    public function resetBuiltIn(string $role): void
+    {
+        abort_unless($this->canEditBuiltIn() && in_array($role, StaffPermissions::BUILT_IN_ROLES, true), 403);
+
+        LandlordRoleDefault::where('landlord_id', Auth::user()->landlord_id)->where('role', $role)->delete();
+        StaffPermissions::flushOverrideCache();
+
+        $this->editingBuiltIn = null;
+        session()->flash('staff-role-saved', 'Built-in role restored to the platform default.');
+    }
+
     public function startCreate(): void
     {
+        $this->editingBuiltIn = null;
         $this->reset(['editingId', 'permissions']);
         $this->name = '';
         $this->scope_type = 'location';
@@ -99,12 +146,14 @@ class StaffRoles extends Component
             'roles' => $roles,
             'catalog' => StaffPermissions::catalog(),
             'builtInRoles' => $this->builtInRoles(),
+            'canEditBuiltIn' => $this->canEditBuiltIn(),
+            'customisedRoles' => LandlordRoleDefault::where('landlord_id', Auth::user()->landlord_id)->pluck('role')->all(),
         ])->layout('components.layouts.app', ['title' => 'Staff Roles']);
     }
 
     /**
      * The three legacy roles every staff account still falls back to until a
-     * custom staff role is created and assigned - shown read-only alongside the
+     * custom staff role is created and assigned - shown alongside the
      * custom roles list so a landlord can see what scope/permissions "Manager",
      * "Caretaker" and "Agent" already carry before deciding whether they need
      * something different. Mirrors StaffScope (property vs unit scope) and
@@ -113,17 +162,14 @@ class StaffRoles extends Component
      */
     protected function builtInRoles(): array
     {
-        $all = StaffPermissions::all();
+        $landlordId = Auth::user()->landlord_id;
 
         return collect([
             ['role' => 'manager', 'name' => 'Manager', 'scope_type' => 'location', 'summary' => 'Full access'],
             ['role' => 'caretaker', 'name' => 'Caretaker', 'scope_type' => 'location', 'summary' => 'On-site tasks only'],
             ['role' => 'agent', 'name' => 'Agent', 'scope_type' => 'house', 'summary' => 'Bookings only'],
-        ])->map(function (array $r) use ($all) {
-            $r['permissions'] = array_values(array_filter(
-                $all,
-                fn (string $slug) => StaffPermissions::defaultFor($r['role'], $slug)
-            ));
+        ])->map(function (array $r) use ($landlordId) {
+            $r['permissions'] = StaffPermissions::builtInFor($landlordId, $r['role']);
             return $r;
         })->all();
     }

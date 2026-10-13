@@ -110,7 +110,7 @@
     <div class="space-y-3">
         <div>
             <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">Built-in roles</p>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Every staff account without a custom role assigned falls back to one of these - fixed, not editable here.</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Every staff account without a custom role assigned falls back to one of these - the landlord can customise their permissions, and it only changes this site's staff.</p>
         </div>
         @foreach ($builtInRoles as $role)
             <div class="rounded-2xl bg-slate-50 border border-slate-200 p-4 dark:bg-slate-900/40 dark:border-slate-800">
@@ -128,8 +128,44 @@
                 </div>
                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">
                     {{ count($role['permissions']) }} of {{ count(\App\Support\StaffPermissions::all()) }} permissions
-                    ({{ strtolower($role['summary']) }})
+                    @if (in_array($role['role'], $customisedRoles))
+                        (customised for your site)
+                    @else
+                        ({{ strtolower($role['summary']) }})
+                    @endif
                 </p>
+
+                @if ($canEditBuiltIn)
+                    @if ($editingBuiltIn === $role['role'])
+                        <div class="mt-3 space-y-3">
+                            <p class="text-[11px] text-slate-400 dark:text-slate-500">Changes apply only to your {{ $role['name'] }} staff without a custom role. Property/unit scope stays fixed.</p>
+                            @foreach ($catalog as $group => $options)
+                                <div class="rounded-lg border border-slate-200 dark:border-slate-700 p-3">
+                                    <p class="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">{{ $group }}</p>
+                                    <div class="space-y-1.5">
+                                        @foreach ($options as $slug => $label)
+                                            <label class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                                                <input type="checkbox" wire:model="builtInPermissions" value="{{ $slug }}" class="rounded border-slate-300 dark:border-slate-700">
+                                                {{ $label }}
+                                            </label>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endforeach
+                            <div class="flex gap-2">
+                                <button type="button" wire:click="$set('editingBuiltIn', null)" class="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 py-2 text-xs font-medium text-slate-700 dark:text-slate-300">Cancel</button>
+                                <button type="button" wire:click="saveBuiltIn" class="flex-1 rounded-lg bg-emerald-600 py-2 text-xs font-semibold text-white hover:bg-emerald-700">Save</button>
+                            </div>
+                        </div>
+                    @else
+                        <div class="mt-3 flex gap-2">
+                            <button type="button" wire:click="startEditBuiltIn('{{ $role['role'] }}')" class="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 py-2 text-xs font-medium text-slate-700 dark:text-slate-300">Customise</button>
+                            @if (in_array($role['role'], $customisedRoles))
+                                <button type="button" wire:click="resetBuiltIn('{{ $role['role'] }}')" wire:confirm="Restore the platform default for this role?" class="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 py-2 text-xs font-medium text-slate-700 dark:text-slate-300">Reset to default</button>
+                            @endif
+                        </div>
+                    @endif
+                @endif
             </div>
         @endforeach
     </div>

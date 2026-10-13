@@ -151,6 +151,48 @@ class StaffPermissions
      */
     public static function defaultFor(string $role, string $slug): bool
     {
+        return in_array($slug, self::platformDefaults($role), true);
+    }
+
+    public const BUILT_IN_ROLES = ['manager', 'caretaker', 'agent'];
+
+    /** Request-lifetime cache of landlord overrides: [landlord_id => [role => slugs]]. */
+    protected static array $overrideCache = [];
+
+    public static function flushOverrideCache(): void
+    {
+        self::$overrideCache = [];
+    }
+
+    /**
+     * Built-in role permissions for one landlord's staff: that landlord's own
+     * override if they saved one (see LandlordRoleDefault), else the platform
+     * default. Scoped per landlord, so one site's edits never touch another's.
+     */
+    public static function builtInFor(?int $landlordId, string $role): array
+    {
+        if ($landlordId) {
+            self::$overrideCache[$landlordId] ??= \App\Models\LandlordRoleDefault::where('landlord_id', $landlordId)
+                ->pluck('permissions', 'role')
+                ->map(fn ($p) => is_array($p) ? $p : [])
+                ->all();
+
+            if (array_key_exists($role, self::$overrideCache[$landlordId])) {
+                // Ignore slugs that have since left the catalog.
+                return array_values(array_intersect(self::$overrideCache[$landlordId][$role], self::all()));
+            }
+        }
+
+        return self::platformDefaults($role);
+    }
+
+    public static function platformDefaults(string $role): array
+    {
+        return array_values(array_filter(self::all(), fn (string $slug) => self::rawDefault($role, $slug)));
+    }
+
+    protected static function rawDefault(string $role, string $slug): bool
+    {
         if ($role === 'manager') {
             return in_array($slug, self::all(), true);
         }

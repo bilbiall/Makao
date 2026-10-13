@@ -195,7 +195,8 @@ class User extends Authenticatable implements MustVerifyEmail
             return $this->staffRole?->hasPermission($slug) ?? false;
         }
 
-        return \App\Support\StaffPermissions::defaultFor($this->role, $slug);
+        // Legacy built-in role: the landlord's own override if they edited it, else the platform default.
+        return in_array($slug, \App\Support\StaffPermissions::builtInFor($this->landlord_id, $this->role), true);
     }
 
     // Manager/Caretaker property access - see App\Support\StaffScope, which replaces

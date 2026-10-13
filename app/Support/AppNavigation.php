@@ -220,16 +220,13 @@ class AppNavigation
     }
 
     /**
-     * The Filament panel dashboard for this role's "Advanced view" - null for 'user',
-     * which has no Filament panel at all (it's a self-registered, landlord-less
-     * account). The app-shell stays the default landing spot for every role
-     * (GenericLoginController), Filament is reached only via this deliberate link.
+     * The Filament panel dashboard for the "Advanced view" link - superadmin only;
+     * null for every other role, whose app-shell is the whole interface. The
+     * app-shell stays the default landing spot (GenericLoginController).
      */
     public static function filamentDashboardRoute(string $role): ?string
     {
         return match ($role) {
-            'admin', 'landlord', 'manager', 'caretaker', 'agent', 'staff' => 'filament.admin.pages.dashboard',
-            'tenant' => 'filament.tenant.pages.tenant-dashboard',
             'superadmin' => 'filament.superadmin.pages.superadmin-dashboard',
             default => null,
         };

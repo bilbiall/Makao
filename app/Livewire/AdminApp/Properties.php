@@ -258,7 +258,7 @@ class Properties extends Component
         }
 
         $this->reset(['house_name', 'display_name', 'house_type', 'rent_amount', 'listing_mode', 'bnb_nightly_price', 'bnb_weekly_price', 'bnb_monthly_price', 'addingHouseTo']);
-        session()->flash('properties-status', 'Unit added. Add photos, a description, amenities and nearby places via Advanced view to make it visible on the public site.');
+        session()->flash('properties-status', 'Unit added. Add photos, a description, amenities and nearby places from the unit's page to make it visible on the public site.');
     }
 
     public function render()
