@@ -1,4 +1,4 @@
-<x-layouts.marketing :title="'Create your account'">
+<x-layouts.marketing :title="'Create your account'" :noindex="true">
     <div class="max-w-2xl mx-auto px-6 py-16">
         <div class="text-center mb-10">
             <h1 class="text-3xl font-bold text-slate-900 dark:text-slate-100">Find your next home</h1>

@@ -1,4 +1,4 @@
-<x-layouts.marketing>
+<x-layouts.marketing description="Browse real long-term rentals and furnished BnB stays across Kenya. Request a viewing or book online, with rent paid safely by M-Pesa.">
     <x-marketing.intent-popup />
 
     {{-- Hero --}}

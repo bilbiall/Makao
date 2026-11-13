@@ -1,4 +1,4 @@
-<x-layouts.marketing :title="'Your booking'">
+<x-layouts.marketing :title="'Your booking'" :noindex="true">
     <div class="max-w-2xl mx-auto px-6 py-12">
         @if (session('status'))
             <div class="mb-6 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm p-4">

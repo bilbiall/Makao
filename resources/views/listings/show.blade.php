@@ -1,4 +1,11 @@
-<x-layouts.marketing :title="$house->publicName()">
+@php
+    $listArea = $house->location?->geo_id ?? $house->location?->location_name ?? 'Kenya';
+    $listType = $house->house_type ? \Illuminate\Support\Str::headline($house->house_type) : 'House';
+    $listBlurb = trim(strip_tags((string) $house->description));
+    $listDesc = $listType . ' to rent in ' . $listArea . ' for KES ' . number_format($house->rent_amount) . ' per month.'
+        . ($listBlurb !== '' ? ' ' . \Illuminate\Support\Str::limit($listBlurb, 120) : ' See photos and request a viewing online.');
+@endphp
+<x-layouts.marketing :title="$house->publicName() . ' - ' . $listType . ' in ' . $listArea" :description="$listDesc" :image="$house->photos->first()?->url()">
     <div class="pb-24 md:pb-14">
         <div class="mx-auto max-w-5xl px-4 py-6 sm:px-6">
             @if (session('status'))

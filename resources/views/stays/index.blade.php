@@ -1,4 +1,7 @@
-<x-layouts.marketing :title="'Book a stay'">
+@php
+    $stayArea = request('area');
+@endphp
+<x-layouts.marketing :title="$stayArea ? 'BnB and short stays in ' . $stayArea : 'BnB and short stays in Kenya'" :description="'Book furnished BnBs and short stays' . ($stayArea ? ' in ' . $stayArea : ' across Kenya') . '. Real photos, clear nightly prices, and pay by M-Pesa.'">
     <div class="pb-14">
         <div class="sticky top-[57px] z-30 border-b border-slate-200 bg-stone-50/95 backdrop-blur dark:border-slate-800 dark:bg-slate-950/95">
             <div class="mx-auto max-w-6xl px-4 py-3 sm:px-6">

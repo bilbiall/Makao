@@ -1,4 +1,4 @@
-<x-layouts.marketing :title="'Pricing'">
+<x-layouts.marketing :title="'Pricing'" description="Hizihome pricing is based on the size and scale of your portfolio. Start free for 3 months, no card needed.">
     <section class="max-w-6xl mx-auto px-6 py-20">
         <div class="text-center max-w-2xl mx-auto">
             <h1 class="text-4xl font-bold text-slate-900 dark:text-slate-100">Plans that scale with your portfolio</h1>

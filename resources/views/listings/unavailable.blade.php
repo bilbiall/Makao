@@ -1,4 +1,4 @@
-<x-layouts.marketing :title="$house->publicName()">
+<x-layouts.marketing :title="$house->publicName()" :noindex="true">
     <div class="pb-24 md:pb-14">
         <div class="mx-auto max-w-xl px-4 py-16 sm:px-6 text-center">
             @if (session('status'))

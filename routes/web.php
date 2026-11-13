@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\MarketingController;
 
 Route::get('/', [MarketingController::class, 'home'])->name('home');
+Route::get('/sitemap.xml', [MarketingController::class, 'sitemap'])->name('sitemap');
+Route::get('/robots.txt', [MarketingController::class, 'robots'])->name('robots');
 Route::get('/for-landlords', [MarketingController::class, 'forLandlords'])->name('for-landlords');
 Route::get('/pricing', [MarketingController::class, 'pricing'])->name('pricing');
 Route::get('/privacy', [MarketingController::class, 'privacy'])->name('privacy');

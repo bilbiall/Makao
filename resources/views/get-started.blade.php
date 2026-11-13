@@ -1,4 +1,4 @@
-<x-layouts.marketing :title="'Get started'">
+<x-layouts.marketing :title="'Get started'" description="Start with Hizihome in minutes. Free for 3 months, no card needed.">
     <div class="max-w-4xl mx-auto px-6 py-20">
         <div class="text-center mb-12">
             <h1 class="text-3xl font-bold text-slate-900 dark:text-slate-100">What brings you here?</h1>

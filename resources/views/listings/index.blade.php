@@ -1,4 +1,11 @@
-<x-layouts.marketing :title="'Find a house'">
+@php
+    $areaFilter = request('area');
+    $listTitle = $areaFilter ? 'Houses and apartments to rent in ' . $areaFilter : 'Houses and apartments to rent in Kenya';
+    $listDescription = $areaFilter
+        ? 'Browse verified houses, bedsitters and apartments to rent in ' . $areaFilter . '. See real photos and prices, then request a viewing online.'
+        : 'Browse verified houses, bedsitters and apartments to rent across Kenya. See real photos and prices, then request a viewing online.';
+@endphp
+<x-layouts.marketing :title="$listTitle" :description="$listDescription">
     <div class="pb-14">
         <div class="sticky top-[57px] z-30 border-b border-slate-200 bg-stone-50/95 backdrop-blur dark:border-slate-800 dark:bg-slate-950/95">
             <div class="mx-auto max-w-6xl px-4 py-3 sm:px-6">

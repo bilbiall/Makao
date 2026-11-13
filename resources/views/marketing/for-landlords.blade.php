@@ -1,4 +1,4 @@
-<x-layouts.marketing :title="'List your property'">
+<x-layouts.marketing :title="'Property management software for Kenyan landlords'" description="Collect rent by M-Pesa, send invoices and SMS reminders, find tenants and see every shilling on one dashboard. Free for 3 months.">
     <x-marketing.hero />
     <x-marketing.feature-grid />
     <x-marketing.how-it-works />

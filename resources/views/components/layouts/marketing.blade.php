@@ -9,26 +9,73 @@
     <link rel="manifest" href="{{ asset('manifest.json') }}">
     <meta name="theme-color" content="#133a2f">
     @php
-        $pageTitle = ($title ?? config('app.name', 'Hizihome')) . ' - Hizihome';
-        $pageDescription = $description ?? 'Hizihome is an all-in-one rental management platform for Kenyan landlords and property managers - M-Pesa rent collection, tenant portal, maintenance tracking, and more.';
-        $fallbackLogoPath = \App\Models\Setting::forLandlord(null)->payload['logo_path'] ?? null;
-        $pageImage = $image ?? ($fallbackLogoPath ? \Illuminate\Support\Facades\Storage::disk('public')->url($fallbackLogoPath) : asset('images/brand/hizihome-icon.png'));
+        // $title is the page's own name; the homepage passes none and gets the full
+        // brand headline instead of "Hizihome - Hizihome". $noindex keeps transactional
+        // pages (bookings, account creation, unavailable listings) out of search.
+        $siteName = 'Hizihome';
+        $pageTitle = ! empty($title) ? $title . ' | ' . $siteName : $siteName . ' | Rentals and BnB stays in Kenya';
+        $pageDescription = $description ?? 'Hizihome helps Kenyans find rentals and BnB stays they can trust, and helps landlords and property managers collect rent by M-Pesa, manage tenants and run their buildings from one dashboard.';
+        $pageImage = $image ?? asset('images/brand/hizihome-og.png');
+        $usingDefaultImage = empty($image);
+        $canonicalUrl = url()->current();
     @endphp
     <title>{{ $pageTitle }}</title>
     <meta name="description" content="{{ $pageDescription }}">
+    <link rel="canonical" href="{{ $canonicalUrl }}">
+    @if (! empty($noindex))
+        <meta name="robots" content="noindex, follow">
+    @endif
 
     {{-- Rich link previews (WhatsApp/Facebook/Twitter/etc) - $image is the only prop
          a page needs to pass beyond the existing :title/:description to get one; falls
-         back to the site's own logo everywhere else so a share is never a bare link. --}}
+         back to the branded share card everywhere else so a share is never a bare link. --}}
+    <meta property="og:site_name" content="{{ $siteName }}">
+    <meta property="og:locale" content="en_KE">
     <meta property="og:type" content="website">
     <meta property="og:title" content="{{ $pageTitle }}">
     <meta property="og:description" content="{{ $pageDescription }}">
-    <meta property="og:url" content="{{ request()->url() }}">
+    <meta property="og:url" content="{{ $canonicalUrl }}">
     <meta property="og:image" content="{{ $pageImage }}">
+    @if ($usingDefaultImage)
+        <meta property="og:image:width" content="1200">
+        <meta property="og:image:height" content="630">
+    @endif
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{{ $pageTitle }}">
     <meta name="twitter:description" content="{{ $pageDescription }}">
     <meta name="twitter:image" content="{{ $pageImage }}">
+
+    @if (request()->routeIs('home'))
+        <script type="application/ld+json">
+            {!! json_encode([
+                '@context' => 'https://schema.org',
+                '@graph' => [
+                    [
+                        '@type' => 'Organization',
+                        '@id' => url('/') . '#organization',
+                        'name' => $siteName,
+                        'url' => url('/'),
+                        'logo' => asset('images/brand/hizihome-icon.png'),
+                        'areaServed' => 'KE',
+                    ],
+                    [
+                        '@type' => 'WebSite',
+                        '@id' => url('/') . '#website',
+                        'url' => url('/'),
+                        'name' => $siteName,
+                        'inLanguage' => 'en-KE',
+                        'publisher' => ['@id' => url('/') . '#organization'],
+                        'potentialAction' => [
+                            '@type' => 'SearchAction',
+                            'target' => url('/houses') . '?area={search_term_string}',
+                            'query-input' => 'required name=search_term_string',
+                        ],
+                    ],
+                ],
+            ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
+        </script>
+    @endif
+    @stack('head')
 
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700" rel="stylesheet" />

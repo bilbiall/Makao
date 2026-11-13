@@ -1,4 +1,4 @@
-<x-layouts.marketing :title="'Start your free trial'">
+<x-layouts.marketing :title="'Start your free trial'" description="Create your Hizihome landlord account and start your 3 month free trial." :noindex="true">
     <div class="max-w-2xl mx-auto px-6 py-16">
         <div class="text-center mb-10">
             <h1 class="text-3xl font-bold text-slate-900 dark:text-slate-100">Start your free trial</h1>
