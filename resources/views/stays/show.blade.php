@@ -46,7 +46,7 @@
                                 </span>
                             @endif
                         </div>
-                        <x-share-buttons :url="url()->current()" :text="'Check out ' . $house->publicName() . ' on Renty'" />
+                        <x-share-buttons :url="url()->current()" :text="'Check out ' . $house->publicName() . ' on Hizihome'" />
                     </div>
                     <h1 class="mt-3 text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">{{ $house->publicName() }}</h1>
                     <p class="mt-1 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">

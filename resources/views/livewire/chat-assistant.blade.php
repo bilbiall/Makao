@@ -45,7 +45,7 @@
             <span class="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900"></span>
         </div>
         <div class="min-w-0 flex-1 pt-0.5">
-            <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">Renty Assistant</p>
+            <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">Hizihome Assistant</p>
             <p class="mt-0.5 text-sm leading-snug text-slate-600 dark:text-slate-300">What type of house are you looking for? Tell me the area &amp; budget too 👋</p>
         </div>
         <button type="button" @click="acknowledge()" aria-label="Dismiss" class="-mr-1 -mt-1 shrink-0 rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300">

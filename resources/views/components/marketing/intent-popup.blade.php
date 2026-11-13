@@ -38,7 +38,7 @@
     >
         <div class="flex items-start justify-between gap-4">
             <div>
-                <p class="text-lg font-semibold text-slate-900 dark:text-slate-100">Welcome to Renty 👋</p>
+                <p class="text-lg font-semibold text-slate-900 dark:text-slate-100">Welcome to Hizihome 👋</p>
                 <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">What brings you here today?</p>
             </div>
             <button type="button" @click="dismiss()" class="flex-shrink-0 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300" aria-label="Close">
@@ -63,7 +63,7 @@
                 </span>
                 <span class="min-w-0">
                     <span class="block text-sm font-semibold text-slate-900 dark:text-slate-100">I list and manage properties</span>
-                    <span class="block text-xs text-slate-500 dark:text-slate-400">See how Renty runs your rentals for you</span>
+                    <span class="block text-xs text-slate-500 dark:text-slate-400">See how Hizihome runs your rentals for you</span>
                 </span>
             </a>
         </div>

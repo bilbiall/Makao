@@ -133,7 +133,7 @@
                         Edit
                     </button>
                     @if ($c2bEnabled)
-                        <button type="button" wire:click="registerC2b({{ $channel->id }})" wire:confirm="This tells Safaricom to send Paybill payment confirmations for this shortcode to Renty. Continue?" class="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 py-2 text-xs font-medium text-slate-700 dark:text-slate-300">
+                        <button type="button" wire:click="registerC2b({{ $channel->id }})" wire:confirm="This tells Safaricom to send Paybill payment confirmations for this shortcode to Hizihome. Continue?" class="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 py-2 text-xs font-medium text-slate-700 dark:text-slate-300">
                             {{ $channel->c2b_registered_at ? 'Re-register C2B' : 'Register C2B' }}
                         </button>
                     @endif

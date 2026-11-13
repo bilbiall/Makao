@@ -27,6 +27,6 @@ class AppHelper
             // Fallback if settings not available
         }
 
-        return config('app.name', 'Renty');
+        return config('app.name', 'Hizihome');
     }
 }

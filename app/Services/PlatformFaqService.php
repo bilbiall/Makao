@@ -34,10 +34,10 @@ class PlatformFaqService
     {
         return match (true) {
             (bool) preg_match('/\b(become a tenant|get admitted|admission process|application process|move.?in process|how (do|can) i apply)\b/i', $text) => 'tenant_admission',
-            (bool) preg_match('/\b(property managers?|caretakers?|landlords?|property owners?|manage (my|our) propert|list (my|our) propert|how (do|does) (this|it|makao|renty|you) (serve|work|help)|why (use|choose) (makao|renty|this))\b/i', $text) => 'owner_benefits',
+            (bool) preg_match('/\b(property managers?|caretakers?|landlords?|property owners?|manage (my|our) propert|list (my|our) propert|how (do|does) (this|it|makao|renty|you) (serve|work|help)|why (use|choose) (makao|renty|hizihome|this))\b/i', $text) => 'owner_benefits',
             (bool) preg_match('/\b(subscription|monthly plan|pricing plans?|free trial|how much (does|would) it cost to (list|join|sign ?up|use))\b/i', $text) => 'pricing',
             (bool) preg_match('/\b(pay rent|how (do|does) (rent )?payments? work|m-?pesa|pay online|payment methods?)\b/i', $text) => 'payments',
-            (bool) preg_match('/\b(what is (makao|renty|this (site|platform|app))|about (makao|renty|this (site|platform|app)))\b/i', $text) => 'general',
+            (bool) preg_match('/\b(what is (makao|renty|hizihome|this (site|platform|app))|about (makao|renty|hizihome|this (site|platform|app)))\b/i', $text) => 'general',
             default => null,
         };
     }

@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     @include('partials.favicon')
     <link rel="manifest" href="{{ asset('manifest.json') }}">
-    <meta name="theme-color" content="#047857">
-    <title>Log in - Renty</title>
+    <meta name="theme-color" content="#133a2f">
+    <title>Log in - Hizihome</title>
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700" rel="stylesheet" />
     @vite(['resources/css/app.css', 'resources/js/app.js'])

@@ -52,6 +52,6 @@
         </tbody>
     </table>
 
-    <div class="footer">Renty &middot; Confidential report generated for {{ $landlord }}</div>
+    <div class="footer">Hizihome &middot; Confidential report generated for {{ $landlord }}</div>
 </body>
 </html>

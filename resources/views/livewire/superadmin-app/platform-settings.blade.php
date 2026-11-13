@@ -49,7 +49,7 @@
                         <button type="button" wire:click="removeLogo" wire:confirm="Remove the site logo and go back to the text logo?" class="text-xs text-rose-600 dark:text-rose-400 whitespace-nowrap">Remove</button>
                     @endif
                 </div>
-                <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Replaces the "R Renty" text logo everywhere (marketing site, app header, Filament panels). Also used as the browser tab favicon, unless you set a dedicated one below. Leave blank to keep the text logo. Shown in both themes whenever no dark-mode logo below is set.</p>
+                <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Replaces the "H Hizihome" text logo everywhere (marketing site, app header, Filament panels). Also used as the browser tab favicon, unless you set a dedicated one below. Leave blank to keep the text logo. Shown in both themes whenever no dark-mode logo below is set.</p>
                 <p wire:loading wire:target="logoUpload" class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Uploading...</p>
                 @error('logoUpload') <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p> @enderror
             </div>
@@ -291,7 +291,7 @@
                 </button>
             </div>
         @elseif ($activeTab === 'billing')
-            <p class="text-xs text-slate-500 dark:text-slate-400">These credentials collect payment FROM landlords FOR their own Renty subscription - completely separate from a landlord's own M-Pesa/Pesapal, which each business sets individually in their own Settings &gt; Payments tab to collect rent from their tenants.</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">These credentials collect payment FROM landlords FOR their own Hizihome subscription - completely separate from a landlord's own M-Pesa/Pesapal, which each business sets individually in their own Settings &gt; Payments tab to collect rent from their tenants.</p>
 
             <p class="text-sm font-semibold text-slate-900 dark:text-slate-100 pt-2 border-t border-slate-100 dark:border-slate-800">Pesapal</p>
             <div class="grid grid-cols-2 gap-3">

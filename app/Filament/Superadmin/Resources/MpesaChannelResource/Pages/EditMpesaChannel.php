@@ -25,7 +25,7 @@ class EditMpesaChannel extends EditRecord
                 ->color('gray')
                 ->visible(fn () => (bool) $this->record->landlord?->c2b_enabled)
                 ->requiresConfirmation()
-                ->modalDescription('This tells Safaricom to send Paybill payment confirmations for this shortcode to Renty. Use sandbox first if you\'re not sure these credentials are correct.')
+                ->modalDescription('This tells Safaricom to send Paybill payment confirmations for this shortcode to Hizihome. Use sandbox first if you\'re not sure these credentials are correct.')
                 ->action(function (MpesaService $mpesa) {
                     $result = $mpesa->registerC2bUrls($this->record);
 

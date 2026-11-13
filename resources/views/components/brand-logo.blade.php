@@ -8,15 +8,15 @@
     $hasBothVariants = $lightUrl && $darkUrl;
 @endphp
 @if ($lightUrl || $darkUrl)
-    <img src="{{ $lightUrl ?? $darkUrl }}" alt="{{ config('app.name', 'Renty') }}"
+    <img src="{{ $lightUrl ?? $darkUrl }}" alt="{{ config('app.name', 'Hizihome') }}"
         {{ $attributes->merge(['class' => "{$imgClass} w-auto object-contain" . ($hasBothVariants ? ' dark:hidden' : '')]) }}>
     @if ($hasBothVariants)
-        <img src="{{ $darkUrl }}" alt="{{ config('app.name', 'Renty') }}"
+        <img src="{{ $darkUrl }}" alt="{{ config('app.name', 'Hizihome') }}"
             {{ $attributes->merge(['class' => "{$imgClass} w-auto object-contain hidden dark:block"]) }}>
     @endif
 @else
-    <span {{ $attributes->merge(['class' => 'inline-flex items-center gap-2']) }}>
-        <span class="grid {{ $imgClass }} aspect-square place-items-center rounded-lg bg-emerald-600 text-sm font-bold text-white">R</span>
-        <span class="{{ $textClass }}">{{ config('app.name', 'Renty') }}</span>
-    </span>
+    <img src="{{ asset('images/brand/hizihome-logo.png') }}" alt="{{ config('app.name', 'Hizihome') }}"
+        {{ $attributes->merge(['class' => "{$imgClass} w-auto object-contain dark:hidden"]) }}>
+    <img src="{{ asset('images/brand/hizihome-logo-white.png') }}" alt="{{ config('app.name', 'Hizihome') }}"
+        {{ $attributes->merge(['class' => "{$imgClass} w-auto object-contain hidden dark:block"]) }}>
 @endif

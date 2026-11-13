@@ -1,8 +1,8 @@
 @php
-    $shareDescription = trim(($user->bio ?: 'Managing ' . $houses->count() . ' short-stay ' . ($houses->count() === 1 ? 'property' : 'properties') . ' on Renty')
+    $shareDescription = trim(($user->bio ?: 'Managing ' . $houses->count() . ' short-stay ' . ($houses->count() === 1 ? 'property' : 'properties') . ' on Hizihome')
         . ($averageRating ? ' - ' . $averageRating . '★ (' . $reviewsCount . ' reviews)' : ''));
 @endphp
-<x-layouts.marketing :title="$user->name . ' - Renty Agent'" :description="$shareDescription" :image="$user->avatarUrl()">
+<x-layouts.marketing :title="$user->name . ' - Hizihome Agent'" :description="$shareDescription" :image="$user->avatarUrl()">
     <div class="pb-24 md:pb-14">
         {{-- Hero --}}
         <div class="bg-gradient-to-br from-emerald-600 to-emerald-800 dark:from-emerald-800 dark:to-slate-900">
@@ -19,7 +19,7 @@
 
                 <p class="mt-1 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-medium">
                     @svg('heroicon-s-check-badge', 'w-4 h-4')
-                    Renty Agent
+                    Hizihome Agent
                 </p>
 
                 <div class="mt-3 flex items-center justify-center gap-4 text-sm">
@@ -41,7 +41,7 @@
                 @endif
 
                 <div class="mt-4 flex justify-center">
-                    <x-share-buttons :url="url()->current()" :text="'Check out ' . $user->name . '\'s stays on Renty'" :on-dark="true" />
+                    <x-share-buttons :url="url()->current()" :text="'Check out ' . $user->name . '\'s stays on Hizihome'" :on-dark="true" />
                 </div>
             </div>
         </div>

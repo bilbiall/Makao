@@ -79,7 +79,7 @@ class PlatformSettings extends Page implements HasForms
                             ->schema([
                                 Forms\Components\FileUpload::make('logo_path')
                                     ->label('Site logo (light mode)')
-                                    ->helperText('Replaces the "R Renty" text logo everywhere (marketing site, app header, Filament panels). Also used as the browser tab favicon, unless you set a dedicated one below. Leave blank to keep the text logo. Shown whenever no dark-mode logo below is set, so this alone is enough if you only have one version.')
+                                    ->helperText('Replaces the "H Hizihome" text logo everywhere (marketing site, app header, Filament panels). Also used as the browser tab favicon, unless you set a dedicated one below. Leave blank to keep the text logo. Shown whenever no dark-mode logo below is set, so this alone is enough if you only have one version.')
                                     ->image()
                                     ->disk('public')
                                     ->visibility('public')
@@ -448,7 +448,7 @@ class PlatformSettings extends Page implements HasForms
                             ->schema([
                                 Forms\Components\Placeholder::make('subscription_billing_note')
                                     ->label('')
-                                    ->content('These credentials collect payment FROM landlords FOR their own Renty subscription - completely separate from a landlord\'s own M-Pesa/Pesapal, which each business sets individually in their own Settings > Payments tab to collect rent from their tenants.'),
+                                    ->content('These credentials collect payment FROM landlords FOR their own Hizihome subscription - completely separate from a landlord\'s own M-Pesa/Pesapal, which each business sets individually in their own Settings > Payments tab to collect rent from their tenants.'),
 
                                 Forms\Components\Section::make('Pesapal')
                                     ->schema([

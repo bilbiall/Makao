@@ -7,12 +7,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     @include('partials.favicon')
     <link rel="manifest" href="{{ asset('manifest.json') }}">
-    <meta name="theme-color" content="#047857">
+    <meta name="theme-color" content="#133a2f">
     @php
-        $pageTitle = ($title ?? config('app.name', 'Renty')) . ' - Renty';
-        $pageDescription = $description ?? 'Renty is an all-in-one rental management platform for Kenyan landlords and property managers - M-Pesa rent collection, tenant portal, maintenance tracking, and more.';
+        $pageTitle = ($title ?? config('app.name', 'Hizihome')) . ' - Hizihome';
+        $pageDescription = $description ?? 'Hizihome is an all-in-one rental management platform for Kenyan landlords and property managers - M-Pesa rent collection, tenant portal, maintenance tracking, and more.';
         $fallbackLogoPath = \App\Models\Setting::forLandlord(null)->payload['logo_path'] ?? null;
-        $pageImage = $image ?? ($fallbackLogoPath ? \Illuminate\Support\Facades\Storage::disk('public')->url($fallbackLogoPath) : asset('images/rentylogo.png'));
+        $pageImage = $image ?? ($fallbackLogoPath ? \Illuminate\Support\Facades\Storage::disk('public')->url($fallbackLogoPath) : asset('images/brand/hizihome-icon.png'));
     @endphp
     <title>{{ $pageTitle }}</title>
     <meta name="description" content="{{ $pageDescription }}">

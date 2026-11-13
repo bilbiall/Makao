@@ -23,7 +23,7 @@
     {{-- How it works --}}
     <section class="py-14 sm:py-20" x-data="{ step: 0 }">
         <div class="mx-auto max-w-6xl px-4 sm:px-6">
-            <h2 class="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 sm:text-3xl">How Renty works</h2>
+            <h2 class="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 sm:text-3xl">How Hizihome works</h2>
             <p class="mt-2 max-w-xl text-slate-500 dark:text-slate-400">Three steps from searching to keys in hand.</p>
         </div>
 
@@ -95,7 +95,7 @@
                         No fake listings, no phantom viewing fees.
                     </h2>
                     <p class="mt-3 text-slate-500 dark:text-slate-400">
-                        Every listing you see is managed by a real property owner through Renty's own management platform -
+                        Every listing you see is managed by a real property owner through Hizihome's own management platform -
                         vacancy is live, not a stale post from three months ago.
                     </p>
                     <a href="{{ route('listings.index') }}" class="mt-6 inline-flex rounded-lg bg-emerald-600 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-700">

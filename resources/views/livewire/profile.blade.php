@@ -77,7 +77,7 @@
             @if (empty($portfolioUrls))
                 <p class="text-xs text-slate-500 dark:text-slate-400">Nothing public yet - once a property is published and vacant (or a stay is published), its link on the public site shows up here.</p>
             @else
-                <p class="text-xs text-slate-500 dark:text-slate-400">This is the same search renters use on Renty, narrowed to just your published properties.</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400">This is the same search renters use on Hizihome, narrowed to just your published properties.</p>
                 <div class="space-y-2">
                     @foreach ($portfolioUrls as $label => $url)
                         <div class="flex items-center gap-2">

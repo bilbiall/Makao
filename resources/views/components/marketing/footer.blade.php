@@ -24,7 +24,7 @@
                 </ul>
             </div>
             <div>
-                <h4 class="text-sm font-semibold text-slate-900 dark:text-slate-100">Renty</h4>
+                <h4 class="text-sm font-semibold text-slate-900 dark:text-slate-100">Hizihome</h4>
                 <ul class="mt-2 space-y-2">
                     <li><a href="{{ route('generic.login') }}" class="text-sm text-slate-500 dark:text-slate-400 transition-colors hover:text-emerald-700 dark:hover:text-emerald-400">Log in</a></li>
                     <li><a href="{{ route('get-started') }}" class="text-sm text-slate-500 dark:text-slate-400 transition-colors hover:text-emerald-700 dark:hover:text-emerald-400">Get started</a></li>
@@ -34,7 +34,7 @@
             </div>
         </div>
         <p class="mt-8 border-t border-slate-200 dark:border-slate-800 pt-6 text-xs text-slate-500 dark:text-slate-400">
-            &copy; {{ now()->year }} Renty. Nairobi, Kenya.
+            &copy; {{ now()->year }} Hizihome. Nairobi, Kenya.
         </p>
     </div>
 </footer>

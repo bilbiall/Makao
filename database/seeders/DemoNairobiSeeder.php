@@ -79,7 +79,7 @@ class DemoNairobiSeeder extends Seeder
 
         $superadmin = User::firstOrCreate(
             ['email' => 'superadmin@rentydemo.co.ke'],
-            ['name' => 'Renty Superadmin', 'password' => Hash::make(self::DEMO_PASSWORD), 'role' => 'superadmin']
+            ['name' => 'Hizihome Superadmin', 'password' => Hash::make(self::DEMO_PASSWORD), 'role' => 'superadmin']
         );
 
         $manifest = $this->manifest();

@@ -15,7 +15,7 @@
                 Run every building you own from one dashboard.
             </h1>
             <p class="mt-6 text-lg text-slate-200">
-                Renty collects rent via M-Pesa and Pesapal, keeps every tenant in the loop by SMS and email,
+                Hizihome collects rent via M-Pesa and Pesapal, keeps every tenant in the loop by SMS and email,
                 and gives you one place to track invoices, bills, maintenance, and move-outs - across as many
                 properties as you manage.
             </p>

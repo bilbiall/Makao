@@ -11,7 +11,7 @@ class ChatCopy
 {
     protected const STRINGS = [
         'en' => [
-            'greeting' => 'Hi! I\'m your Renty assistant. What type of house are you looking for - bedsitter, 1 bedroom, 2 bedroom...? Tell me the area and your budget too, e.g. "1 bedroom in Kasarani under 20k", and I\'ll find it.',
+            'greeting' => 'Hi! I\'m your Hizihome assistant. What type of house are you looking for - bedsitter, 1 bedroom, 2 bedroom...? Tell me the area and your budget too, e.g. "1 bedroom in Kasarani under 20k", and I\'ll find it.',
             'greeting_unconfigured' => "Hi! The chat assistant isn't set up yet, but you can browse listings directly using search.",
             'unconfigured' => "The chat assistant isn't set up yet - please browse listings directly for now.",
             'rate_limited' => "You've sent quite a few messages - please wait a few minutes before continuing.",
@@ -31,7 +31,7 @@ class ChatCopy
             'chip_show_price' => 'Show KES :price homes',
         ],
         'sw' => [
-            'greeting' => 'Habari! Mimi ni msaidizi wako wa Renty. Unatafuta nyumba ya aina gani - bedsitter, chumba kimoja, vyumba viwili...? Niambie pia eneo na bajeti, mfano "chumba kimoja Kasarani chini ya 20k", nitakutafutia.',
+            'greeting' => 'Habari! Mimi ni msaidizi wako wa Hizihome. Unatafuta nyumba ya aina gani - bedsitter, chumba kimoja, vyumba viwili...? Niambie pia eneo na bajeti, mfano "chumba kimoja Kasarani chini ya 20k", nitakutafutia.',
             'greeting_unconfigured' => 'Habari! Msaidizi wa mazungumzo bado haujawekwa, lakini unaweza kuangalia nyumba moja kwa moja kwa kutumia utafutaji.',
             'unconfigured' => 'Msaidizi wa mazungumzo bado haujawekwa - tafadhali angalia nyumba moja kwa moja kwa sasa.',
             'rate_limited' => 'Umetuma ujumbe mwingi - tafadhali subiri dakika chache kabla ya kuendelea.',

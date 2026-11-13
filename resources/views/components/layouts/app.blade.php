@@ -16,9 +16,9 @@
     @include('partials.theme-init-script')
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     @include('partials.favicon')
-    <title>{{ $title ? $title . ' - Renty' : 'Renty' }}</title>
+    <title>{{ $title ? $title . ' - Hizihome' : 'Hizihome' }}</title>
     <link rel="manifest" href="{{ asset('manifest.json') }}">
-    <meta name="theme-color" content="#047857">
+    <meta name="theme-color" content="#133a2f">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
